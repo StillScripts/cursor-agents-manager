@@ -40,6 +40,7 @@ import {
 } from "@/lib/schemas/cursor/launch-agent";
 
 const modelOptions = [
+  { value: "", label: "Auto (Recommended)" },
   { value: "claude-3-5-sonnet-20241022", label: "Claude 3.5 Sonnet (Latest)" },
   { value: "claude-3-5-sonnet-20240620", label: "Claude 3.5 Sonnet (June)" },
   { value: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku" },
@@ -71,7 +72,7 @@ export function LaunchAgentForm() {
         repository: "",
         ref: "main",
       },
-      model: "claude-3-5-sonnet-20241022",
+      model: undefined,
       target: {
         autoCreatePr: true,
         openAsCursorGithubApp: false,
@@ -330,8 +331,8 @@ export function LaunchAgentForm() {
                   <Field>
                     <FieldLabel>AI Model</FieldLabel>
                     <Select
-                      value={field.state.value}
-                      onValueChange={(value) => field.handleChange(value ?? "")}
+                      value={field.state.value || ""}
+                      onValueChange={(value) => field.handleChange(value === "" ? undefined : value)}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -345,7 +346,7 @@ export function LaunchAgentForm() {
                       </SelectContent>
                     </Select>
                     <FieldDescription>
-                      Choose the AI model that best fits your task complexity and requirements
+                      Auto mode lets Cursor choose the best model for your task. You can also select a specific model if needed.
                     </FieldDescription>
                   </Field>
                 )}

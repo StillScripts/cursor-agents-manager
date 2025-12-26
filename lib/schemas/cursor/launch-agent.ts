@@ -89,8 +89,8 @@ export const availableModels = [
 
 export const modelSchema = z
   .enum(availableModels)
-  .default("claude-3-5-sonnet-20241022")
-  .describe("The AI model to use for the agent");
+  .optional()
+  .describe("The AI model to use for the agent. If not specified, Cursor will automatically choose the best model");
 
 // Main launch agent request schema
 export const launchAgentRequestSchema = z.object({
@@ -191,7 +191,7 @@ export function formDataToApiRequest(formData: LaunchAgentFormData): LaunchAgent
   };
 
   // Only include optional fields if they have values
-  if (formData.model) {
+  if (formData.model && formData.model !== "") {
     request.model = formData.model;
   }
 
@@ -220,7 +220,7 @@ export const defaultFormValues: Partial<LaunchAgentFormData> = {
     repository: "",
     ref: "main",
   },
-  model: "claude-3-5-sonnet-20241022",
+  model: undefined, // Auto mode - let Cursor choose
   target: {
     autoCreatePr: true,
     openAsCursorGithubApp: false,

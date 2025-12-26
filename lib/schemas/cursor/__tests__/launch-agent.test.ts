@@ -152,4 +152,31 @@ describe('Launch Agent Schema', () => {
       target: formData.target,
     });
   });
+
+  it('should omit model from API request when auto mode is selected', () => {
+    const formData: LaunchAgentFormData = {
+      prompt: {
+        text: 'Test task',
+      },
+      source: {
+        repository: 'https://github.com/user/repo',
+        ref: 'main',
+      },
+      model: undefined, // Auto mode
+      target: {
+        autoCreatePr: true,
+        openAsCursorGithubApp: false,
+        skipReviewerRequest: false,
+      },
+    };
+
+    const apiRequest = formDataToApiRequest(formData);
+
+    expect(apiRequest.model).toBeUndefined();
+    expect(apiRequest).toEqual({
+      prompt: formData.prompt,
+      source: formData.source,
+      target: formData.target,
+    });
+  });
 });
