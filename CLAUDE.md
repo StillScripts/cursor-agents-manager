@@ -32,31 +32,99 @@ bun run lint
 Create a `.env.local` file for environment variables:
 
 ```bash
-# Optional: Cursor API key for live mode
-CURSOR_API_KEY=your-api-key-here
+# Turso Database (Auth DB - Shared)
+TURSO_AUTH_DATABASE_URL=libsql://your-auth-db.turso.io
+TURSO_AUTH_TOKEN=your-auth-token
+
+# Turso API (for database management)
+TURSO_ORG_NAME=your-org-name
+TURSO_API_TOKEN=your-turso-api-token
+
+# Better Auth
+BETTER_AUTH_SECRET=your-random-secret-min-32-chars
+ENCRYPTION_SECRET=your-encryption-secret-min-32-chars
+
+# App URL
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Optional: Your Cursor API key (can also be set per-user in the app)
+CURSOR_API_KEY=your-cursor-api-key
 ```
 
-**Simulation Mode**: The app automatically enters simulation mode (using mock data) when:
-- `CURSOR_API_KEY` is missing
-- `CURSOR_API_KEY` is empty or contains placeholder text like "undefined", "your-api-key", or "placeholder"
-- `CURSOR_API_KEY` is shorter than 10 characters
-
-See `lib/api-utils.ts:isSimulationMode()` for the exact logic.
+**Simulation Mode**: The app automatically enters simulation mode (using mock data) when a user doesn't have a valid API key configured in their account. Mode detection happens in `lib/api-utils.ts:isSimulationMode()` which:
+1. Checks the user's session from the request headers
+2. Queries the `user_api_keys` table for their encrypted API key
+3. Returns `true` if no API key exists or if it's invalid (< 10 chars, contains placeholders)
+4. Returns `false` if a valid API key exists (enabling live mode)
 
 ## Architecture
+
+### Authentication & Database
+
+**Authentication System**: The app uses Better Auth with email/password authentication. All user data is stored in a shared Turso SQLite database.
+
+**Authentication Flow**:
+1. User registers at `/signup` with email/password
+2. Better Auth hashes password with bcrypt and creates user in `user` table
+3. Session is created and stored in `session` table
+4. Session token stored in HTTP-only cookie
+5. Middleware (`middleware.ts`) protects all routes except `/login`, `/signup`, and `/api/auth/*`
+6. Unauthenticated users are redirected to `/login` with callback URL
+7. Authenticated users accessing auth pages are redirected to home
+
+**Database Architecture**:
+
+The app uses a **single shared Turso database** for all users:
+- `user` - User accounts (id, name, email, emailVerified, timestamps)
+- `session` - Active sessions with expiry tracking
+- `account` - Account credentials (passwords, OAuth tokens if added)
+- `verification` - Email verification tokens
+- `user_api_keys` - Encrypted Cursor API keys (one per user, `userId` foreign key)
+- `repositories` - User's saved GitHub repositories (`userId` foreign key)
+- `branches` - User's saved branch names (`userId` foreign key)
+- `user_settings` - User preferences like theme (`userId` foreign key)
+
+All user-specific tables have `userId` foreign keys with cascade delete.
+
+**Security**:
+- Passwords: Hashed with bcrypt by Better Auth
+- API Keys: Encrypted with AES-256-GCM before storage using `lib/encryption.ts`
+- Sessions: HTTP-only cookies, 7-day expiry with 1-day refresh
+- Database: Parameterized queries via Drizzle ORM (SQL injection protection)
+- Middleware: Route protection, session validation on every request
+
+**Key Files**:
+- `lib/auth.ts` - Better Auth server configuration
+- `lib/auth-client.ts` - Client-side auth utilities (signIn, signUp, signOut, useSession)
+- `lib/db.ts` - Drizzle database connection to Turso
+- `lib/encryption.ts` - AES-256-GCM encryption/decryption for API keys
+- `lib/schema/auth-schema.ts` - Better Auth tables + user_api_keys
+- `lib/schema/user-schema.ts` - User data tables (repositories, branches, settings)
+- `lib/hooks/use-session.ts` - React hook for accessing current user session
+- `middleware.ts` - Route protection middleware
+- `app/api/auth/[...all]/route.ts` - Better Auth API endpoints
+- `app/login/page.tsx` - Login form
+- `app/signup/page.tsx` - Registration form
 
 ### App Structure (Next.js App Router)
 
 ```
 app/
 ├── page.tsx                  # Home: agent list view
+├── login/page.tsx            # Login page
+├── signup/page.tsx           # Signup page
 ├── new/page.tsx              # Launch new agent form
 ├── agent/[id]/page.tsx       # Agent detail/conversation view
 ├── settings/page.tsx         # Settings page
 ├── account/page.tsx          # Account page
 ├── layout.tsx                # Root layout with providers
 └── api/                      # API routes (Next.js Route Handlers)
-    └── agents/
+    ├── auth/[...all]/        # Better Auth endpoints (GET, POST)
+    ├── user/                 # User data endpoints (authenticated)
+    │   ├── api-key/          # GET (status), POST (save), DELETE
+    │   ├── repositories/     # GET (list), POST (save all)
+    │   └── branches/         # GET (list), POST (save all)
+    └── agents/               # Agent operations (simulation or live mode)
         ├── route.ts          # GET (list), POST (launch)
         └── [id]/
             ├── route.ts      # GET (details), DELETE
@@ -68,32 +136,63 @@ app/
 ### Key Directories
 
 - `components/`: React components (UI components in `components/ui/`)
+  - `components/api-key-manager.tsx`: API key management UI component
+  - `components/account-screen.tsx`: Account page with user info and API key management
+  - `components/settings-form.tsx`: Settings form for repositories and branches
 - `lib/`: Utilities, types, and custom hooks
+  - `lib/auth.ts`: Better Auth server configuration
+  - `lib/auth-client.ts`: Client-side auth utilities
+  - `lib/db.ts`: Drizzle database connection
+  - `lib/encryption.ts`: AES-256-GCM encryption for API keys
   - `lib/types.ts`: TypeScript types for Agent, AgentMessage, etc.
-  - `lib/api-utils.ts`: API configuration and simulation mode detection
+  - `lib/api-utils.ts`: API configuration, simulation mode detection, user API key retrieval
   - `lib/mock-data.ts`: Simulated data for development/demo
-  - `lib/hooks/`: React Query hooks (`use-agents.ts`, `use-repositories.ts`, `use-branches.ts`)
+  - `lib/schema/`: Database schemas
+    - `auth-schema.ts`: Better Auth tables + user_api_keys
+    - `user-schema.ts`: User data tables (repositories, branches, settings)
+  - `lib/hooks/`: React Query hooks
+    - `use-session.ts`: Current user session hook
+    - `use-agents.ts`: Agent operations (list, launch, stop, delete)
+    - `use-repositories.ts`: User repositories (fetch from DB, save to DB)
+    - `use-branches.ts`: User branches (fetch from DB, save to DB)
 - `hooks/`: General React hooks
 - `public/`: Static assets
 - `styles/`: Global styles
+- `drizzle/`: Database migrations
+- `middleware.ts`: Next.js middleware for route protection
 
 ### State Management
 
+- **Better Auth Session**: Server-side session management with HTTP-only cookies
+  - Sessions stored in `session` table with 7-day expiry
+  - Client hook: `useSession()` returns current user, session, loading state
 - **React Query** (@tanstack/react-query): Server state, data fetching, caching
-  - All agent operations use custom hooks in `lib/hooks/use-agents.ts`
-  - Auto-refetch intervals: agents list (10s), conversations (5s)
-  - Query invalidation on mutations (launch, stop, delete, follow-up)
+  - Agent operations: `lib/hooks/use-agents.ts` (list, launch, stop, delete, followup)
+  - User data: `lib/hooks/use-repositories.ts`, `lib/hooks/use-branches.ts`
+  - Auto-refetch intervals: agents list (10s), conversations (5s), user data (5min stale time)
+  - Query invalidation on mutations (launch, stop, delete, follow-up, save repos/branches)
+  - Optimistic updates for immediate UI feedback
 - **ThemeProvider** (next-themes): Theme management (dark/light/system)
-- **React Hook Form** + **Zod**: Form validation
+- **TanStack React Form**: Form state and validation (login, signup, settings)
 
 ### API Layer
 
-All API routes support dual mode operation:
+All API routes are protected by authentication (except `/api/auth/*`). Agent routes support dual mode operation:
 
-1. **Simulation Mode** (no API key): Returns mock data from `lib/mock-data.ts` with 2s delays
-2. **Live Mode** (valid API key): Proxies requests to `https://api.cursor.com/v0/agents`
+**User API Routes** (authenticated):
+- `GET /api/user/api-key` - Check if user has API key (returns masked version)
+- `POST /api/user/api-key` - Save/update encrypted API key
+- `DELETE /api/user/api-key` - Remove API key
+- `GET /api/user/repositories` - Get user's saved repositories
+- `POST /api/user/repositories` - Save repositories (replaces all)
+- `GET /api/user/branches` - Get user's saved branches
+- `POST /api/user/branches` - Save branches (replaces all)
 
-API routes follow REST conventions:
+**Agent API Routes** (simulation or live mode based on user's API key):
+1. **Simulation Mode** (user has no API key): Returns mock data from `lib/mock-data.ts` with 2s delays
+2. **Live Mode** (user has valid API key): Decrypts user's API key and proxies requests to `https://api.cursor.com/v0/agents`
+
+Agent API routes follow REST conventions:
 - `GET /api/agents?page=0&limit=20` - Paginated list
 - `POST /api/agents` - Launch new agent
 - `GET /api/agents/[id]` - Agent details
@@ -102,7 +201,14 @@ API routes follow REST conventions:
 - `POST /api/agents/[id]/stop` - Stop running agent
 - `DELETE /api/agents/[id]` - Delete agent
 
-All responses include a `simulation: boolean` field indicating the mode.
+All agent responses include a `simulation: boolean` field indicating the mode.
+
+**Mode Detection**: Each agent API route calls `isSimulationMode(request)` which:
+1. Extracts session from request headers using `auth.api.getSession()`
+2. If no session, returns `true` (simulation mode)
+3. Queries `user_api_keys` table for user's encrypted API key
+4. Decrypts the API key if found
+5. Returns `true` if no key, invalid key, or key too short; otherwise `false` (live mode)
 
 ### UI Architecture
 
@@ -125,13 +231,35 @@ Core types in `lib/types.ts`:
 
 ### Data Flow
 
-1. User interacts with UI component
+**Authentication Flow**:
+1. User visits protected route
+2. Middleware checks for valid session via `auth.api.getSession()`
+3. If no session, redirect to `/login?callbackUrl=<original-path>`
+4. User submits login/signup form
+5. Better Auth validates credentials and creates session
+6. Session token stored in HTTP-only cookie
+7. User redirected to original path (or home)
+
+**Agent Operation Flow** (e.g., launching an agent):
+1. User interacts with UI component (e.g., clicks "Launch Agent")
 2. Component calls React Query hook (e.g., `useLaunchAgent()`)
-3. Hook makes fetch request to Next.js API route
-4. API route checks `isSimulationMode()`
-5. Returns either mock data or proxies to Cursor API
-6. React Query updates cache and triggers re-renders
-7. UI reflects new state
+3. Hook makes authenticated fetch request to Next.js API route (`POST /api/agents`)
+4. API route extracts session from request headers
+5. API route calls `isSimulationMode(request)` to check user's API key
+6. If simulation mode: Returns mock data from `lib/mock-data.ts`
+7. If live mode: Decrypts user's API key, proxies request to Cursor API
+8. React Query updates cache and triggers re-renders
+9. UI reflects new state with agent status
+
+**User Data Flow** (e.g., saving repositories):
+1. User edits repositories in Settings form
+2. User clicks "Save Settings"
+3. Form calls `saveRepositories(repos)` from `useRepositories()` hook
+4. Hook makes authenticated `POST /api/user/repositories` request
+5. API route extracts session, gets `userId`
+6. API route deletes old repositories, inserts new ones (all with `userId`)
+7. React Query updates cache with new data
+8. UI reflects saved repositories immediately
 
 ## Important Configuration
 
