@@ -1,11 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { removeSimulatedAgent, getSimulatedAgents } from "@/lib/mock-data"
-import { isSimulationMode, CURSOR_API_URL } from "@/lib/api-utils"
+import { isSimulationMode, getUserApiKey, CURSOR_API_URL } from "@/lib/api-utils"
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const simMode = await isSimulationMode(request)
 
-  if (isSimulationMode()) {
+  if (simMode) {
     const agents = getSimulatedAgents()
     const agent = agents.find((a) => a.id === id)
     if (!agent) {
@@ -15,9 +16,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   try {
+    const apiKey = await getUserApiKey(request)
+    if (!apiKey) {
+      return NextResponse.json({ error: "API key not configured" }, { status: 401 })
+    }
+
     const response = await fetch(`${CURSOR_API_URL}/${id}`, {
       headers: {
-        Authorization: `Bearer ${process.env.CURSOR_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
     })
 
@@ -35,17 +41,23 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const simMode = await isSimulationMode(request)
 
-  if (isSimulationMode()) {
+  if (simMode) {
     removeSimulatedAgent(id)
     return NextResponse.json({ success: true, simulation: true })
   }
 
   try {
+    const apiKey = await getUserApiKey(request)
+    if (!apiKey) {
+      return NextResponse.json({ error: "API key not configured" }, { status: 401 })
+    }
+
     const response = await fetch(`${CURSOR_API_URL}/${id}`, {
       method: "DELETE",
       headers: {
-        Authorization: `Bearer ${process.env.CURSOR_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
     })
 

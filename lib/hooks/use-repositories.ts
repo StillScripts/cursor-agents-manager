@@ -1,66 +1,84 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 
 const STORAGE_KEY = "cursor-agent-repositories"
 
 export interface Repository {
   url: string
   name: string
+  id?: number
+}
+
+interface RepositoriesResponse {
+  repositories: Repository[]
+}
+
+async function fetchRepositories(): Promise<Repository[]> {
+  const response = await fetch("/api/user/repositories")
+
+  if (!response.ok) {
+    // If unauthorized, try to migrate from localStorage
+    if (response.status === 401) {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored) {
+        try {
+          return JSON.parse(stored)
+        } catch {
+          return []
+        }
+      }
+    }
+    throw new Error("Failed to fetch repositories")
+  }
+
+  const data: RepositoriesResponse = await response.json()
+  return data.repositories || []
+}
+
+async function saveRepositories(repos: Repository[]): Promise<Repository[]> {
+  const response = await fetch("/api/user/repositories", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ repositories: repos }),
+  })
+
+  if (!response.ok) {
+    throw new Error("Failed to save repositories")
+  }
+
+  const data: RepositoriesResponse = await response.json()
+  return data.repositories || []
 }
 
 export function useRepositories() {
-  const [repositories, setRepositories] = useState<Repository[]>([])
-  const [isLoaded, setIsLoaded] = useState(false)
+  const queryClient = useQueryClient()
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      try {
-        setRepositories(JSON.parse(stored))
-      } catch {
-        setRepositories([])
-      }
-    }
-    setIsLoaded(true)
-  }, [])
+  const { data: repositories = [], isLoading } = useQuery({
+    queryKey: ["repositories"],
+    queryFn: fetchRepositories,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
 
-  const saveRepositories = useCallback((repos: Repository[]) => {
-    setRepositories(repos)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(repos))
-  }, [])
-
-  const addRepository = useCallback(
-    (repo: Repository) => {
-      const newRepos = [...repositories, repo]
-      saveRepositories(newRepos)
+  const mutation = useMutation({
+    mutationFn: saveRepositories,
+    onSuccess: (data) => {
+      queryClient.setQueryData(["repositories"], data)
+      // Clear localStorage after successful migration
+      localStorage.removeItem(STORAGE_KEY)
     },
-    [repositories, saveRepositories],
-  )
+  })
 
-  const removeRepository = useCallback(
-    (index: number) => {
-      const newRepos = repositories.filter((_, i) => i !== index)
-      saveRepositories(newRepos)
-    },
-    [repositories, saveRepositories],
-  )
-
-  const updateRepository = useCallback(
-    (index: number, repo: Repository) => {
-      const newRepos = [...repositories]
-      newRepos[index] = repo
-      saveRepositories(newRepos)
-    },
-    [repositories, saveRepositories],
-  )
+  const saveRepositoriesMutation = (repos: Repository[]) => {
+    mutation.mutate(repos)
+  }
 
   return {
     repositories,
-    isLoaded,
-    addRepository,
-    removeRepository,
-    updateRepository,
-    saveRepositories,
+    isLoaded: !isLoading,
+    saveRepositories: saveRepositoriesMutation,
+    isLoading,
+    isSaving: mutation.isPending,
+    error: mutation.error,
   }
 }

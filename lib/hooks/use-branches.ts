@@ -1,68 +1,88 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 
 const STORAGE_KEY = "cursor-agent-branches"
 const DEFAULT_BRANCHES = ["master"]
 
 export interface Branch {
   name: string
+  id?: number
+}
+
+interface BranchesResponse {
+  branches: Branch[]
+}
+
+async function fetchBranches(): Promise<Branch[]> {
+  const response = await fetch("/api/user/branches")
+
+  if (!response.ok) {
+    // If unauthorized, try to migrate from localStorage
+    if (response.status === 401) {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored) {
+        try {
+          return JSON.parse(stored)
+        } catch {
+          return [{ name: DEFAULT_BRANCHES[0] }]
+        }
+      }
+      return [{ name: DEFAULT_BRANCHES[0] }]
+    }
+    throw new Error("Failed to fetch branches")
+  }
+
+  const data: BranchesResponse = await response.json()
+  const branches = data.branches || []
+
+  // If no branches, return default
+  return branches.length > 0 ? branches : [{ name: DEFAULT_BRANCHES[0] }]
+}
+
+async function saveBranches(branchList: Branch[]): Promise<Branch[]> {
+  const response = await fetch("/api/user/branches", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ branches: branchList }),
+  })
+
+  if (!response.ok) {
+    throw new Error("Failed to save branches")
+  }
+
+  const data: BranchesResponse = await response.json()
+  return data.branches || []
 }
 
 export function useBranches() {
-  const [branches, setBranches] = useState<Branch[]>([])
-  const [isLoaded, setIsLoaded] = useState(false)
+  const queryClient = useQueryClient()
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      try {
-        setBranches(JSON.parse(stored))
-      } catch {
-        setBranches([{ name: DEFAULT_BRANCHES[0] }])
-      }
-    } else {
-      setBranches([{ name: DEFAULT_BRANCHES[0] }])
-    }
-    setIsLoaded(true)
-  }, [])
+  const { data: branches = [{ name: DEFAULT_BRANCHES[0] }], isLoading } = useQuery({
+    queryKey: ["branches"],
+    queryFn: fetchBranches,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
 
-  const saveBranches = useCallback((newBranches: Branch[]) => {
-    setBranches(newBranches)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newBranches))
-  }, [])
-
-  const addBranch = useCallback(
-    (branch: Branch) => {
-      const newBranches = [...branches, branch]
-      saveBranches(newBranches)
+  const mutation = useMutation({
+    mutationFn: saveBranches,
+    onSuccess: (data) => {
+      queryClient.setQueryData(["branches"], data)
+      // Clear localStorage after successful migration
+      localStorage.removeItem(STORAGE_KEY)
     },
-    [branches, saveBranches],
-  )
+  })
 
-  const removeBranch = useCallback(
-    (index: number) => {
-      const newBranches = branches.filter((_, i) => i !== index)
-      saveBranches(newBranches)
-    },
-    [branches, saveBranches],
-  )
-
-  const updateBranch = useCallback(
-    (index: number, branch: Branch) => {
-      const newBranches = [...branches]
-      newBranches[index] = branch
-      saveBranches(newBranches)
-    },
-    [branches, saveBranches],
-  )
+  const saveBranchesMutation = (branchList: Branch[]) => {
+    mutation.mutate(branchList)
+  }
 
   return {
     branches,
-    isLoaded,
-    addBranch,
-    removeBranch,
-    updateBranch,
-    saveBranches,
+    isLoaded: !isLoading,
+    saveBranches: saveBranchesMutation,
+    isLoading,
+    isSaving: mutation.isPending,
+    error: mutation.error,
   }
 }

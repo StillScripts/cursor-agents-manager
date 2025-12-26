@@ -1,12 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { addMessageToConversation } from "@/lib/mock-data"
-import { isSimulationMode, CURSOR_API_URL } from "@/lib/api-utils"
+import { isSimulationMode, getUserApiKey, CURSOR_API_URL } from "@/lib/api-utils"
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const body = await request.json()
+  const simMode = await isSimulationMode(request)
 
-  if (isSimulationMode()) {
+  if (simMode) {
     addMessageToConversation(id, {
       id: `msg_${Date.now()}`,
       type: "user_message",
@@ -25,10 +26,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   try {
+    const apiKey = await getUserApiKey(request)
+    if (!apiKey) {
+      return NextResponse.json({ error: "API key not configured" }, { status: 401 })
+    }
+
     const response = await fetch(`${CURSOR_API_URL}/${id}/followup`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.CURSOR_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),

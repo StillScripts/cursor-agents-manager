@@ -5,17 +5,12 @@ import { useRouter } from "next/navigation"
 import { PageHeader } from "./page-header"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Key, Settings, HelpCircle, LogOut, ChevronRight, Zap } from "lucide-react"
+import { ApiKeyManager } from "@/components/api-key-manager"
+import { Settings, HelpCircle, LogOut, ChevronRight, Zap } from "lucide-react"
 import { useSession } from "@/lib/hooks/use-session"
 import { signOut } from "@/lib/auth-client"
 
 const menuItems = [
-  {
-    icon: Key,
-    label: "API Key",
-    description: "Configure your Cursor API key",
-    href: "/account",
-  },
   {
     icon: Settings,
     label: "Settings",
@@ -96,6 +91,9 @@ export function AccountScreen() {
             </div>
           </CardContent>
         </Card>
+
+        {/* API Key Manager */}
+        <ApiKeyManager />
 
         {/* Usage Card */}
         <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
