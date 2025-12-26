@@ -82,7 +82,7 @@ The schema is used in the API route (`/app/api/agents/route.ts`) to:
 
 ### Testing
 
-Comprehensive tests are included in `__tests__/launch-agent.test.ts` covering:
+Comprehensive tests are included in `__tests__/launch-agent.test.ts` using Bun's built-in test runner, covering:
 
 - Valid minimal requests
 - Complete requests with all options
@@ -90,3 +90,10 @@ Comprehensive tests are included in `__tests__/launch-agent.test.ts` covering:
 - Webhook validation
 - Form-to-API conversion
 - Edge cases and error conditions
+
+Run tests with:
+```bash
+bun test                    # Run all tests
+bun test --watch           # Run tests in watch mode
+bun test lib/schemas/      # Run schema tests specifically
+```
