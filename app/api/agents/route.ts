@@ -10,6 +10,10 @@ import {
   CURSOR_API_URL,
 } from "@/lib/api-utils";
 import type { Agent } from "@/lib/types";
+import { 
+  validateLaunchAgentRequest,
+  type LaunchAgentRequest 
+} from "@/lib/schemas/cursor/launch-agent";
 
 async function simulateDelay() {
   await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -80,6 +84,21 @@ export async function POST(request: NextRequest) {
       JSON.stringify(body, null, 2)
     );
 
+    // Validate the request body using our schema
+    let validatedRequest: LaunchAgentRequest;
+    try {
+      validatedRequest = validateLaunchAgentRequest(body);
+    } catch (validationError) {
+      console.error("[API /agents POST] Validation error:", validationError);
+      return NextResponse.json(
+        { 
+          error: "Invalid request data", 
+          details: validationError instanceof Error ? validationError.message : "Validation failed" 
+        },
+        { status: 400 }
+      );
+    }
+
     const simMode = await isSimulationMode(request);
     console.log("[API /agents POST] Simulation mode:", simMode);
 
@@ -89,13 +108,13 @@ export async function POST(request: NextRequest) {
 
       const newAgent: Agent = {
         id: `bc_${Math.random().toString(36).substr(2, 9)}`,
-        name: body.prompt.text.substring(0, 50) + "...",
+        name: validatedRequest.prompt.text.substring(0, 50) + "...",
         status: "CREATING",
-        source: body.source,
+        source: validatedRequest.source,
         target: {
           url: `https://cursor.com/agents?id=bc_sim_new`,
-          branchName: body.target?.branchName || `cursor/task-${Date.now()}`,
-          autoCreatePr: body.target?.autoCreatePr ?? false,
+          branchName: validatedRequest.target?.branchName || `cursor/task-${Date.now()}`,
+          autoCreatePr: validatedRequest.target?.autoCreatePr ?? false,
         },
         createdAt: new Date().toISOString(),
       };
@@ -137,7 +156,7 @@ export async function POST(request: NextRequest) {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(validatedRequest),
     });
 
     console.log(

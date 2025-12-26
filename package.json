@@ -7,6 +7,8 @@
     "dev": "next dev",
     "lint": "eslint .",
     "start": "next start",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
     "db:generate": "dotenv -e .env.local -- drizzle-kit generate",
     "db:push": "dotenv -e .env.local -- drizzle-kit push",
     "db:migrate": "dotenv -e .env.local -- drizzle-kit migrate",
