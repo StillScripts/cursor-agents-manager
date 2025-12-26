@@ -8,6 +8,13 @@
       "when": 1766733966345,
       "tag": "0000_fluffy_landau",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1766739726364,
+      "tag": "0001_broken_epoch",
+      "breakpoints": true
     }
   ]
 }
