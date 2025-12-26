@@ -29,24 +29,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Rocket, Settings, AlertCircle, ExternalLink } from "lucide-react";
+import { Rocket, Settings, AlertCircle, ExternalLink, Plus, X } from "lucide-react";
 import Link from "next/link";
+import {
+  type LaunchAgentFormData,
+  launchAgentFormSchema,
+  defaultFormValues,
+  availableModels,
+  formDataToApiRequest,
+} from "@/lib/schemas/cursor/launch-agent";
 
-const models = [
-  { value: "claude-4-sonnet", label: "Claude 4 Sonnet" },
-  { value: "claude-4-opus", label: "Claude 4 Opus" },
-  { value: "gpt-4", label: "GPT-4" },
+const modelOptions = [
+  { value: "claude-3-5-sonnet-20241022", label: "Claude 3.5 Sonnet (Latest)" },
+  { value: "claude-3-5-sonnet-20240620", label: "Claude 3.5 Sonnet (June)" },
+  { value: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku" },
+  { value: "claude-3-opus-20240229", label: "Claude 3 Opus" },
+  { value: "claude-3-sonnet-20240229", label: "Claude 3 Sonnet" },
+  { value: "claude-3-haiku-20240307", label: "Claude 3 Haiku" },
+  { value: "gpt-4o", label: "GPT-4o" },
+  { value: "gpt-4o-mini", label: "GPT-4o Mini" },
   { value: "gpt-4-turbo", label: "GPT-4 Turbo" },
-];
-
-interface FormValues {
-  prompt: string;
-  repository: string;
-  ref: string;
-  model: string;
-  branchName: string;
-  autoCreatePr: boolean;
-}
+  { value: "gpt-4", label: "GPT-4" },
+  { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo" },
+  { value: "o1-preview", label: "o1 Preview" },
+  { value: "o1-mini", label: "o1 Mini" },
+] as const;
 
 export function LaunchAgentForm() {
   const router = useRouter();
@@ -54,28 +61,33 @@ export function LaunchAgentForm() {
   const { repositories, isLoaded } = useRepositories();
   const { branches, isLoaded: branchesLoaded } = useBranches();
 
-  const form = useForm({
+  const form = useForm<LaunchAgentFormData>({
     defaultValues: {
-      prompt: "",
-      repository: "",
-      ref: "main",
-      model: "claude-4-sonnet",
-      branchName: "",
-      autoCreatePr: true,
+      prompt: {
+        text: "",
+        images: [],
+      },
+      source: {
+        repository: "",
+        ref: "main",
+      },
+      model: "claude-3-5-sonnet-20241022",
+      target: {
+        autoCreatePr: true,
+        openAsCursorGithubApp: false,
+        skipReviewerRequest: false,
+        branchName: "",
+      },
+      webhook: undefined,
     },
     onSubmit: async ({ value }) => {
-      await launchAgent.mutateAsync({
-        prompt: { text: value.prompt },
-        source: {
-          repository: value.repository,
-          ref: value.ref,
-        },
-        model: value.model,
-        target: {
-          branchName: value.branchName || undefined,
-          autoCreatePr: value.autoCreatePr,
-        },
-      });
+      // Validate form data
+      const validatedData = launchAgentFormSchema.parse(value);
+      
+      // Convert to API request format
+      const apiRequest = formDataToApiRequest(validatedData);
+      
+      await launchAgent.mutateAsync(apiRequest);
       router.push("/");
     },
   });
@@ -111,15 +123,21 @@ export function LaunchAgentForm() {
             </FieldDescription>
             <FieldGroup>
               <form.Field
-                name="prompt"
+                name="prompt.text"
                 validators={{
                   onChange: ({ value }) =>
-                    !value ? "Please describe the task" : undefined,
+                    !value 
+                      ? "Please describe the task" 
+                      : value.length < 10
+                      ? "Please provide a more detailed task description (at least 10 characters)"
+                      : value.length > 5000
+                      ? "Task description is too long (maximum 5000 characters)"
+                      : undefined,
                 }}
               >
                 {(field) => (
                   <Field data-invalid={field.state.meta.errors.length > 0}>
-                    <FieldLabel htmlFor="prompt">Prompt</FieldLabel>
+                    <FieldLabel htmlFor="prompt">Task Description</FieldLabel>
                     <Textarea
                       id="prompt"
                       placeholder="Add a README.md file with installation instructions..."
@@ -128,6 +146,9 @@ export function LaunchAgentForm() {
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
                     />
+                    <FieldDescription>
+                      Describe the task you want the agent to perform (10-5000 characters)
+                    </FieldDescription>
                     <FieldError
                       errors={field.state.meta.errors.map((e) => ({
                         message: e?.toString(),
@@ -146,14 +167,23 @@ export function LaunchAgentForm() {
             </FieldDescription>
             <FieldGroup>
               <form.Field
-                name="repository"
+                name="source.repository"
                 validators={{
-                  onChange: ({ value }) =>
-                    !value
-                      ? "Repository is required"
-                      : !value.includes("github.com")
-                      ? "Must be a valid GitHub URL"
-                      : undefined,
+                  onChange: ({ value }) => {
+                    if (!value) return "Repository is required";
+                    try {
+                      const url = new URL(value);
+                      if (url.hostname !== "github.com") {
+                        return "Must be a valid GitHub repository URL";
+                      }
+                      if (url.pathname.split("/").length < 3) {
+                        return "Must be a valid GitHub repository URL (e.g., https://github.com/owner/repo)";
+                      }
+                      return undefined;
+                    } catch {
+                      return "Please enter a valid URL";
+                    }
+                  },
                 }}
               >
                 {(field) => (
@@ -219,9 +249,19 @@ export function LaunchAgentForm() {
                 )}
               </form.Field>
 
-              <form.Field name="ref">
+              <form.Field 
+                name="source.ref"
+                validators={{
+                  onChange: ({ value }) =>
+                    !value 
+                      ? "Base branch is required"
+                      : value.length > 100
+                      ? "Branch name is too long"
+                      : undefined,
+                }}
+              >
                 {(field) => (
-                  <Field>
+                  <Field data-invalid={field.state.meta.errors.length > 0}>
                     <FieldLabel htmlFor="ref">Base Branch</FieldLabel>
                     {isLoaded && branchesLoaded && hasBranches ? (
                       <>
@@ -266,10 +306,15 @@ export function LaunchAgentForm() {
                           onChange={(e) => field.handleChange(e.target.value)}
                         />
                         <FieldDescription>
-                          The branch to base changes on
+                          The branch to base changes on (branch name, tag, or commit hash)
                         </FieldDescription>
                       </>
                     )}
+                    <FieldError
+                      errors={field.state.meta.errors.map((e) => ({
+                        message: e?.toString(),
+                      }))}
+                    />
                   </Field>
                 )}
               </form.Field>
@@ -277,13 +322,13 @@ export function LaunchAgentForm() {
           </FieldSet>
 
           <FieldSet>
-            <FieldLegend>Configuration</FieldLegend>
-            <FieldDescription>Optional agent settings</FieldDescription>
+            <FieldLegend>Model Configuration</FieldLegend>
+            <FieldDescription>Choose the AI model for your agent</FieldDescription>
             <FieldGroup>
               <form.Field name="model">
                 {(field) => (
                   <Field>
-                    <FieldLabel>Model</FieldLabel>
+                    <FieldLabel>AI Model</FieldLabel>
                     <Select
                       value={field.state.value}
                       onValueChange={(value) => field.handleChange(value ?? "")}
@@ -292,37 +337,59 @@ export function LaunchAgentForm() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {models.map((model) => (
+                        {modelOptions.map((model) => (
                           <SelectItem key={model.value} value={model.value}>
                             {model.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    <FieldDescription>
+                      Choose the AI model that best fits your task complexity and requirements
+                    </FieldDescription>
                   </Field>
                 )}
               </form.Field>
+            </FieldGroup>
+          </FieldSet>
 
-              <form.Field name="branchName">
+          <FieldSet>
+            <FieldLegend>Target Configuration</FieldLegend>
+            <FieldDescription>Configure where and how the agent makes changes</FieldDescription>
+            <FieldGroup>
+              <form.Field 
+                name="target.branchName"
+                validators={{
+                  onChange: ({ value }) =>
+                    value && !/^[a-zA-Z0-9/_-]+$/.test(value)
+                      ? "Branch name can only contain letters, numbers, hyphens, underscores, and forward slashes"
+                      : undefined,
+                }}
+              >
                 {(field) => (
-                  <Field>
+                  <Field data-invalid={field.state.meta.errors.length > 0}>
                     <FieldLabel htmlFor="branchName">
                       Target Branch (optional)
                     </FieldLabel>
                     <Input
                       id="branchName"
                       placeholder="feature/my-feature"
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
+                      value={field.state.value || ""}
+                      onChange={(e) => field.handleChange(e.target.value || undefined)}
                     />
                     <FieldDescription>
-                      Leave empty to auto-generate
+                      Custom branch name for the agent to create. Leave empty to auto-generate.
                     </FieldDescription>
+                    <FieldError
+                      errors={field.state.meta.errors.map((e) => ({
+                        message: e?.toString(),
+                      }))}
+                    />
                   </Field>
                 )}
               </form.Field>
 
-              <form.Field name="autoCreatePr">
+              <form.Field name="target.autoCreatePr">
                 {(field) => (
                   <Field orientation="horizontal">
                     <Switch
@@ -335,9 +402,103 @@ export function LaunchAgentForm() {
                         Auto-create Pull Request
                       </FieldLabel>
                       <FieldDescription>
-                        Automatically create a PR when finished
+                        Automatically create a PR when the agent completes
                       </FieldDescription>
                     </FieldContent>
+                  </Field>
+                )}
+              </form.Field>
+
+              <form.Field name="target.openAsCursorGithubApp">
+                {(field) => (
+                  <Field orientation="horizontal">
+                    <Switch
+                      id="openAsCursorGithubApp"
+                      checked={field.state.value}
+                      onCheckedChange={(checked) => field.handleChange(checked)}
+                    />
+                    <FieldContent>
+                      <FieldLabel htmlFor="openAsCursorGithubApp">
+                        Open PR as Cursor GitHub App
+                      </FieldLabel>
+                      <FieldDescription>
+                        Open the pull request as the Cursor GitHub App instead of as your user account (only applies if auto-create PR is enabled)
+                      </FieldDescription>
+                    </FieldContent>
+                  </Field>
+                )}
+              </form.Field>
+
+              <form.Field name="target.skipReviewerRequest">
+                {(field) => (
+                  <Field orientation="horizontal">
+                    <Switch
+                      id="skipReviewerRequest"
+                      checked={field.state.value}
+                      onCheckedChange={(checked) => field.handleChange(checked)}
+                    />
+                    <FieldContent>
+                      <FieldLabel htmlFor="skipReviewerRequest">
+                        Skip Adding Reviewer
+                      </FieldLabel>
+                      <FieldDescription>
+                        Skip adding you as a reviewer to the pull request (only applies if auto-create PR is enabled and PR is opened as Cursor GitHub App)
+                      </FieldDescription>
+                    </FieldContent>
+                  </Field>
+                )}
+              </form.Field>
+            </FieldGroup>
+          </FieldSet>
+
+          <FieldSet>
+            <FieldLegend>Webhook Configuration (Optional)</FieldLegend>
+            <FieldDescription>Get notified about agent status changes</FieldDescription>
+            <FieldGroup>
+              <form.Field name="webhook.url">
+                {(field) => (
+                  <Field>
+                    <FieldLabel htmlFor="webhookUrl">Webhook URL</FieldLabel>
+                    <Input
+                      id="webhookUrl"
+                      placeholder="https://your-app.com/webhooks/cursor"
+                      value={field.state.value || ""}
+                      onChange={(e) => field.handleChange(e.target.value || undefined)}
+                    />
+                    <FieldDescription>
+                      URL to receive webhook notifications about agent status changes
+                    </FieldDescription>
+                  </Field>
+                )}
+              </form.Field>
+
+              <form.Field 
+                name="webhook.secret"
+                validators={{
+                  onChange: ({ value }) =>
+                    value && value.length < 32
+                      ? "Webhook secret must be at least 32 characters long"
+                      : undefined,
+                }}
+              >
+                {(field) => (
+                  <Field data-invalid={field.state.meta.errors.length > 0}>
+                    <FieldLabel htmlFor="webhookSecret">Webhook Secret (Optional)</FieldLabel>
+                    <Input
+                      id="webhookSecret"
+                      type="password"
+                      placeholder="Your webhook secret (min 32 characters)"
+                      value={field.state.value || ""}
+                      onChange={(e) => field.handleChange(e.target.value || undefined)}
+                    />
+                    <FieldDescription>
+                      Secret key for webhook payload verification (minimum 32 characters)
+                    </FieldDescription>
+                    <FieldError
+                      errors={field.state.meta.errors.map((e) => ({
+                        message: e?.toString(),
+                      }))}
+                    />
                   </Field>
                 )}
               </form.Field>

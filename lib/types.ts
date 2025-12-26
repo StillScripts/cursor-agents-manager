@@ -46,18 +46,15 @@ export interface PaginatedAgentsResponse {
   simulation: boolean
 }
 
-export interface LaunchAgentRequest {
-  prompt: {
-    text: string
-    images?: { data: string; dimension: { width: number; height: number } }[]
-  }
-  source: {
-    repository: string
-    ref: string
-  }
-  model?: string
-  target?: {
-    autoCreatePr?: boolean
-    branchName?: string
-  }
-}
+// Re-export types from the schema for backwards compatibility
+export type {
+  LaunchAgentRequest,
+  LaunchAgentResponse,
+  LaunchAgentFormData,
+  PromptImage,
+  Prompt,
+  Source,
+  Target,
+  Webhook,
+  Model,
+} from "@/lib/schemas/cursor/launch-agent";
