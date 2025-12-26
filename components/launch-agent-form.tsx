@@ -1,16 +1,17 @@
-"use client"
+"use client";
 
-import { useRouter } from "next/navigation"
-import { useForm } from "@tanstack/react-form"
-import { useLaunchAgent } from "@/lib/hooks/use-agents"
-import { useRepositories } from "@/lib/hooks/use-repositories"
-import { useBranches } from "@/lib/hooks/use-branches"
-import { PageHeader } from "./page-header"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
-import { Spinner } from "@/components/ui/spinner"
+import { useRouter } from "next/navigation";
+import { useForm } from "@tanstack/react-form";
+import { useLaunchAgent } from "@/lib/hooks/use-agents";
+import { useRepositories } from "@/lib/hooks/use-repositories";
+import { useBranches } from "@/lib/hooks/use-branches";
+import { PageHeader } from "./page-header";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Spinner } from "@/components/ui/spinner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Field,
   FieldDescription,
@@ -20,34 +21,40 @@ import {
   FieldSet,
   FieldLegend,
   FieldContent,
-} from "@/components/ui/field"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Rocket, Settings } from "lucide-react"
-import Link from "next/link"
+} from "@/components/ui/field";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Rocket, Settings, AlertCircle, ExternalLink } from "lucide-react";
+import Link from "next/link";
 
 const models = [
   { value: "claude-4-sonnet", label: "Claude 4 Sonnet" },
   { value: "claude-4-opus", label: "Claude 4 Opus" },
   { value: "gpt-4", label: "GPT-4" },
   { value: "gpt-4-turbo", label: "GPT-4 Turbo" },
-]
+];
 
 interface FormValues {
-  prompt: string
-  repository: string
-  ref: string
-  model: string
-  branchName: string
-  autoCreatePr: boolean
+  prompt: string;
+  repository: string;
+  ref: string;
+  model: string;
+  branchName: string;
+  autoCreatePr: boolean;
 }
 
 export function LaunchAgentForm() {
-  const router = useRouter()
-  const launchAgent = useLaunchAgent()
-  const { repositories, isLoaded } = useRepositories()
-  const { branches, isLoaded: branchesLoaded } = useBranches()
+  const router = useRouter();
+  const launchAgent = useLaunchAgent();
+  const { repositories, isLoaded } = useRepositories();
+  const { branches, isLoaded: branchesLoaded } = useBranches();
 
-  const form = useForm<FormValues>({
+  const form = useForm({
     defaultValues: {
       prompt: "",
       repository: "",
@@ -68,13 +75,21 @@ export function LaunchAgentForm() {
           branchName: value.branchName || undefined,
           autoCreatePr: value.autoCreatePr,
         },
-      })
-      router.push("/")
+      });
+      router.push("/");
     },
-  })
+  });
 
-  const hasRepositories = repositories.length > 0 && repositories.some((r) => r.url.trim())
-  const hasBranches = branches.length > 0 && branches.some((b) => b.name.trim())
+  const hasRepositories =
+    repositories.length > 0 && repositories.some((r) => r.url.trim());
+  const hasBranches =
+    branches.length > 0 && branches.some((b) => b.name.trim());
+
+  const errorMessage =
+    launchAgent.error instanceof Error ? launchAgent.error.message : null;
+  const isGitHubAccessError = errorMessage?.includes(
+    "lack access to repository"
+  );
 
   return (
     <>
@@ -82,21 +97,24 @@ export function LaunchAgentForm() {
 
       <form
         onSubmit={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          form.handleSubmit()
+          e.preventDefault();
+          e.stopPropagation();
+          form.handleSubmit();
         }}
         className="p-4"
       >
         <FieldGroup className="gap-6">
           <FieldSet>
             <FieldLegend>Task Description</FieldLegend>
-            <FieldDescription>Describe what you want the agent to do</FieldDescription>
+            <FieldDescription>
+              Describe what you want the agent to do
+            </FieldDescription>
             <FieldGroup>
               <form.Field
                 name="prompt"
                 validators={{
-                  onChange: ({ value }) => (!value ? "Please describe the task" : undefined),
+                  onChange: ({ value }) =>
+                    !value ? "Please describe the task" : undefined,
                 }}
               >
                 {(field) => (
@@ -123,7 +141,9 @@ export function LaunchAgentForm() {
 
           <FieldSet>
             <FieldLegend>Repository</FieldLegend>
-            <FieldDescription>The GitHub repository for the agent to work on</FieldDescription>
+            <FieldDescription>
+              The GitHub repository for the agent to work on
+            </FieldDescription>
             <FieldGroup>
               <form.Field
                 name="repository"
@@ -132,8 +152,8 @@ export function LaunchAgentForm() {
                     !value
                       ? "Repository is required"
                       : !value.includes("github.com")
-                        ? "Must be a valid GitHub URL"
-                        : undefined,
+                      ? "Must be a valid GitHub URL"
+                      : undefined,
                 }}
               >
                 {(field) => (
@@ -141,9 +161,14 @@ export function LaunchAgentForm() {
                     <FieldLabel htmlFor="repository">Repository</FieldLabel>
                     {isLoaded && hasRepositories ? (
                       <>
-                        <Select value={field.state.value} onValueChange={field.handleChange}>
+                        <Select
+                          value={field.state.value}
+                          onValueChange={(value) =>
+                            field.handleChange(value ?? "")
+                          }
+                        >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a repository" />
+                            <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             {repositories
@@ -200,15 +225,23 @@ export function LaunchAgentForm() {
                     <FieldLabel htmlFor="ref">Base Branch</FieldLabel>
                     {isLoaded && branchesLoaded && hasBranches ? (
                       <>
-                        <Select value={field.state.value} onValueChange={field.handleChange}>
+                        <Select
+                          value={field.state.value}
+                          onValueChange={(value) =>
+                            field.handleChange(value ?? "")
+                          }
+                        >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select branch" />
+                            <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             {branches
                               .filter((b) => b.name.trim())
                               .map((branch) => (
-                                <SelectItem key={branch.name} value={branch.name}>
+                                <SelectItem
+                                  key={branch.name}
+                                  value={branch.name}
+                                >
                                   {branch.name}
                                 </SelectItem>
                               ))}
@@ -232,7 +265,9 @@ export function LaunchAgentForm() {
                           value={field.state.value}
                           onChange={(e) => field.handleChange(e.target.value)}
                         />
-                        <FieldDescription>The branch to base changes on</FieldDescription>
+                        <FieldDescription>
+                          The branch to base changes on
+                        </FieldDescription>
                       </>
                     )}
                   </Field>
@@ -249,9 +284,12 @@ export function LaunchAgentForm() {
                 {(field) => (
                   <Field>
                     <FieldLabel>Model</FieldLabel>
-                    <Select value={field.state.value} onValueChange={field.handleChange}>
+                    <Select
+                      value={field.state.value}
+                      onValueChange={(value) => field.handleChange(value ?? "")}
+                    >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select model" />
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {models.map((model) => (
@@ -268,14 +306,18 @@ export function LaunchAgentForm() {
               <form.Field name="branchName">
                 {(field) => (
                   <Field>
-                    <FieldLabel htmlFor="branchName">Target Branch (optional)</FieldLabel>
+                    <FieldLabel htmlFor="branchName">
+                      Target Branch (optional)
+                    </FieldLabel>
                     <Input
                       id="branchName"
                       placeholder="feature/my-feature"
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                     />
-                    <FieldDescription>Leave empty to auto-generate</FieldDescription>
+                    <FieldDescription>
+                      Leave empty to auto-generate
+                    </FieldDescription>
                   </Field>
                 )}
               </form.Field>
@@ -283,10 +325,18 @@ export function LaunchAgentForm() {
               <form.Field name="autoCreatePr">
                 {(field) => (
                   <Field orientation="horizontal">
-                    <Switch id="autoCreatePr" checked={field.state.value} onCheckedChange={field.handleChange} />
+                    <Switch
+                      id="autoCreatePr"
+                      checked={field.state.value}
+                      onCheckedChange={(checked) => field.handleChange(checked)}
+                    />
                     <FieldContent>
-                      <FieldLabel htmlFor="autoCreatePr">Auto-create Pull Request</FieldLabel>
-                      <FieldDescription>Automatically create a PR when finished</FieldDescription>
+                      <FieldLabel htmlFor="autoCreatePr">
+                        Auto-create Pull Request
+                      </FieldLabel>
+                      <FieldDescription>
+                        Automatically create a PR when finished
+                      </FieldDescription>
                     </FieldContent>
                   </Field>
                 )}
@@ -294,9 +344,46 @@ export function LaunchAgentForm() {
             </FieldGroup>
           </FieldSet>
         </FieldGroup>
+        {launchAgent.isError && errorMessage && (
+          <Alert variant="destructive" className="mt-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Failed to launch agent</AlertTitle>
+            <AlertDescription className="mt-2">
+              {isGitHubAccessError ? (
+                <div className="space-y-2">
+                  <p>The Cursor GitHub App needs access to your repository.</p>
+                  <p className="text-sm">
+                    <strong>To fix this:</strong>
+                  </p>
+                  <ol className="list-decimal list-inside text-sm space-y-1 ml-2">
+                    <li>
+                      Go to{" "}
+                      <a
+                        href="https://cursor.com/settings"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline inline-flex items-center gap-1"
+                      >
+                        Cursor Settings
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </li>
+                    <li>Navigate to GitHub App / Integrations</li>
+                    <li>Install or configure the Cursor GitHub App</li>
+                    <li>Grant access to your repository</li>
+                  </ol>
+                </div>
+              ) : (
+                <p>{errorMessage}</p>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="mt-8">
-          <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
+          <form.Subscribe
+            selector={(state) => [state.canSubmit, state.isSubmitting]}
+          >
             {([canSubmit, isSubmitting]) => (
               <Button
                 type="submit"
@@ -315,5 +402,5 @@ export function LaunchAgentForm() {
         </div>
       </form>
     </>
-  )
+  );
 }
