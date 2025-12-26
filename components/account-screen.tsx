@@ -1,10 +1,13 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { PageHeader } from "./page-header"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Key, Settings, HelpCircle, LogOut, ChevronRight, Zap } from "lucide-react"
+import { useSession } from "@/lib/hooks/use-session"
+import { signOut } from "@/lib/auth-client"
 
 const menuItems = [
   {
@@ -28,6 +31,52 @@ const menuItems = [
 ]
 
 export function AccountScreen() {
+  const { user, isLoading } = useSession()
+  const router = useRouter()
+
+  const handleSignOut = async () => {
+    await signOut()
+    router.push("/login")
+    router.refresh()
+  }
+
+  const getUserInitial = () => {
+    if (user?.name) {
+      return user.name.charAt(0).toUpperCase()
+    }
+    if (user?.email) {
+      return user.email.charAt(0).toUpperCase()
+    }
+    return "U"
+  }
+
+  const getUserName = () => {
+    if (user?.name) return user.name
+    if (user?.email) return user.email.split("@")[0]
+    return "User"
+  }
+
+  if (isLoading) {
+    return (
+      <>
+        <PageHeader title="Account" />
+        <div className="p-4">
+          <Card className="bg-card border-border">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4 animate-pulse">
+                <div className="w-14 h-14 rounded-full bg-muted" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-muted rounded w-24" />
+                  <div className="h-3 bg-muted rounded w-32" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </>
+    )
+  }
+
   return (
     <>
       <PageHeader title="Account" />
@@ -38,11 +87,11 @@ export function AccountScreen() {
           <CardContent className="p-4">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center">
-                <span className="text-xl font-bold text-primary">U</span>
+                <span className="text-xl font-bold text-primary">{getUserInitial()}</span>
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-foreground">User</p>
-                <p className="text-sm text-muted-foreground">user@example.com</p>
+                <p className="font-semibold text-foreground">{getUserName()}</p>
+                <p className="text-sm text-muted-foreground">{user?.email || "user@example.com"}</p>
               </div>
             </div>
           </CardContent>
@@ -93,6 +142,7 @@ export function AccountScreen() {
         <Button
           variant="ghost"
           className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+          onClick={handleSignOut}
         >
           <LogOut className="h-5 w-5 mr-3" />
           Sign Out
