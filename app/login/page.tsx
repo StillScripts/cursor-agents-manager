@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { useForm } from "@tanstack/react-form"
 import { signIn } from "@/lib/auth-client"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-export default function LoginPage() {
+function LoginForm() {
   const [error, setError] = useState("")
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -130,5 +130,29 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-8">
+              <div className="animate-pulse space-y-4">
+                <div className="h-8 bg-muted rounded w-32" />
+                <div className="h-4 bg-muted rounded w-48" />
+                <div className="h-10 bg-muted rounded" />
+                <div className="h-10 bg-muted rounded" />
+                <div className="h-10 bg-muted rounded" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   )
 }
