@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { ApiKeyManager } from "@/components/api-key-manager"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { signOut } from "@/lib/auth-client"
 import { useSession } from "@/lib/hooks/use-session"
 import { PageHeader } from "./page-header"
@@ -54,6 +55,7 @@ export function AccountScreen() {
           <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
+          <Skeleton className="mt-6 h-4 w-20" />
         </div>
       </>
     )
