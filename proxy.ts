@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth"
 const publicRoutes = ["/login", "/signup"]
 const authRoutes = ["/login", "/signup"]
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Allow public routes, API routes, and static files
