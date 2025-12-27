@@ -4,6 +4,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider } from "next-themes"
 import type React from "react"
 import { useState } from "react"
+import {
+  ToastProvider,
+  ToastViewport,
+} from "@/components/ui/toast"
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -25,7 +29,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
       enableSystem
       storageKey="theme"
     >
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          {children}
+          <ToastViewport />
+        </ToastProvider>
+      </QueryClientProvider>
     </ThemeProvider>
   )
 }
