@@ -6,13 +6,14 @@ import {
   ExternalLink,
   GitBranch,
   Send,
+  Sparkles,
   StopCircle,
   Trash2,
   User,
   Wrench,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Accordion,
   AccordionContent,
@@ -39,8 +40,10 @@ import {
   useDeleteAgent,
   useSendFollowUp,
   useStopAgent,
+  useSummarizeConversation,
 } from "@/lib/hooks/use-agents"
 import { cn } from "@/lib/utils"
+import { useToast } from "@/hooks/use-toast"
 import { PageHeader } from "./page-header"
 import { SimulationBanner } from "./simulation-banner"
 import { StatusBadge } from "./status-badge"
@@ -53,6 +56,7 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
   const router = useRouter()
   const [followUpMessage, setFollowUpMessage] = useState("")
   const [openItems, setOpenItems] = useState<string[]>(["summary"])
+  const [aiSummary, setAiSummary] = useState<string | null>(null)
 
   const { data: agent, isLoading: agentLoading } = useAgent(agentId)
   const { data: conversation, isLoading: conversationLoading } =
@@ -60,6 +64,26 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
   const stopAgent = useStopAgent()
   const deleteAgent = useDeleteAgent()
   const sendFollowUp = useSendFollowUp()
+  const summarizeConversation = useSummarizeConversation()
+  const { toast } = useToast()
+
+  // Load summary from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const key = `agent-summary-${agentId}`
+      const stored = localStorage.getItem(key)
+      if (stored) {
+        setAiSummary(stored)
+      }
+    }
+  }, [agentId])
+
+  // Update summary when mutation succeeds
+  useEffect(() => {
+    if (summarizeConversation.isSuccess && summarizeConversation.data) {
+      setAiSummary(summarizeConversation.data.summary)
+    }
+  }, [summarizeConversation.isSuccess, summarizeConversation.data])
 
   const handleStop = async () => {
     await stopAgent.mutateAsync(agentId)
@@ -74,6 +98,24 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
     if (!followUpMessage.trim()) return
     await sendFollowUp.mutateAsync({ id: agentId, message: followUpMessage })
     setFollowUpMessage("")
+  }
+
+  const handleSummarize = async () => {
+    try {
+      await summarizeConversation.mutateAsync(agentId)
+      toast({
+        title: "Summary generated",
+        description: "The conversation has been summarized successfully.",
+      })
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to summarize conversation"
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    }
   }
 
   if (agentLoading) {
@@ -164,6 +206,21 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
                   </p>
                 )}
 
+                {/* AI-Generated Summary */}
+                {aiSummary && (
+                  <div className="pt-3 border-t border-border">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-semibold text-foreground">
+                        AI Summary
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {aiSummary}
+                    </p>
+                  </div>
+                )}
+
                 {/* Actions inside Summary */}
                 <div className="flex gap-3 pt-3 border-t border-border">
                   {canStop && (
@@ -237,6 +294,24 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
                   </div>
                 ) : (
                   <div className="space-y-3">
+                    {/* Summarize Button */}
+                    {conversation && conversation.messages.length > 0 && (
+                      <div className="flex justify-end mb-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleSummarize}
+                          disabled={summarizeConversation.isPending}
+                        >
+                          {summarizeConversation.isPending ? (
+                            <Spinner className="h-4 w-4 mr-2" />
+                          ) : (
+                            <Sparkles className="h-4 w-4 mr-2" />
+                          )}
+                          {aiSummary ? "Regenerate Summary" : "Summarize Conversation"}
+                        </Button>
+                      </div>
+                    )}
                     {conversation?.messages.map((message) => (
                       <div
                         key={message.id}

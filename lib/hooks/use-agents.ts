@@ -118,3 +118,26 @@ export function useSendFollowUp() {
     },
   })
 }
+
+export function useSummarizeConversation() {
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/agents/${id}/summarize`, {
+        method: "POST",
+      })
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new Error(error.error || "Failed to summarize conversation")
+      }
+      const data = await response.json()
+      return { id, summary: data.summary }
+    },
+    onSuccess: (data) => {
+      // Store summary in localStorage
+      if (typeof window !== "undefined") {
+        const key = `agent-summary-${data.id}`
+        localStorage.setItem(key, data.summary)
+      }
+    },
+  })
+}
