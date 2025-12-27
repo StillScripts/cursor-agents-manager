@@ -15,7 +15,8 @@
       "!**/build",
       "!**/coverage",
       "!**/*.min.js",
-      "!**/drizzle"
+      "!**/drizzle",
+      "!**/*.css"
     ]
   },
   "formatter": {
@@ -44,6 +45,9 @@
         "noUnusedVariables": "warn",
         "useExhaustiveDependencies": "warn"
       },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
+      },
       "style": {
         "noNonNullAssertion": "off",
         "useImportType": "warn",
@@ -53,6 +57,18 @@
         "noArrayIndexKey": "off",
         "noExplicitAny": "off"
       }
+    }
+  },
+  "css": {
+    "parser": {
+      "cssModules": false,
+      "allowWrongLineComments": true
+    },
+    "formatter": {
+      "enabled": true,
+      "indentStyle": "space",
+      "indentWidth": 2,
+      "lineWidth": 80
     }
   },
   "javascript": {

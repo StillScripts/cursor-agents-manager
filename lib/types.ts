@@ -1,4 +1,9 @@
-export type AgentStatus = "RUNNING" | "FINISHED" | "ERROR" | "CREATING" | "EXPIRED"
+export type AgentStatus =
+  | "RUNNING"
+  | "FINISHED"
+  | "ERROR"
+  | "CREATING"
+  | "EXPIRED"
 
 export interface Agent {
   id: string
@@ -48,13 +53,13 @@ export interface PaginatedAgentsResponse {
 
 // Re-export types from the schema for backwards compatibility
 export type {
+  LaunchAgentFormData,
   LaunchAgentRequest,
   LaunchAgentResponse,
-  LaunchAgentFormData,
-  PromptImage,
+  Model,
   Prompt,
+  PromptImage,
   Source,
   Target,
   Webhook,
-  Model,
-} from "@/lib/schemas/cursor/launch-agent";
+} from "@/lib/schemas/cursor/launch-agent"

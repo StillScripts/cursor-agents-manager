@@ -1,16 +1,21 @@
 "use client"
 
+import {
+  type ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table"
+import { Bot, ChevronLeft, ChevronRight } from "lucide-react"
 import { useState } from "react"
-import { useReactTable, getCoreRowModel, flexRender, type ColumnDef } from "@tanstack/react-table"
-import { ChevronLeft, ChevronRight, Bot } from "lucide-react"
-import { useAgents } from "@/lib/hooks/use-agents"
-import { AgentCard } from "./agent-card"
-import { SimulationBanner } from "./simulation-banner"
-import { PageHeader } from "./page-header"
-import { AgentListSkeleton } from "./agent-list-skeleton"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
+import { useAgents } from "@/lib/hooks/use-agents"
 import type { Agent } from "@/lib/types"
+import { AgentCard } from "./agent-card"
+import { AgentListSkeleton } from "./agent-list-skeleton"
+import { PageHeader } from "./page-header"
+import { SimulationBanner } from "./simulation-banner"
 
 const columns: ColumnDef<Agent>[] = [
   {
@@ -56,7 +61,9 @@ export function AgentsTable() {
           {error && (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <p className="text-destructive mb-2">Failed to load agents</p>
-              <p className="text-sm text-muted-foreground">Please try again later</p>
+              <p className="text-sm text-muted-foreground">
+                Please try again later
+              </p>
             </div>
           )}
 
@@ -66,7 +73,9 @@ export function AgentsTable() {
                 <Bot className="h-8 w-8 text-muted-foreground" />
               </div>
               <p className="text-foreground font-medium mb-1">No agents yet</p>
-              <p className="text-sm text-muted-foreground">Launch your first agent to get started</p>
+              <p className="text-sm text-muted-foreground">
+                Launch your first agent to get started
+              </p>
             </div>
           )}
 
@@ -75,7 +84,10 @@ export function AgentsTable() {
               <div className="space-y-2">
                 {table.getRowModel().rows.map((row) => (
                   <div key={row.id}>
-                    {flexRender(row.getVisibleCells()[0].column.columnDef.cell, row.getVisibleCells()[0].getContext())}
+                    {flexRender(
+                      row.getVisibleCells()[0].column.columnDef.cell,
+                      row.getVisibleCells()[0].getContext()
+                    )}
                   </div>
                 ))}
               </div>

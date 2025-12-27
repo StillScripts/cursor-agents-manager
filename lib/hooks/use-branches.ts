@@ -1,6 +1,6 @@
 "use client"
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 const STORAGE_KEY = "cursor-agent-branches"
 const DEFAULT_BRANCHES = ["master"]
@@ -58,11 +58,12 @@ async function saveBranches(branchList: Branch[]): Promise<Branch[]> {
 export function useBranches() {
   const queryClient = useQueryClient()
 
-  const { data: branches = [{ name: DEFAULT_BRANCHES[0] }], isLoading } = useQuery({
-    queryKey: ["branches"],
-    queryFn: fetchBranches,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  })
+  const { data: branches = [{ name: DEFAULT_BRANCHES[0] }], isLoading } =
+    useQuery({
+      queryKey: ["branches"],
+      queryFn: fetchBranches,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    })
 
   const mutation = useMutation({
     mutationFn: saveBranches,

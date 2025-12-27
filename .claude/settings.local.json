@@ -4,7 +4,8 @@
       "Bash(tree:*)",
       "Bash(ls:*)",
       "Bash(cat:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(bun run lint:*)"
     ]
   }
 }

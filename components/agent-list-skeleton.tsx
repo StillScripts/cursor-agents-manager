@@ -12,7 +12,10 @@ export function AgentListSkeleton() {
         {/* Agent cards skeleton */}
         <div className="space-y-2">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-card border border-border rounded-lg p-3">
+            <div
+              key={i}
+              className="bg-card border border-border rounded-lg p-3"
+            >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 space-y-2">
                   <Skeleton className="h-5 w-16 rounded-full" />

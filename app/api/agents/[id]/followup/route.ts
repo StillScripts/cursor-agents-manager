@@ -1,8 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server"
+import {
+  CURSOR_API_URL,
+  getUserApiKey,
+  isSimulationMode,
+} from "@/lib/api-utils"
 import { addMessageToConversation } from "@/lib/mock-data"
-import { isSimulationMode, getUserApiKey, CURSOR_API_URL } from "@/lib/api-utils"
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const { id } = await params
   const body = await request.json()
   const simMode = await isSimulationMode(request)
@@ -28,7 +35,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     const apiKey = await getUserApiKey(request)
     if (!apiKey) {
-      return NextResponse.json({ error: "API key not configured" }, { status: 401 })
+      return NextResponse.json(
+        { error: "API key not configured" },
+        { status: 401 }
+      )
     }
 
     const response = await fetch(`${CURSOR_API_URL}/${id}/followup`, {
@@ -48,6 +58,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ ...data, simulation: false })
   } catch (error) {
     console.error("Error sending follow-up:", error)
-    return NextResponse.json({ error: "Failed to send follow-up" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to send follow-up" },
+      { status: 500 }
+    )
   }
 }

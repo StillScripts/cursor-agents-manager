@@ -1,9 +1,9 @@
 "use client"
 
+import { Bot, Plus, User } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Bot, Plus, User } from "lucide-react"
 
 const navItems = [
   { href: "/", icon: Bot, label: "Agents" },
@@ -19,14 +19,18 @@ export function BottomNav() {
       <div className="max-w-md mx-auto flex items-center justify-around h-16">
         {navItems.map((item) => {
           const isActive =
-            item.href === "/" ? pathname === "/" || pathname.startsWith("/agent") : pathname === item.href
+            item.href === "/"
+              ? pathname === "/" || pathname.startsWith("/agent")
+              : pathname === item.href
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
                 "flex flex-col items-center justify-center gap-1 w-20 h-full transition-colors",
-                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                isActive
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               <item.icon className="h-5 w-5" />

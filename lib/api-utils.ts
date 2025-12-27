@@ -1,11 +1,13 @@
-import { db } from "./db"
-import { userApiKeys } from "./schema/auth-schema"
-import { decryptData } from "./encryption"
 import { eq } from "drizzle-orm"
-import { auth } from "./auth"
 import type { NextRequest } from "next/server"
+import { auth } from "./auth"
+import { db } from "./db"
+import { decryptData } from "./encryption"
+import { userApiKeys } from "./schema/auth-schema"
 
-export async function getUserApiKey(request: NextRequest): Promise<string | null> {
+export async function getUserApiKey(
+  request: NextRequest
+): Promise<string | null> {
   const session = await auth.api.getSession({ headers: request.headers })
 
   if (!session) {

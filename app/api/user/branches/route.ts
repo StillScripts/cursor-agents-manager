@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server"
+import { eq } from "drizzle-orm"
+import { type NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { branches } from "@/lib/schema/user-schema"
-import { eq } from "drizzle-orm"
 
 // Get all branches for the current user
 export async function GET(request: NextRequest) {
@@ -22,7 +22,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ branches: userBranches })
   } catch (error) {
     console.error("Error fetching branches:", error)
-    return NextResponse.json({ error: "Failed to fetch branches" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to fetch branches" },
+      { status: 500 }
+    )
   }
 }
 
@@ -39,7 +42,10 @@ export async function POST(request: NextRequest) {
     const { branches: branchList } = body
 
     if (!Array.isArray(branchList)) {
-      return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 }
+      )
     }
 
     // Delete existing branches for this user
@@ -70,6 +76,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ branches: updatedBranches })
   } catch (error) {
     console.error("Error saving branches:", error)
-    return NextResponse.json({ error: "Failed to save branches" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to save branches" },
+      { status: 500 }
+    )
   }
 }

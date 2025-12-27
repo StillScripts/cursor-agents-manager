@@ -1,7 +1,12 @@
 "use client"
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import type { Agent, AgentConversation, LaunchAgentRequest, PaginatedAgentsResponse } from "@/lib/types"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import type {
+  Agent,
+  AgentConversation,
+  LaunchAgentRequest,
+  PaginatedAgentsResponse,
+} from "@/lib/types"
 
 interface AgentsResponse {
   agents: Agent[]
@@ -113,7 +118,9 @@ export function useSendFollowUp() {
       return response.json()
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["conversation", variables.id] })
+      queryClient.invalidateQueries({
+        queryKey: ["conversation", variables.id],
+      })
     },
   })
 }

@@ -1,43 +1,50 @@
-"use client";
+"use client"
 
-import { useRouter } from "next/navigation";
-import { useForm } from "@tanstack/react-form";
-import { useLaunchAgent } from "@/lib/hooks/use-agents";
-import { useRepositories } from "@/lib/hooks/use-repositories";
-import { useBranches } from "@/lib/hooks/use-branches";
-import { PageHeader } from "./page-header";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Spinner } from "@/components/ui/spinner";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useForm } from "@tanstack/react-form"
+import {
+  AlertCircle,
+  ExternalLink,
+  Plus,
+  Rocket,
+  Settings,
+  X,
+} from "lucide-react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
 import {
   Field,
+  FieldContent,
   FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
-  FieldSet,
   FieldLegend,
-  FieldContent,
-} from "@/components/ui/field";
+  FieldSet,
+} from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Rocket, Settings, AlertCircle, ExternalLink, Plus, X } from "lucide-react";
-import Link from "next/link";
+} from "@/components/ui/select"
+import { Spinner } from "@/components/ui/spinner"
+import { Switch } from "@/components/ui/switch"
+import { Textarea } from "@/components/ui/textarea"
+import { useLaunchAgent } from "@/lib/hooks/use-agents"
+import { useBranches } from "@/lib/hooks/use-branches"
+import { useRepositories } from "@/lib/hooks/use-repositories"
 import {
+  availableModels,
+  defaultFormValues,
+  formDataToApiRequest,
   type LaunchAgentFormData,
   launchAgentFormSchema,
-  defaultFormValues,
-  availableModels,
-  formDataToApiRequest,
-} from "@/lib/schemas/cursor/launch-agent";
+} from "@/lib/schemas/cursor/launch-agent"
+import { PageHeader } from "./page-header"
 
 const modelOptions = [
   { value: "", label: "Auto (Recommended)" },
@@ -54,13 +61,13 @@ const modelOptions = [
   { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo" },
   { value: "o1-preview", label: "o1 Preview" },
   { value: "o1-mini", label: "o1 Mini" },
-] as const;
+] as const
 
 export function LaunchAgentForm() {
-  const router = useRouter();
-  const launchAgent = useLaunchAgent();
-  const { repositories, isLoaded } = useRepositories();
-  const { branches, isLoaded: branchesLoaded } = useBranches();
+  const router = useRouter()
+  const launchAgent = useLaunchAgent()
+  const { repositories, isLoaded } = useRepositories()
+  const { branches, isLoaded: branchesLoaded } = useBranches()
 
   const form = useForm<LaunchAgentFormData>({
     defaultValues: {
@@ -83,26 +90,25 @@ export function LaunchAgentForm() {
     },
     onSubmit: async ({ value }) => {
       // Validate form data
-      const validatedData = launchAgentFormSchema.parse(value);
-      
+      const validatedData = launchAgentFormSchema.parse(value)
+
       // Convert to API request format
-      const apiRequest = formDataToApiRequest(validatedData);
-      
-      await launchAgent.mutateAsync(apiRequest);
-      router.push("/");
+      const apiRequest = formDataToApiRequest(validatedData)
+
+      await launchAgent.mutateAsync(apiRequest)
+      router.push("/")
     },
-  });
+  })
 
   const hasRepositories =
-    repositories.length > 0 && repositories.some((r) => r.url.trim());
-  const hasBranches =
-    branches.length > 0 && branches.some((b) => b.name.trim());
+    repositories.length > 0 && repositories.some((r) => r.url.trim())
+  const hasBranches = branches.length > 0 && branches.some((b) => b.name.trim())
 
   const errorMessage =
-    launchAgent.error instanceof Error ? launchAgent.error.message : null;
+    launchAgent.error instanceof Error ? launchAgent.error.message : null
   const isGitHubAccessError = errorMessage?.includes(
     "lack access to repository"
-  );
+  )
 
   return (
     <>
@@ -110,9 +116,9 @@ export function LaunchAgentForm() {
 
       <form
         onSubmit={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          form.handleSubmit();
+          e.preventDefault()
+          e.stopPropagation()
+          form.handleSubmit()
         }}
         className="p-4"
       >
@@ -127,13 +133,13 @@ export function LaunchAgentForm() {
                 name="prompt.text"
                 validators={{
                   onChange: ({ value }) =>
-                    !value 
-                      ? "Please describe the task" 
+                    !value
+                      ? "Please describe the task"
                       : value.length < 10
-                      ? "Please provide a more detailed task description (at least 10 characters)"
-                      : value.length > 5000
-                      ? "Task description is too long (maximum 5000 characters)"
-                      : undefined,
+                        ? "Please provide a more detailed task description (at least 10 characters)"
+                        : value.length > 5000
+                          ? "Task description is too long (maximum 5000 characters)"
+                          : undefined,
                 }}
               >
                 {(field) => (
@@ -148,7 +154,8 @@ export function LaunchAgentForm() {
                       onBlur={field.handleBlur}
                     />
                     <FieldDescription>
-                      Describe the task you want the agent to perform (10-5000 characters)
+                      Describe the task you want the agent to perform (10-5000
+                      characters)
                     </FieldDescription>
                     <FieldError
                       errors={field.state.meta.errors.map((e) => ({
@@ -171,18 +178,18 @@ export function LaunchAgentForm() {
                 name="source.repository"
                 validators={{
                   onChange: ({ value }) => {
-                    if (!value) return "Repository is required";
+                    if (!value) return "Repository is required"
                     try {
-                      const url = new URL(value);
+                      const url = new URL(value)
                       if (url.hostname !== "github.com") {
-                        return "Must be a valid GitHub repository URL";
+                        return "Must be a valid GitHub repository URL"
                       }
                       if (url.pathname.split("/").length < 3) {
-                        return "Must be a valid GitHub repository URL (e.g., https://github.com/owner/repo)";
+                        return "Must be a valid GitHub repository URL (e.g., https://github.com/owner/repo)"
                       }
-                      return undefined;
+                      return undefined
                     } catch {
-                      return "Please enter a valid URL";
+                      return "Please enter a valid URL"
                     }
                   },
                 }}
@@ -250,15 +257,15 @@ export function LaunchAgentForm() {
                 )}
               </form.Field>
 
-              <form.Field 
+              <form.Field
                 name="source.ref"
                 validators={{
                   onChange: ({ value }) =>
-                    !value 
+                    !value
                       ? "Base branch is required"
                       : value.length > 100
-                      ? "Branch name is too long"
-                      : undefined,
+                        ? "Branch name is too long"
+                        : undefined,
                 }}
               >
                 {(field) => (
@@ -307,7 +314,8 @@ export function LaunchAgentForm() {
                           onChange={(e) => field.handleChange(e.target.value)}
                         />
                         <FieldDescription>
-                          The branch to base changes on (branch name, tag, or commit hash)
+                          The branch to base changes on (branch name, tag, or
+                          commit hash)
                         </FieldDescription>
                       </>
                     )}
@@ -324,7 +332,9 @@ export function LaunchAgentForm() {
 
           <FieldSet>
             <FieldLegend>Model Configuration</FieldLegend>
-            <FieldDescription>Choose the AI model for your agent</FieldDescription>
+            <FieldDescription>
+              Choose the AI model for your agent
+            </FieldDescription>
             <FieldGroup>
               <form.Field name="model">
                 {(field) => (
@@ -332,7 +342,9 @@ export function LaunchAgentForm() {
                     <FieldLabel>AI Model</FieldLabel>
                     <Select
                       value={field.state.value || ""}
-                      onValueChange={(value) => field.handleChange(value === "" ? undefined : value)}
+                      onValueChange={(value) =>
+                        field.handleChange(value === "" ? undefined : value)
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -346,7 +358,8 @@ export function LaunchAgentForm() {
                       </SelectContent>
                     </Select>
                     <FieldDescription>
-                      Auto mode lets Cursor choose the best model for your task. You can also select a specific model if needed.
+                      Auto mode lets Cursor choose the best model for your task.
+                      You can also select a specific model if needed.
                     </FieldDescription>
                   </Field>
                 )}
@@ -356,9 +369,11 @@ export function LaunchAgentForm() {
 
           <FieldSet>
             <FieldLegend>Target Configuration</FieldLegend>
-            <FieldDescription>Configure where and how the agent makes changes</FieldDescription>
+            <FieldDescription>
+              Configure where and how the agent makes changes
+            </FieldDescription>
             <FieldGroup>
-              <form.Field 
+              <form.Field
                 name="target.branchName"
                 validators={{
                   onChange: ({ value }) =>
@@ -376,10 +391,13 @@ export function LaunchAgentForm() {
                       id="branchName"
                       placeholder="feature/my-feature"
                       value={field.state.value || ""}
-                      onChange={(e) => field.handleChange(e.target.value || undefined)}
+                      onChange={(e) =>
+                        field.handleChange(e.target.value || undefined)
+                      }
                     />
                     <FieldDescription>
-                      Custom branch name for the agent to create. Leave empty to auto-generate.
+                      Custom branch name for the agent to create. Leave empty to
+                      auto-generate.
                     </FieldDescription>
                     <FieldError
                       errors={field.state.meta.errors.map((e) => ({
@@ -423,7 +441,9 @@ export function LaunchAgentForm() {
                         Open PR as Cursor GitHub App
                       </FieldLabel>
                       <FieldDescription>
-                        Open the pull request as the Cursor GitHub App instead of as your user account (only applies if auto-create PR is enabled)
+                        Open the pull request as the Cursor GitHub App instead
+                        of as your user account (only applies if auto-create PR
+                        is enabled)
                       </FieldDescription>
                     </FieldContent>
                   </Field>
@@ -443,7 +463,9 @@ export function LaunchAgentForm() {
                         Skip Adding Reviewer
                       </FieldLabel>
                       <FieldDescription>
-                        Skip adding you as a reviewer to the pull request (only applies if auto-create PR is enabled and PR is opened as Cursor GitHub App)
+                        Skip adding you as a reviewer to the pull request (only
+                        applies if auto-create PR is enabled and PR is opened as
+                        Cursor GitHub App)
                       </FieldDescription>
                     </FieldContent>
                   </Field>
@@ -454,7 +476,9 @@ export function LaunchAgentForm() {
 
           <FieldSet>
             <FieldLegend>Webhook Configuration (Optional)</FieldLegend>
-            <FieldDescription>Get notified about agent status changes</FieldDescription>
+            <FieldDescription>
+              Get notified about agent status changes
+            </FieldDescription>
             <FieldGroup>
               <form.Field name="webhook.url">
                 {(field) => (
@@ -464,16 +488,19 @@ export function LaunchAgentForm() {
                       id="webhookUrl"
                       placeholder="https://your-app.com/webhooks/cursor"
                       value={field.state.value || ""}
-                      onChange={(e) => field.handleChange(e.target.value || undefined)}
+                      onChange={(e) =>
+                        field.handleChange(e.target.value || undefined)
+                      }
                     />
                     <FieldDescription>
-                      URL to receive webhook notifications about agent status changes
+                      URL to receive webhook notifications about agent status
+                      changes
                     </FieldDescription>
                   </Field>
                 )}
               </form.Field>
 
-              <form.Field 
+              <form.Field
                 name="webhook.secret"
                 validators={{
                   onChange: ({ value }) =>
@@ -484,16 +511,21 @@ export function LaunchAgentForm() {
               >
                 {(field) => (
                   <Field data-invalid={field.state.meta.errors.length > 0}>
-                    <FieldLabel htmlFor="webhookSecret">Webhook Secret (Optional)</FieldLabel>
+                    <FieldLabel htmlFor="webhookSecret">
+                      Webhook Secret (Optional)
+                    </FieldLabel>
                     <Input
                       id="webhookSecret"
                       type="password"
                       placeholder="Your webhook secret (min 32 characters)"
                       value={field.state.value || ""}
-                      onChange={(e) => field.handleChange(e.target.value || undefined)}
+                      onChange={(e) =>
+                        field.handleChange(e.target.value || undefined)
+                      }
                     />
                     <FieldDescription>
-                      Secret key for webhook payload verification (minimum 32 characters)
+                      Secret key for webhook payload verification (minimum 32
+                      characters)
                     </FieldDescription>
                     <FieldError
                       errors={field.state.meta.errors.map((e) => ({
@@ -564,5 +596,5 @@ export function LaunchAgentForm() {
         </div>
       </form>
     </>
-  );
+  )
 }

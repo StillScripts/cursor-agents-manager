@@ -1,11 +1,10 @@
 "use client"
 
-import * as React from "react"
-import { OTPInput, OTPInputContext } from "input-otp"
-
-import { cn } from '@/lib/utils'
-import { HugeiconsIcon } from "@hugeicons/react"
 import { MinusSignIcon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { OTPInput, OTPInputContext } from "input-otp"
+import * as React from "react"
+import { cn } from "@/lib/utils"
 
 function InputOTP({
   className,
@@ -22,10 +21,7 @@ function InputOTP({
         containerClassName
       )}
       spellCheck={false}
-      className={cn(
-        "disabled:cursor-not-allowed",
-        className
-      )}
+      className={cn("disabled:cursor-not-allowed", className)}
       {...props}
     />
   )
@@ -35,7 +31,10 @@ function InputOTPGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="input-otp-group"
-      className={cn("has-aria-invalid:ring-destructive/20 dark:has-aria-invalid:ring-destructive/40 has-aria-invalid:border-destructive rounded-lg has-aria-invalid:ring-[3px] flex items-center", className)}
+      className={cn(
+        "has-aria-invalid:ring-destructive/20 dark:has-aria-invalid:ring-destructive/40 has-aria-invalid:border-destructive rounded-lg has-aria-invalid:ring-[3px] flex items-center",
+        className
+      )}
       {...props}
     />
   )

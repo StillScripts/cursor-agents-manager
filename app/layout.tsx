@@ -1,14 +1,14 @@
-import type React from "react";
-import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
-import "./globals.css";
-import { Providers } from "@/components/providers";
+import type { Metadata, Viewport } from "next"
+import { Inter, JetBrains_Mono } from "next/font/google"
+import type React from "react"
+import "./globals.css"
+import { Providers } from "@/components/providers"
 
-const fontSans = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const fontSans = Inter({ subsets: ["latin"], variable: "--font-sans" })
 const fontMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
-});
+})
 
 export const metadata: Metadata = {
   title: {
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   //   statusBarStyle: "black-translucent",
   //   title: "Cursor Agents",
   // },
-};
+}
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -30,12 +30,12 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: "#1a1a2e",
-};
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <html
@@ -74,5 +74,5 @@ export default function RootLayout({
         <Providers>{children}</Providers>
       </body>
     </html>
-  );
+  )
 }

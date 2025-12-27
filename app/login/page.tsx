@@ -1,15 +1,21 @@
 "use client"
 
-import { useState, Suspense } from "react"
 import { useForm } from "@tanstack/react-form"
-import { signIn } from "@/lib/auth-client"
-import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Suspense, useState } from "react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { signIn } from "@/lib/auth-client"
 
 function LoginForm() {
   const [error, setError] = useState("")
@@ -50,7 +56,9 @@ function LoginForm() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Sign In</CardTitle>
-          <CardDescription>Sign in to your Cursor Agent Manager account</CardDescription>
+          <CardDescription>
+            Sign in to your Cursor Agent Manager account
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form
@@ -65,7 +73,11 @@ function LoginForm() {
               name="email"
               validators={{
                 onChange: ({ value }) =>
-                  !value ? "Email is required" : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? "Invalid email format" : undefined,
+                  !value
+                    ? "Email is required"
+                    : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+                      ? "Invalid email format"
+                      : undefined,
               }}
             >
               {(field) => (
@@ -81,7 +93,9 @@ function LoginForm() {
                     disabled={form.state.isSubmitting}
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <p className="text-sm text-destructive">{field.state.meta.errors[0]}</p>
+                    <p className="text-sm text-destructive">
+                      {field.state.meta.errors[0]}
+                    </p>
                   )}
                 </div>
               )}
@@ -90,7 +104,8 @@ function LoginForm() {
             <form.Field
               name="password"
               validators={{
-                onChange: ({ value }) => (!value ? "Password is required" : undefined),
+                onChange: ({ value }) =>
+                  !value ? "Password is required" : undefined,
               }}
             >
               {(field) => (
@@ -105,7 +120,9 @@ function LoginForm() {
                     disabled={form.state.isSubmitting}
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <p className="text-sm text-destructive">{field.state.meta.errors[0]}</p>
+                    <p className="text-sm text-destructive">
+                      {field.state.meta.errors[0]}
+                    </p>
                   )}
                 </div>
               )}
@@ -117,7 +134,11 @@ function LoginForm() {
               </Alert>
             )}
 
-            <Button type="submit" className="w-full" disabled={form.state.isSubmitting}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={form.state.isSubmitting}
+            >
               {form.state.isSubmitting ? "Signing in..." : "Sign In"}
             </Button>
           </form>

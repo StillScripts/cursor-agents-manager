@@ -1,7 +1,13 @@
 import type { Agent, AgentConversation, AgentMessage } from "./types"
 
 function generateMockAgents(): Agent[] {
-  const statuses: Agent["status"][] = ["RUNNING", "FINISHED", "ERROR", "CREATING", "EXPIRED"]
+  const statuses: Agent["status"][] = [
+    "RUNNING",
+    "FINISHED",
+    "ERROR",
+    "CREATING",
+    "EXPIRED",
+  ]
   const repos = [
     "acme/web-app",
     "acme/api-service",
@@ -14,7 +20,13 @@ function generateMockAgents(): Agent[] {
     "acme/analytics",
     "acme/docs",
   ]
-  const branches = ["main", "develop", "staging", "feature/auth", "feature/payments"]
+  const branches = [
+    "main",
+    "develop",
+    "staging",
+    "feature/auth",
+    "feature/payments",
+  ]
   const tasks = [
     "Add README Documentation",
     "Fix Authentication Bug",
@@ -70,7 +82,10 @@ function generateMockAgents(): Agent[] {
       target: {
         url: `https://cursor.com/agents?id=bc_sim${String(i + 1).padStart(3, "0")}`,
         branchName: `cursor/${task.toLowerCase().replace(/\s+/g, "-")}-${1000 + i}`,
-        prUrl: status === "FINISHED" ? `https://github.com/${repo}/pull/${40 + i}` : undefined,
+        prUrl:
+          status === "FINISHED"
+            ? `https://github.com/${repo}/pull/${40 + i}`
+            : undefined,
         autoCreatePr: i % 2 === 0,
       },
       createdAt: new Date(Date.now() - 1000 * 60 * (i * 30 + 5)).toISOString(),
@@ -157,7 +172,7 @@ export function getSimulatedAgents(): Agent[] {
 
 export function getSimulatedAgentsPaginated(
   page: number,
-  limit: number,
+  limit: number
 ): { agents: Agent[]; total: number; totalPages: number } {
   const start = page * limit
   const end = start + limit
@@ -176,15 +191,23 @@ export function removeSimulatedAgent(id: string): void {
   simulatedAgents = simulatedAgents.filter((a) => a.id !== id)
 }
 
-export function updateSimulatedAgentStatus(id: string, status: Agent["status"]): void {
-  simulatedAgents = simulatedAgents.map((a) => (a.id === id ? { ...a, status } : a))
+export function updateSimulatedAgentStatus(
+  id: string,
+  status: Agent["status"]
+): void {
+  simulatedAgents = simulatedAgents.map((a) =>
+    a.id === id ? { ...a, status } : a
+  )
 }
 
 export function getSimulatedConversation(id: string): AgentConversation | null {
   return mockConversations[id] || null
 }
 
-export function addMessageToConversation(id: string, message: AgentMessage): void {
+export function addMessageToConversation(
+  id: string,
+  message: AgentMessage
+): void {
   if (!mockConversations[id]) {
     mockConversations[id] = { id, messages: [] }
   }

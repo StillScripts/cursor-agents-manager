@@ -1,14 +1,14 @@
 "use client"
 
+import { ChevronRight, HelpCircle, LogOut, Settings, Zap } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { PageHeader } from "./page-header"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { ApiKeyManager } from "@/components/api-key-manager"
-import { Settings, HelpCircle, LogOut, ChevronRight, Zap } from "lucide-react"
-import { useSession } from "@/lib/hooks/use-session"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { signOut } from "@/lib/auth-client"
+import { useSession } from "@/lib/hooks/use-session"
+import { PageHeader } from "./page-header"
 
 const menuItems = [
   {
@@ -82,11 +82,15 @@ export function AccountScreen() {
           <CardContent className="p-4">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center">
-                <span className="text-xl font-bold text-primary">{getUserInitial()}</span>
+                <span className="text-xl font-bold text-primary">
+                  {getUserInitial()}
+                </span>
               </div>
               <div className="flex-1">
                 <p className="font-semibold text-foreground">{getUserName()}</p>
-                <p className="text-sm text-muted-foreground">{user?.email || "user@example.com"}</p>
+                <p className="text-sm text-muted-foreground">
+                  {user?.email || "user@example.com"}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -108,7 +112,10 @@ export function AccountScreen() {
                 <span className="text-foreground font-medium">5 / 50</span>
               </div>
               <div className="h-2 bg-background rounded-full overflow-hidden">
-                <div className="h-full bg-primary rounded-full" style={{ width: "10%" }} />
+                <div
+                  className="h-full bg-primary rounded-full"
+                  style={{ width: "10%" }}
+                />
               </div>
             </div>
           </CardContent>
@@ -125,8 +132,12 @@ export function AccountScreen() {
                       <item.icon className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-foreground">{item.label}</p>
-                      <p className="text-sm text-muted-foreground">{item.description}</p>
+                      <p className="font-medium text-foreground">
+                        {item.label}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {item.description}
+                      </p>
                     </div>
                     <ChevronRight className="h-5 w-5 text-muted-foreground" />
                   </div>
@@ -147,7 +158,9 @@ export function AccountScreen() {
         </Button>
 
         {/* Version */}
-        <p className="text-xs text-center text-muted-foreground pt-4">Cursor Agent Manager v1.0.0</p>
+        <p className="text-xs text-center text-muted-foreground pt-4">
+          Cursor Agent Manager v1.0.0
+        </p>
       </div>
     </>
   )

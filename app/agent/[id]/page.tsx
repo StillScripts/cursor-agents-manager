@@ -1,5 +1,5 @@
-import { MobileShell } from "@/components/mobile-shell"
 import { AgentDetail } from "@/components/agent-detail"
+import { MobileShell } from "@/components/mobile-shell"
 
 interface PageProps {
   params: Promise<{ id: string }>
