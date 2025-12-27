@@ -5,7 +5,9 @@
       "Bash(ls:*)",
       "Bash(cat:*)",
       "Bash(find:*)",
-      "Bash(bun run lint:*)"
+      "Bash(bun run lint:*)",
+      "Bash(bunx biome check:*)",
+      "Bash(bun run check:*)"
     ]
   }
 }

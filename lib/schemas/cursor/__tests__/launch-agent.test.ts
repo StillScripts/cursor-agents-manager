@@ -2,8 +2,6 @@ import { describe, expect, it } from "bun:test"
 import {
   formDataToApiRequest,
   type LaunchAgentFormData,
-  launchAgentFormSchema,
-  validateLaunchAgentForm,
   validateLaunchAgentRequest,
 } from "../launch-agent"
 

@@ -238,7 +238,7 @@ export function formDataToApiRequest(
     request.target = formData.target
   }
 
-  if (formData.webhook && formData.webhook.url) {
+  if (formData.webhook?.url) {
     request.webhook = formData.webhook
   }
 

@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     // Insert new branches
     if (branchList.length > 0) {
       const validBranches = branchList
-        .filter((b) => b.name && b.name.trim())
+        .filter((b) => b.name?.trim())
         .map((b) => ({
           userId: session.user.id,
           name: b.name.trim(),

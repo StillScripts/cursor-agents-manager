@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
 
       const newAgent: Agent = {
         id: `bc_${Math.random().toString(36).substr(2, 9)}`,
-        name: validatedRequest.prompt.text.substring(0, 50) + "...",
+        name: `${validatedRequest.prompt.text.substring(0, 50)}...`,
         status: "CREATING",
         source: validatedRequest.source,
         target: {

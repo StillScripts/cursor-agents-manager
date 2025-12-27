@@ -57,7 +57,7 @@ export default function SignupPage() {
         // Successfully signed up, redirect to home
         router.push("/")
         router.refresh()
-      } catch (err) {
+      } catch (_err) {
         setError("An unexpected error occurred")
       }
     },

@@ -132,29 +132,27 @@ export function ApiKeyManager() {
       </CardHeader>
       <CardContent className="pt-0 space-y-3">
         {!isEditing && apiKeyData?.hasApiKey && (
-          <>
-            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-              <code className="text-sm font-mono">{apiKeyData.masked}</code>
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                >
-                  Update
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => deleteMutation.mutate()}
-                  disabled={deleteMutation.isPending}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+          <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+            <code className="text-sm font-mono">{apiKeyData.masked}</code>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsEditing(true)}
+              >
+                Update
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:text-destructive"
+                onClick={() => deleteMutation.mutate()}
+                disabled={deleteMutation.isPending}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
-          </>
+          </div>
         )}
 
         {!isEditing && !apiKeyData?.hasApiKey && (

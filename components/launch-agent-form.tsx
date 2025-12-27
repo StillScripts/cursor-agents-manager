@@ -1,14 +1,7 @@
 "use client"
 
 import { useForm } from "@tanstack/react-form"
-import {
-  AlertCircle,
-  ExternalLink,
-  Plus,
-  Rocket,
-  Settings,
-  X,
-} from "lucide-react"
+import { AlertCircle, ExternalLink, Rocket, Settings } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -38,11 +31,10 @@ import { useLaunchAgent } from "@/lib/hooks/use-agents"
 import { useBranches } from "@/lib/hooks/use-branches"
 import { useRepositories } from "@/lib/hooks/use-repositories"
 import {
-  availableModels,
-  defaultFormValues,
   formDataToApiRequest,
   type LaunchAgentFormData,
   launchAgentFormSchema,
+  type Model,
 } from "@/lib/schemas/cursor/launch-agent"
 import { PageHeader } from "./page-header"
 
@@ -69,6 +61,7 @@ export function LaunchAgentForm() {
   const { repositories, isLoaded } = useRepositories()
   const { branches, isLoaded: branchesLoaded } = useBranches()
 
+  // @ts-expect-error - useForm generic signature expects 12 type args in this version, but inference works correctly
   const form = useForm<LaunchAgentFormData>({
     defaultValues: {
       prompt: {
@@ -342,9 +335,13 @@ export function LaunchAgentForm() {
                     <FieldLabel>AI Model</FieldLabel>
                     <Select
                       value={field.state.value || ""}
-                      onValueChange={(value) =>
-                        field.handleChange(value === "" ? undefined : value)
-                      }
+                      onValueChange={(value) => {
+                        const modelValue: Model | undefined =
+                          value === "" || value === null
+                            ? undefined
+                            : (value as Model)
+                        field.handleChange(modelValue)
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue />

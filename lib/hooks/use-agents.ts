@@ -8,12 +8,6 @@ import type {
   PaginatedAgentsResponse,
 } from "@/lib/types"
 
-interface AgentsResponse {
-  agents: Agent[]
-  nextCursor?: string
-  simulation: boolean
-}
-
 export function useAgents(page = 0, limit = 20) {
   return useQuery<PaginatedAgentsResponse>({
     queryKey: ["agents", page, limit],
