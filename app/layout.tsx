@@ -70,7 +70,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="antialiased font-sans">
+      <body className="antialiased font-sans" suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>
