@@ -7,7 +7,9 @@
       "Bash(find:*)",
       "Bash(bun run lint:*)",
       "Bash(bunx biome check:*)",
-      "Bash(bun run check:*)"
+      "Bash(bun run check:*)",
+      "WebFetch(domain:tanstack.com)",
+      "Bash(bun pm:*)"
     ]
   }
 }

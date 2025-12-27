@@ -1,21 +1,18 @@
 "use client"
 
-import { useForm } from "@tanstack/react-form"
 import { Check, Monitor, Moon, Plus, Sun, Trash2 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldSet,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { FieldDescription, FieldGroup, FieldSet } from "@/components/ui/field"
+import { useAppForm } from "@/lib/hooks/use-app-form"
 import { useBranches } from "@/lib/hooks/use-branches"
-import { type Repository, useRepositories } from "@/lib/hooks/use-repositories"
+import { useRepositories } from "@/lib/hooks/use-repositories"
+import {
+  type SettingsFormData,
+  settingsFormSchema,
+} from "@/lib/schemas/settings"
 import { PageHeader } from "./page-header"
 
 const themeOptions = [
@@ -23,11 +20,6 @@ const themeOptions = [
   { value: "dark", label: "Dark", icon: Moon },
   { value: "system", label: "System", icon: Monitor },
 ] as const
-
-interface RepoFormValues {
-  repositories: Repository[]
-  branches: Array<{ name: string }>
-}
 
 export function SettingsForm() {
   const { theme, setTheme } = useTheme()
@@ -40,20 +32,28 @@ export function SettingsForm() {
     setMounted(true)
   }, [])
 
-  const form = useForm<RepoFormValues>({
+  // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
+  const form = useAppForm<SettingsFormData>({
     defaultValues: {
       repositories: [],
       branches: [],
     },
     onSubmit: async ({ value }) => {
+      // Filter out invalid/empty items before validation
       const validRepos = value.repositories.filter(
         (r) => r.url.trim() && r.name.trim()
       )
       const validBranches = value.branches.filter((b) => b.name.trim())
-      saveRepositories(validRepos)
-      saveBranches(
-        validBranches.length > 0 ? validBranches : [{ name: "master" }]
-      )
+
+      // Validate with Zod schema
+      const validatedData = settingsFormSchema.parse({
+        repositories: validRepos,
+        branches:
+          validBranches.length > 0 ? validBranches : [{ name: "master" }],
+      })
+
+      saveRepositories(validatedData.repositories)
+      saveBranches(validatedData.branches)
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     },
@@ -157,7 +157,7 @@ export function SettingsForm() {
                       {field.state.value.map((_, index) => (
                         <div key={index} className="flex gap-2 items-start">
                           <div className="flex-1 space-y-2">
-                            <form.Field
+                            <form.AppField
                               name={`repositories[${index}].name`}
                               validators={{
                                 onChange: ({ value }) =>
@@ -167,24 +167,14 @@ export function SettingsForm() {
                               }}
                             >
                               {(subField) => (
-                                <Field
-                                  data-invalid={
-                                    subField.state.meta.errors.length > 0
-                                  }
-                                >
-                                  <Input
-                                    placeholder="Repository name"
-                                    value={subField.state.value || ""}
-                                    onChange={(e) =>
-                                      subField.handleChange(e.target.value)
-                                    }
-                                    onBlur={subField.handleBlur}
-                                    className="h-9 text-sm"
-                                  />
-                                </Field>
+                                <subField.ControlledInput
+                                  field={subField}
+                                  placeholder="Repository name"
+                                  className="h-9 text-sm"
+                                />
                               )}
-                            </form.Field>
-                            <form.Field
+                            </form.AppField>
+                            <form.AppField
                               name={`repositories[${index}].url`}
                               validators={{
                                 onChange: ({ value }) => {
@@ -196,30 +186,13 @@ export function SettingsForm() {
                               }}
                             >
                               {(subField) => (
-                                <Field
-                                  data-invalid={
-                                    subField.state.meta.errors.length > 0
-                                  }
-                                >
-                                  <Input
-                                    placeholder="https://github.com/org/repo"
-                                    value={subField.state.value || ""}
-                                    onChange={(e) =>
-                                      subField.handleChange(e.target.value)
-                                    }
-                                    onBlur={subField.handleBlur}
-                                    className="h-9 text-sm"
-                                  />
-                                  <FieldError
-                                    errors={subField.state.meta.errors.map(
-                                      (e) => ({
-                                        message: e?.toString(),
-                                      })
-                                    )}
-                                  />
-                                </Field>
+                                <subField.ControlledInput
+                                  field={subField}
+                                  placeholder="https://github.com/org/repo"
+                                  className="h-9 text-sm"
+                                />
                               )}
-                            </form.Field>
+                            </form.AppField>
                           </div>
                           <Button
                             type="button"
@@ -279,7 +252,7 @@ export function SettingsForm() {
                       {field.state.value.map((_, index) => (
                         <div key={index} className="flex gap-2 items-start">
                           <div className="flex-1">
-                            <form.Field
+                            <form.AppField
                               name={`branches[${index}].name`}
                               validators={{
                                 onChange: ({ value }) =>
@@ -289,30 +262,13 @@ export function SettingsForm() {
                               }}
                             >
                               {(subField) => (
-                                <Field
-                                  data-invalid={
-                                    subField.state.meta.errors.length > 0
-                                  }
-                                >
-                                  <Input
-                                    placeholder="e.g., main, develop, staging"
-                                    value={subField.state.value || ""}
-                                    onChange={(e) =>
-                                      subField.handleChange(e.target.value)
-                                    }
-                                    onBlur={subField.handleBlur}
-                                    className="h-9 text-sm"
-                                  />
-                                  <FieldError
-                                    errors={subField.state.meta.errors.map(
-                                      (e) => ({
-                                        message: e?.toString(),
-                                      })
-                                    )}
-                                  />
-                                </Field>
+                                <subField.ControlledInput
+                                  field={subField}
+                                  placeholder="e.g., main, develop, staging"
+                                  className="h-9 text-sm"
+                                />
                               )}
-                            </form.Field>
+                            </form.AppField>
                           </div>
                           <Button
                             type="button"
