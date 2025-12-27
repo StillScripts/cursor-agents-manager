@@ -1,7 +1,4 @@
-import {
-  createFormHook,
-  createFormHookContexts,
-} from "@tanstack/react-form"
+import { createFormHook, createFormHookContexts } from "@tanstack/react-form"
 import {
   ControlledArrayField,
   ControlledInput,
