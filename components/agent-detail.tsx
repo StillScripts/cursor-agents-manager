@@ -13,6 +13,8 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import {
   Accordion,
   AccordionContent,
@@ -269,9 +271,122 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
                                   : "Agent"}
                           </span>
                         </div>
-                        <p className="text-foreground whitespace-pre-wrap">
-                          {message.text || message.toolResult || "..."}
-                        </p>
+                        {message.type === "assistant_message" ? (
+                          <div className="text-foreground markdown-content">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                p: ({ children }) => (
+                                  <p className="mb-2 last:mb-0">{children}</p>
+                                ),
+                                h1: ({ children }) => (
+                                  <h1 className="text-lg font-bold mb-2 mt-3 first:mt-0">
+                                    {children}
+                                  </h1>
+                                ),
+                                h2: ({ children }) => (
+                                  <h2 className="text-base font-bold mb-2 mt-3 first:mt-0">
+                                    {children}
+                                  </h2>
+                                ),
+                                h3: ({ children }) => (
+                                  <h3 className="text-sm font-semibold mb-2 mt-3 first:mt-0">
+                                    {children}
+                                  </h3>
+                                ),
+                                ul: ({ children }) => (
+                                  <ul className="list-disc list-inside mb-2 space-y-1">
+                                    {children}
+                                  </ul>
+                                ),
+                                ol: ({ children }) => (
+                                  <ol className="list-decimal list-inside mb-2 space-y-1">
+                                    {children}
+                                  </ol>
+                                ),
+                                li: ({ children }) => (
+                                  <li className="ml-2">{children}</li>
+                                ),
+                                code: ({ children, className }) => {
+                                  const isInline =
+                                    !className || !className.includes("language-")
+                                  return isInline ? (
+                                    <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono">
+                                      {children}
+                                    </code>
+                                  ) : (
+                                    <code className={className}>{children}</code>
+                                  )
+                                },
+                                pre: ({ children }) => (
+                                  <pre className="bg-muted p-2 rounded-lg overflow-x-auto mb-2 text-xs font-mono text-foreground">
+                                    {children}
+                                  </pre>
+                                ),
+                                blockquote: ({ children }) => (
+                                  <blockquote className="border-l-2 border-border pl-3 my-2 italic text-muted-foreground">
+                                    {children}
+                                  </blockquote>
+                                ),
+                                a: ({ children, href }) => (
+                                  <a
+                                    href={href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary underline"
+                                  >
+                                    {children}
+                                  </a>
+                                ),
+                                strong: ({ children }) => (
+                                  <strong className="font-semibold">
+                                    {children}
+                                  </strong>
+                                ),
+                                em: ({ children }) => (
+                                  <em className="italic">{children}</em>
+                                ),
+                                hr: () => (
+                                  <hr className="my-3 border-border" />
+                                ),
+                                table: ({ children }) => (
+                                  <div className="overflow-x-auto my-2">
+                                    <table className="min-w-full border-collapse border border-border">
+                                      {children}
+                                    </table>
+                                  </div>
+                                ),
+                                thead: ({ children }) => (
+                                  <thead className="bg-muted">{children}</thead>
+                                ),
+                                tbody: ({ children }) => (
+                                  <tbody>{children}</tbody>
+                                ),
+                                tr: ({ children }) => (
+                                  <tr className="border-b border-border">
+                                    {children}
+                                  </tr>
+                                ),
+                                th: ({ children }) => (
+                                  <th className="border border-border px-2 py-1 text-left font-semibold">
+                                    {children}
+                                  </th>
+                                ),
+                                td: ({ children }) => (
+                                  <td className="border border-border px-2 py-1">
+                                    {children}
+                                  </td>
+                                ),
+                              }}
+                            >
+                              {message.text || "..."}
+                            </ReactMarkdown>
+                          </div>
+                        ) : (
+                          <p className="text-foreground whitespace-pre-wrap">
+                            {message.text || message.toolResult || "..."}
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>
