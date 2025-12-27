@@ -33,7 +33,7 @@ export function PageHeader({
       )}
     >
       <div className="flex items-start justify-between min-h-14 px-4 py-3">
-        <div className="flex items-start gap-2 flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
           {showBack && (
             <Button
               variant="ghost"
@@ -44,12 +44,12 @@ export function PageHeader({
               <ChevronLeft className="h-5 w-5" />
             </Button>
           )}
-          <div className="flex items-start gap-1 flex-1 min-w-0">
+          <div className="flex items-center gap-1 flex-1 min-w-0">
             <h1
               className={cn(
                 "text-lg font-semibold leading-tight",
                 expandable && !isExpanded && "truncate",
-                expandable && isExpanded && "break-words"
+                expandable && isExpanded && "wrap-break-word"
               )}
             >
               {title}
