@@ -1,5 +1,5 @@
-import { MobileShell } from "@/components/mobile-shell"
 import { AgentsTable } from "@/components/agents-table"
+import { MobileShell } from "@/components/mobile-shell"
 
 export const dynamic = "force-dynamic"
 

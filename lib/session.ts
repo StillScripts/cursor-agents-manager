@@ -1,6 +1,6 @@
-import { auth } from "./auth"
-import { cache } from "react"
 import { headers } from "next/headers"
+import { cache } from "react"
+import { auth } from "./auth"
 
 export const getCurrentSession = cache(async () => {
   return await auth.api.getSession({

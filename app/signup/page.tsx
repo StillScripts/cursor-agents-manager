@@ -1,15 +1,21 @@
 "use client"
 
-import { useState } from "react"
 import { useForm } from "@tanstack/react-form"
-import { signUp } from "@/lib/auth-client"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { signUp } from "@/lib/auth-client"
 
 export default function SignupPage() {
   const [error, setError] = useState("")
@@ -51,7 +57,7 @@ export default function SignupPage() {
         // Successfully signed up, redirect to home
         router.push("/")
         router.refresh()
-      } catch (err) {
+      } catch (_err) {
         setError("An unexpected error occurred")
       }
     },
@@ -76,7 +82,8 @@ export default function SignupPage() {
             <form.Field
               name="name"
               validators={{
-                onChange: ({ value }) => (!value ? "Name is required" : undefined),
+                onChange: ({ value }) =>
+                  !value ? "Name is required" : undefined,
               }}
             >
               {(field) => (
@@ -92,7 +99,9 @@ export default function SignupPage() {
                     disabled={form.state.isSubmitting}
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <p className="text-sm text-destructive">{field.state.meta.errors[0]}</p>
+                    <p className="text-sm text-destructive">
+                      {field.state.meta.errors[0]}
+                    </p>
                   )}
                 </div>
               )}
@@ -102,7 +111,11 @@ export default function SignupPage() {
               name="email"
               validators={{
                 onChange: ({ value }) =>
-                  !value ? "Email is required" : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? "Invalid email format" : undefined,
+                  !value
+                    ? "Email is required"
+                    : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+                      ? "Invalid email format"
+                      : undefined,
               }}
             >
               {(field) => (
@@ -118,7 +131,9 @@ export default function SignupPage() {
                     disabled={form.state.isSubmitting}
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <p className="text-sm text-destructive">{field.state.meta.errors[0]}</p>
+                    <p className="text-sm text-destructive">
+                      {field.state.meta.errors[0]}
+                    </p>
                   )}
                 </div>
               )}
@@ -128,7 +143,11 @@ export default function SignupPage() {
               name="password"
               validators={{
                 onChange: ({ value }) =>
-                  !value ? "Password is required" : value.length < 8 ? "Password must be at least 8 characters" : undefined,
+                  !value
+                    ? "Password is required"
+                    : value.length < 8
+                      ? "Password must be at least 8 characters"
+                      : undefined,
               }}
             >
               {(field) => (
@@ -143,7 +162,9 @@ export default function SignupPage() {
                     disabled={form.state.isSubmitting}
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <p className="text-sm text-destructive">{field.state.meta.errors[0]}</p>
+                    <p className="text-sm text-destructive">
+                      {field.state.meta.errors[0]}
+                    </p>
                   )}
                 </div>
               )}
@@ -155,7 +176,11 @@ export default function SignupPage() {
                 onChangeListenTo: ["password"],
                 onChange: ({ value, fieldApi }) => {
                   const password = fieldApi.form.getFieldValue("password")
-                  return !value ? "Please confirm your password" : value !== password ? "Passwords do not match" : undefined
+                  return !value
+                    ? "Please confirm your password"
+                    : value !== password
+                      ? "Passwords do not match"
+                      : undefined
                 },
               }}
             >
@@ -171,7 +196,9 @@ export default function SignupPage() {
                     disabled={form.state.isSubmitting}
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <p className="text-sm text-destructive">{field.state.meta.errors[0]}</p>
+                    <p className="text-sm text-destructive">
+                      {field.state.meta.errors[0]}
+                    </p>
                   )}
                 </div>
               )}
@@ -183,8 +210,14 @@ export default function SignupPage() {
               </Alert>
             )}
 
-            <Button type="submit" className="w-full" disabled={form.state.isSubmitting}>
-              {form.state.isSubmitting ? "Creating account..." : "Create Account"}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={form.state.isSubmitting}
+            >
+              {form.state.isSubmitting
+                ? "Creating account..."
+                : "Create Account"}
             </Button>
           </form>
           <p className="mt-4 text-center text-sm text-muted-foreground">

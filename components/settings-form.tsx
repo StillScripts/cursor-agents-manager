@@ -1,16 +1,22 @@
 "use client"
 
-import { useTheme } from "next-themes"
 import { useForm } from "@tanstack/react-form"
-import { useRepositories, type Repository } from "@/lib/hooks/use-repositories"
-import { useBranches } from "@/lib/hooks/use-branches"
-import { PageHeader } from "./page-header"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldSet } from "@/components/ui/field"
-import { Sun, Moon, Monitor, Plus, Trash2, Check } from "lucide-react"
+import { Check, Monitor, Moon, Plus, Sun, Trash2 } from "lucide-react"
+import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldSet,
+} from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import { useBranches } from "@/lib/hooks/use-branches"
+import { type Repository, useRepositories } from "@/lib/hooks/use-repositories"
+import { PageHeader } from "./page-header"
 
 const themeOptions = [
   { value: "light", label: "Light", icon: Sun },
@@ -40,10 +46,14 @@ export function SettingsForm() {
       branches: [],
     },
     onSubmit: async ({ value }) => {
-      const validRepos = value.repositories.filter((r) => r.url.trim() && r.name.trim())
+      const validRepos = value.repositories.filter(
+        (r) => r.url.trim() && r.name.trim()
+      )
       const validBranches = value.branches.filter((b) => b.name.trim())
       saveRepositories(validRepos)
-      saveBranches(validBranches.length > 0 ? validBranches : [{ name: "master" }])
+      saveBranches(
+        validBranches.length > 0 ? validBranches : [{ name: "master" }]
+      )
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     },
@@ -52,8 +62,14 @@ export function SettingsForm() {
   // Sync form with localStorage once loaded
   useEffect(() => {
     if (isLoaded && branchesLoaded) {
-      form.setFieldValue("repositories", repositories.length > 0 ? repositories : [{ url: "", name: "" }])
-      form.setFieldValue("branches", branches.length > 0 ? branches : [{ name: "master" }])
+      form.setFieldValue(
+        "repositories",
+        repositories.length > 0 ? repositories : [{ url: "", name: "" }]
+      )
+      form.setFieldValue(
+        "branches",
+        branches.length > 0 ? branches : [{ name: "master" }]
+      )
     }
   }, [isLoaded, branchesLoaded, repositories, branches, form])
 
@@ -80,7 +96,9 @@ export function SettingsForm() {
         {/* Theme Selection */}
         <Card className="bg-card border-border">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold">Appearance</CardTitle>
+            <CardTitle className="text-base font-semibold">
+              Appearance
+            </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="grid grid-cols-3 gap-2">
@@ -92,11 +110,17 @@ export function SettingsForm() {
                     key={option.value}
                     onClick={() => setTheme(option.value)}
                     className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all ${
-                      isActive ? "border-primary bg-primary/10" : "border-border bg-muted/50 hover:bg-muted"
+                      isActive
+                        ? "border-primary bg-primary/10"
+                        : "border-border bg-muted/50 hover:bg-muted"
                     }`}
                   >
-                    <Icon className={`h-5 w-5 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
-                    <span className={`text-xs font-medium ${isActive ? "text-primary" : "text-muted-foreground"}`}>
+                    <Icon
+                      className={`h-5 w-5 ${isActive ? "text-primary" : "text-muted-foreground"}`}
+                    />
+                    <span
+                      className={`text-xs font-medium ${isActive ? "text-primary" : "text-muted-foreground"}`}
+                    >
                       {option.label}
                     </span>
                   </button>
@@ -109,7 +133,9 @@ export function SettingsForm() {
         {/* Repositories */}
         <Card className="bg-card border-border">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold">Your Repositories</CardTitle>
+            <CardTitle className="text-base font-semibold">
+              Your Repositories
+            </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <form
@@ -121,7 +147,8 @@ export function SettingsForm() {
             >
               <FieldSet>
                 <FieldDescription>
-                  Add your GitHub repositories to quickly select them when launching agents.
+                  Add your GitHub repositories to quickly select them when
+                  launching agents.
                 </FieldDescription>
 
                 <form.Field name="repositories" mode="array">
@@ -133,15 +160,24 @@ export function SettingsForm() {
                             <form.Field
                               name={`repositories[${index}].name`}
                               validators={{
-                                onChange: ({ value }) => (!value?.trim() ? "Name is required" : undefined),
+                                onChange: ({ value }) =>
+                                  !value?.trim()
+                                    ? "Name is required"
+                                    : undefined,
                               }}
                             >
                               {(subField) => (
-                                <Field data-invalid={subField.state.meta.errors.length > 0}>
+                                <Field
+                                  data-invalid={
+                                    subField.state.meta.errors.length > 0
+                                  }
+                                >
                                   <Input
                                     placeholder="Repository name"
                                     value={subField.state.value || ""}
-                                    onChange={(e) => subField.handleChange(e.target.value)}
+                                    onChange={(e) =>
+                                      subField.handleChange(e.target.value)
+                                    }
                                     onBlur={subField.handleBlur}
                                     className="h-9 text-sm"
                                   />
@@ -153,24 +189,33 @@ export function SettingsForm() {
                               validators={{
                                 onChange: ({ value }) => {
                                   if (!value?.trim()) return "URL is required"
-                                  if (!value.includes("github.com")) return "Must be a GitHub URL"
+                                  if (!value.includes("github.com"))
+                                    return "Must be a GitHub URL"
                                   return undefined
                                 },
                               }}
                             >
                               {(subField) => (
-                                <Field data-invalid={subField.state.meta.errors.length > 0}>
+                                <Field
+                                  data-invalid={
+                                    subField.state.meta.errors.length > 0
+                                  }
+                                >
                                   <Input
                                     placeholder="https://github.com/org/repo"
                                     value={subField.state.value || ""}
-                                    onChange={(e) => subField.handleChange(e.target.value)}
+                                    onChange={(e) =>
+                                      subField.handleChange(e.target.value)
+                                    }
                                     onBlur={subField.handleBlur}
                                     className="h-9 text-sm"
                                   />
                                   <FieldError
-                                    errors={subField.state.meta.errors.map((e) => ({
-                                      message: e?.toString(),
-                                    }))}
+                                    errors={subField.state.meta.errors.map(
+                                      (e) => ({
+                                        message: e?.toString(),
+                                      })
+                                    )}
                                   />
                                 </Field>
                               )}
@@ -210,7 +255,9 @@ export function SettingsForm() {
         {/* Base Branches */}
         <Card className="bg-card border-border">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold">Base Branches</CardTitle>
+            <CardTitle className="text-base font-semibold">
+              Base Branches
+            </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <form
@@ -222,7 +269,8 @@ export function SettingsForm() {
             >
               <FieldSet>
                 <FieldDescription>
-                  Manage the base branches available when launching agents. Defaults to master.
+                  Manage the base branches available when launching agents.
+                  Defaults to master.
                 </FieldDescription>
 
                 <form.Field name="branches" mode="array">
@@ -234,22 +282,33 @@ export function SettingsForm() {
                             <form.Field
                               name={`branches[${index}].name`}
                               validators={{
-                                onChange: ({ value }) => (!value?.trim() ? "Branch name is required" : undefined),
+                                onChange: ({ value }) =>
+                                  !value?.trim()
+                                    ? "Branch name is required"
+                                    : undefined,
                               }}
                             >
                               {(subField) => (
-                                <Field data-invalid={subField.state.meta.errors.length > 0}>
+                                <Field
+                                  data-invalid={
+                                    subField.state.meta.errors.length > 0
+                                  }
+                                >
                                   <Input
                                     placeholder="e.g., main, develop, staging"
                                     value={subField.state.value || ""}
-                                    onChange={(e) => subField.handleChange(e.target.value)}
+                                    onChange={(e) =>
+                                      subField.handleChange(e.target.value)
+                                    }
                                     onBlur={subField.handleBlur}
                                     className="h-9 text-sm"
                                   />
                                   <FieldError
-                                    errors={subField.state.meta.errors.map((e) => ({
-                                      message: e?.toString(),
-                                    }))}
+                                    errors={subField.state.meta.errors.map(
+                                      (e) => ({
+                                        message: e?.toString(),
+                                      })
+                                    )}
                                   />
                                 </Field>
                               )}

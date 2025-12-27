@@ -1,13 +1,19 @@
 "use client"
 
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { Check, Eye, EyeOff, Key, Trash2 } from "lucide-react"
 import { useState } from "react"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Key, Eye, EyeOff, Check, Trash2 } from "lucide-react"
 
 interface ApiKeyResponse {
   hasApiKey: boolean
@@ -114,7 +120,9 @@ export function ApiKeyManager() {
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
           <Key className="h-4 w-4 text-primary" />
-          <CardTitle className="text-base font-semibold">Cursor API Key</CardTitle>
+          <CardTitle className="text-base font-semibold">
+            Cursor API Key
+          </CardTitle>
         </div>
         <CardDescription>
           {apiKeyData?.hasApiKey
@@ -124,25 +132,27 @@ export function ApiKeyManager() {
       </CardHeader>
       <CardContent className="pt-0 space-y-3">
         {!isEditing && apiKeyData?.hasApiKey && (
-          <>
-            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-              <code className="text-sm font-mono">{apiKeyData.masked}</code>
-              <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
-                  Update
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => deleteMutation.mutate()}
-                  disabled={deleteMutation.isPending}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+          <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+            <code className="text-sm font-mono">{apiKeyData.masked}</code>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsEditing(true)}
+              >
+                Update
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:text-destructive"
+                onClick={() => deleteMutation.mutate()}
+                disabled={deleteMutation.isPending}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
-          </>
+          </div>
         )}
 
         {!isEditing && !apiKeyData?.hasApiKey && (
@@ -171,7 +181,11 @@ export function ApiKeyManager() {
                   onClick={() => setShowKey(!showKey)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
-                  {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showKey ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             </div>
@@ -183,7 +197,11 @@ export function ApiKeyManager() {
             )}
 
             <div className="flex gap-2">
-              <Button onClick={handleSave} disabled={saveMutation.isPending} className="flex-1">
+              <Button
+                onClick={handleSave}
+                disabled={saveMutation.isPending}
+                className="flex-1"
+              >
                 {saveMutation.isPending ? (
                   "Saving..."
                 ) : (
@@ -193,7 +211,11 @@ export function ApiKeyManager() {
                   </>
                 )}
               </Button>
-              <Button variant="outline" onClick={handleCancel} disabled={saveMutation.isPending}>
+              <Button
+                variant="outline"
+                onClick={handleCancel}
+                disabled={saveMutation.isPending}
+              >
                 Cancel
               </Button>
             </div>

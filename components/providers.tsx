@@ -1,8 +1,8 @@
 "use client"
 
-import type React from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider } from "next-themes"
+import type React from "react"
 import { useState } from "react"
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -15,11 +15,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
             refetchOnWindowFocus: false,
           },
         },
-      }),
+      })
   )
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem storageKey="theme">
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="dark"
+      enableSystem
+      storageKey="theme"
+    >
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </ThemeProvider>
   )

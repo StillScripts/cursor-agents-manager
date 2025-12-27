@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server"
+import { eq } from "drizzle-orm"
+import { type NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { repositories } from "@/lib/schema/user-schema"
-import { eq } from "drizzle-orm"
 
 // Get all repositories for the current user
 export async function GET(request: NextRequest) {
@@ -22,7 +22,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ repositories: userRepos })
   } catch (error) {
     console.error("Error fetching repositories:", error)
-    return NextResponse.json({ error: "Failed to fetch repositories" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to fetch repositories" },
+      { status: 500 }
+    )
   }
 }
 
@@ -39,11 +42,16 @@ export async function POST(request: NextRequest) {
     const { repositories: repos } = body
 
     if (!Array.isArray(repos)) {
-      return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 }
+      )
     }
 
     // Delete existing repositories for this user
-    await db.delete(repositories).where(eq(repositories.userId, session.user.id))
+    await db
+      .delete(repositories)
+      .where(eq(repositories.userId, session.user.id))
 
     // Insert new repositories
     if (repos.length > 0) {
@@ -71,6 +79,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ repositories: updatedRepos })
   } catch (error) {
     console.error("Error saving repositories:", error)
-    return NextResponse.json({ error: "Failed to save repositories" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to save repositories" },
+      { status: 500 }
+    )
   }
 }

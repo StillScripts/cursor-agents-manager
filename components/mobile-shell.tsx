@@ -10,7 +10,9 @@ interface MobileShellProps {
 export function MobileShell({ children }: MobileShellProps) {
   return (
     <div className="flex flex-col h-dvh max-w-md mx-auto bg-background">
-      <main className="flex-1 overflow-y-auto mobile-scroll pb-20">{children}</main>
+      <main className="flex-1 overflow-y-auto mobile-scroll pb-20">
+        {children}
+      </main>
       <BottomNav />
     </div>
   )

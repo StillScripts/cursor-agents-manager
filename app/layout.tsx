@@ -1,22 +1,27 @@
-import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { Inter, JetBrains_Mono } from "next/font/google"
+import type React from "react"
 import "./globals.css"
 import { Providers } from "@/components/providers"
 
 const fontSans = Inter({ subsets: ["latin"], variable: "--font-sans" })
-const fontMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" })
+const fontMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+})
 
 export const metadata: Metadata = {
-  title: "Cursor Agent Manager",
-  description: "Manage your Cursor background agents on the go",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Cursor Agents",
+  title: {
+    default: "Cursor Agent Manager",
+    template: "%s | Cursor Agent Manager",
   },
-    generator: 'v0.app'
+  description: "Manage your Cursor background agents on the go",
+  //manifest: "/manifest.json",
+  // appleWebApp: {
+  //   capable: true,
+  //   statusBarStyle: "black-translucent",
+  //   title: "Cursor Agents",
+  // },
 }
 
 export const viewport: Viewport = {
@@ -33,7 +38,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${fontSans.variable} ${fontMono.variable}`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${fontSans.variable} ${fontMono.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{

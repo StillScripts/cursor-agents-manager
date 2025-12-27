@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server"
+import crypto from "crypto"
+import { eq } from "drizzle-orm"
+import { type NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { decryptData, encryptData } from "@/lib/encryption"
 import { userApiKeys } from "@/lib/schema/auth-schema"
-import { encryptData, decryptData } from "@/lib/encryption"
-import { eq } from "drizzle-orm"
-import crypto from "crypto"
 
 // Get API key status (don't return the actual key)
 export async function GET(request: NextRequest) {
@@ -58,7 +58,10 @@ export async function POST(request: NextRequest) {
 
   // Validate API key format (basic check)
   if (apiKey.trim().length < 10) {
-    return NextResponse.json({ error: "Invalid API key format" }, { status: 400 })
+    return NextResponse.json(
+      { error: "Invalid API key format" },
+      { status: 400 }
+    )
   }
 
   const encryptedKey = encryptData(apiKey)
@@ -94,7 +97,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Error saving API key:", error)
-    return NextResponse.json({ error: "Failed to save API key" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to save API key" },
+      { status: 500 }
+    )
   }
 }
 
@@ -115,6 +121,9 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Error deleting API key:", error)
-    return NextResponse.json({ error: "Failed to delete API key" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to delete API key" },
+      { status: 500 }
+    )
   }
 }
