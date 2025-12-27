@@ -183,15 +183,15 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
                   )}
 
                   <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="destructive"
-                        className={canStop ? "" : "flex-1"}
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </Button>
-                    </AlertDialogTrigger>
+                    <AlertDialogTrigger
+                      className={canStop ? "" : "flex-1"}
+                      render={
+                        <Button variant="destructive">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </Button>
+                      }
+                    />
                     <AlertDialogContent className="max-w-[90%] rounded-xl">
                       <AlertDialogHeader>
                         <AlertDialogTitle>Delete Agent?</AlertDialogTitle>

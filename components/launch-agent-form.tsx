@@ -87,6 +87,7 @@ export function LaunchAgentForm() {
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         <FormProvider value={form}>
           <form
+            id={form.formId}
             onSubmit={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -248,7 +249,7 @@ export function LaunchAgentForm() {
               )}
             </form.AppField>
 
-            {/* <form.AppField name="target.openAsCursorGithubApp">
+            <form.AppField name="target.openAsCursorGithubApp">
               {(field) => (
                 <field.ControlledSwitch
                   field={field}
@@ -256,9 +257,9 @@ export function LaunchAgentForm() {
                   description="Open the pull request as the Cursor GitHub App instead of as your user account (only applies if auto-create PR is enabled)"
                 />
               )}
-            </form.AppField> */}
+            </form.AppField>
 
-            {/* <form.AppField name="target.skipReviewerRequest">
+            <form.AppField name="target.skipReviewerRequest">
               {(field) => (
                 <field.ControlledSwitch
                   field={field}
@@ -266,7 +267,7 @@ export function LaunchAgentForm() {
                   description="Skip adding you as a reviewer to the pull request (only applies if auto-create PR is enabled and PR is opened as Cursor GitHub App)"
                 />
               )}
-            </form.AppField> */}
+            </form.AppField>
 
             <FieldGroup>
               <form.AppField name="webhook.url">
