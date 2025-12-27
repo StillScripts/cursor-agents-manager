@@ -100,6 +100,10 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
 
   const repoName = agent.source.repository.split("/").slice(-2).join("/")
   const canStop = agent.status === "RUNNING" || agent.status === "CREATING"
+  const canSendFollowUp =
+    agent.status === "RUNNING" ||
+    agent.status === "FINISHED" ||
+    agent.status === "ERROR"
 
   return (
     <>
@@ -276,46 +280,46 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
                     ))}
                   </div>
                 )}
-
-                {canStop && (
-                  <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-border">
-                    <Textarea
-                      placeholder="Send a follow-up message..."
-                      value={followUpMessage}
-                      onChange={(e) => setFollowUpMessage(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                          e.preventDefault()
-                          handleSendFollowUp()
-                        }
-                      }}
-                      className="min-h-[80px] resize-none"
-                    />
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">
-                        Press ⌘+Enter to send
-                      </span>
-                      <Button
-                        size="sm"
-                        onClick={handleSendFollowUp}
-                        disabled={
-                          !followUpMessage.trim() || sendFollowUp.isPending
-                        }
-                      >
-                        {sendFollowUp.isPending ? (
-                          <Spinner className="h-4 w-4 mr-2" />
-                        ) : (
-                          <Send className="h-4 w-4 mr-2" />
-                        )}
-                        Send
-                      </Button>
-                    </div>
-                  </div>
-                )}
               </div>
             </AccordionContent>
           </AccordionItem>
         </Accordion>
+
+        {/* Follow-up Message Section - Always visible below conversation */}
+        {canSendFollowUp && (
+          <div className="border border-border rounded-xl p-4 bg-card">
+            <div className="flex flex-col gap-3">
+              <Textarea
+                placeholder="Send a follow-up message to continue the task..."
+                value={followUpMessage}
+                onChange={(e) => setFollowUpMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault()
+                    handleSendFollowUp()
+                  }
+                }}
+                className="min-h-[100px] resize-none"
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">
+                  Press ⌘+Enter or Ctrl+Enter to send
+                </span>
+                <Button
+                  onClick={handleSendFollowUp}
+                  disabled={!followUpMessage.trim() || sendFollowUp.isPending}
+                >
+                  {sendFollowUp.isPending ? (
+                    <Spinner className="h-4 w-4 mr-2" />
+                  ) : (
+                    <Send className="h-4 w-4 mr-2" />
+                  )}
+                  Send
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   )
