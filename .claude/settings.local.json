@@ -10,7 +10,8 @@
       "Bash(bun run check:*)",
       "WebFetch(domain:tanstack.com)",
       "Bash(bun pm:*)",
-      "Bash(bun update:*)"
+      "Bash(bun update:*)",
+      "Bash(bun remove:*)"
     ]
   }
 }

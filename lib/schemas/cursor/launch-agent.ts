@@ -224,7 +224,7 @@ export function formDataToApiRequest(
   }
 
   // Only include optional fields if they have values
-  if (formData.model && formData.model !== "") {
+  if (formData.model) {
     request.model = formData.model
   }
 
@@ -235,7 +235,14 @@ export function formDataToApiRequest(
       formData.target.skipReviewerRequest !== undefined ||
       formData.target.branchName)
   ) {
-    request.target = formData.target
+    request.target = {
+      autoCreatePr: formData.target.autoCreatePr,
+      openAsCursorGithubApp: formData.target.openAsCursorGithubApp,
+      skipReviewerRequest: formData.target.skipReviewerRequest,
+      ...(formData.target.branchName && {
+        branchName: formData.target.branchName,
+      }),
+    }
   }
 
   if (formData.webhook?.url) {
@@ -259,6 +266,6 @@ export const defaultFormValues: Partial<LaunchAgentFormData> = {
     autoCreatePr: true,
     openAsCursorGithubApp: false,
     skipReviewerRequest: false,
-    branchName: "",
+    branchName: undefined,
   },
 }
