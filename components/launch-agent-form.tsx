@@ -1,33 +1,16 @@
 "use client"
 
-import { useForm } from "@tanstack/react-form"
-import { AlertCircle, ExternalLink, Rocket, Settings } from "lucide-react"
-import Link from "next/link"
+import { AlertCircle, ExternalLink, Rocket } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
 import {
-  Field,
-  FieldContent,
   FieldDescription,
-  FieldError,
   FieldGroup,
-  FieldLabel,
   FieldLegend,
   FieldSet,
 } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Spinner } from "@/components/ui/spinner"
-import { Switch } from "@/components/ui/switch"
-import { Textarea } from "@/components/ui/textarea"
 import { useLaunchAgent } from "@/lib/hooks/use-agents"
+import { useAppForm } from "@/lib/hooks/use-app-form"
 import { useBranches } from "@/lib/hooks/use-branches"
 import { useRepositories } from "@/lib/hooks/use-repositories"
 import {
@@ -61,8 +44,8 @@ export function LaunchAgentForm() {
   const { repositories, isLoaded } = useRepositories()
   const { branches, isLoaded: branchesLoaded } = useBranches()
 
-  // @ts-expect-error - useForm generic signature expects 12 type args in this version, but inference works correctly
-  const form = useForm<LaunchAgentFormData>({
+  // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
+  const form = useAppForm<LaunchAgentFormData>({
     defaultValues: {
       prompt: {
         text: "",
@@ -122,7 +105,7 @@ export function LaunchAgentForm() {
               Describe what you want the agent to do
             </FieldDescription>
             <FieldGroup>
-              <form.Field
+              <form.AppField
                 name="prompt.text"
                 validators={{
                   onChange: ({ value }) =>
@@ -136,28 +119,15 @@ export function LaunchAgentForm() {
                 }}
               >
                 {(field) => (
-                  <Field data-invalid={field.state.meta.errors.length > 0}>
-                    <FieldLabel htmlFor="prompt">Task Description</FieldLabel>
-                    <Textarea
-                      id="prompt"
-                      placeholder="Add a README.md file with installation instructions..."
-                      className="min-h-[120px]"
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      onBlur={field.handleBlur}
-                    />
-                    <FieldDescription>
-                      Describe the task you want the agent to perform (10-5000
-                      characters)
-                    </FieldDescription>
-                    <FieldError
-                      errors={field.state.meta.errors.map((e) => ({
-                        message: e?.toString(),
-                      }))}
-                    />
-                  </Field>
+                  <field.ControlledTextarea
+                    field={field}
+                    label="Task Description"
+                    description="Describe the task you want the agent to perform (10-5000 characters)"
+                    placeholder="Add a README.md file with installation instructions..."
+                    className="min-h-[120px]"
+                  />
                 )}
-              </form.Field>
+              </form.AppField>
             </FieldGroup>
           </FieldSet>
 
@@ -167,7 +137,7 @@ export function LaunchAgentForm() {
               The GitHub repository for the agent to work on
             </FieldDescription>
             <FieldGroup>
-              <form.Field
+              <form.AppField
                 name="source.repository"
                 validators={{
                   onChange: ({ value }) => {
@@ -187,70 +157,31 @@ export function LaunchAgentForm() {
                   },
                 }}
               >
-                {(field) => (
-                  <Field data-invalid={field.state.meta.errors.length > 0}>
-                    <FieldLabel htmlFor="repository">Repository</FieldLabel>
-                    {isLoaded && hasRepositories ? (
-                      <>
-                        <Select
-                          value={field.state.value}
-                          onValueChange={(value) =>
-                            field.handleChange(value ?? "")
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {repositories
-                              .filter((r) => r.url.trim())
-                              .map((repo) => (
-                                <SelectItem key={repo.url} value={repo.url}>
-                                  {repo.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                        <FieldDescription>
-                          <Link
-                            href="/settings"
-                            className="text-primary hover:underline inline-flex items-center gap-1"
-                          >
-                            <Settings className="h-3 w-3" />
-                            Manage repositories
-                          </Link>
-                        </FieldDescription>
-                      </>
-                    ) : (
-                      <>
-                        <Input
-                          id="repository"
-                          placeholder="https://github.com/your-org/your-repo"
-                          value={field.state.value}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          onBlur={field.handleBlur}
-                        />
-                        <FieldDescription>
-                          <Link
-                            href="/settings"
-                            className="text-primary hover:underline inline-flex items-center gap-1"
-                          >
-                            <Settings className="h-3 w-3" />
-                            Add repositories in Settings for quick access
-                          </Link>
-                        </FieldDescription>
-                      </>
-                    )}
-                    <FieldError
-                      errors={field.state.meta.errors.map((e) => ({
-                        message: e?.toString(),
-                      }))}
+                {(field) =>
+                  isLoaded && hasRepositories ? (
+                    <field.ControlledSelect
+                      field={field}
+                      label="Repository"
+                      description="Manage repositories in Settings"
+                      options={repositories
+                        .filter((r) => r.url.trim())
+                        .map((repo) => ({
+                          value: repo.url,
+                          label: repo.name,
+                        }))}
                     />
-                  </Field>
-                )}
-              </form.Field>
+                  ) : (
+                    <field.ControlledInput
+                      field={field}
+                      label="Repository"
+                      description="Add repositories in Settings for quick access"
+                      placeholder="https://github.com/your-org/your-repo"
+                    />
+                  )
+                }
+              </form.AppField>
 
-              <form.Field
+              <form.AppField
                 name="source.ref"
                 validators={{
                   onChange: ({ value }) =>
@@ -261,65 +192,29 @@ export function LaunchAgentForm() {
                         : undefined,
                 }}
               >
-                {(field) => (
-                  <Field data-invalid={field.state.meta.errors.length > 0}>
-                    <FieldLabel htmlFor="ref">Base Branch</FieldLabel>
-                    {isLoaded && branchesLoaded && hasBranches ? (
-                      <>
-                        <Select
-                          value={field.state.value}
-                          onValueChange={(value) =>
-                            field.handleChange(value ?? "")
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {branches
-                              .filter((b) => b.name.trim())
-                              .map((branch) => (
-                                <SelectItem
-                                  key={branch.name}
-                                  value={branch.name}
-                                >
-                                  {branch.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                        <FieldDescription>
-                          <Link
-                            href="/settings"
-                            className="text-primary hover:underline inline-flex items-center gap-1"
-                          >
-                            <Settings className="h-3 w-3" />
-                            Manage branches
-                          </Link>
-                        </FieldDescription>
-                      </>
-                    ) : (
-                      <>
-                        <Input
-                          id="ref"
-                          placeholder="main"
-                          value={field.state.value}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                        />
-                        <FieldDescription>
-                          The branch to base changes on (branch name, tag, or
-                          commit hash)
-                        </FieldDescription>
-                      </>
-                    )}
-                    <FieldError
-                      errors={field.state.meta.errors.map((e) => ({
-                        message: e?.toString(),
-                      }))}
+                {(field) =>
+                  isLoaded && branchesLoaded && hasBranches ? (
+                    <field.ControlledSelect
+                      field={field}
+                      label="Base Branch"
+                      description="Manage branches in Settings"
+                      options={branches
+                        .filter((b) => b.name.trim())
+                        .map((branch) => ({
+                          value: branch.name,
+                          label: branch.name,
+                        }))}
                     />
-                  </Field>
-                )}
-              </form.Field>
+                  ) : (
+                    <field.ControlledInput
+                      field={field}
+                      label="Base Branch"
+                      description="The branch to base changes on (branch name, tag, or commit hash)"
+                      placeholder="main"
+                    />
+                  )
+                }
+              </form.AppField>
             </FieldGroup>
           </FieldSet>
 
@@ -329,38 +224,26 @@ export function LaunchAgentForm() {
               Choose the AI model for your agent
             </FieldDescription>
             <FieldGroup>
-              <form.Field name="model">
+              <form.AppField name="model">
                 {(field) => (
-                  <Field>
-                    <FieldLabel>AI Model</FieldLabel>
-                    <Select
-                      value={field.state.value || ""}
-                      onValueChange={(value) => {
-                        const modelValue: Model | undefined =
-                          value === "" || value === null
-                            ? undefined
-                            : (value as Model)
-                        field.handleChange(modelValue)
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {modelOptions.map((model) => (
-                          <SelectItem key={model.value} value={model.value}>
-                            {model.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FieldDescription>
-                      Auto mode lets Cursor choose the best model for your task.
-                      You can also select a specific model if needed.
-                    </FieldDescription>
-                  </Field>
+                  <field.ControlledSelect
+                    field={field}
+                    label="AI Model"
+                    description="Auto mode lets Cursor choose the best model for your task. You can also select a specific model if needed."
+                    options={modelOptions.map((model) => ({
+                      value: model.value,
+                      label: model.label,
+                    }))}
+                    onValueChange={(value) => {
+                      const modelValue: Model | undefined =
+                        value === "" || value === null
+                          ? undefined
+                          : (value as Model)
+                      field.handleChange(modelValue)
+                    }}
+                  />
                 )}
-              </form.Field>
+              </form.AppField>
             </FieldGroup>
           </FieldSet>
 
@@ -370,7 +253,7 @@ export function LaunchAgentForm() {
               Configure where and how the agent makes changes
             </FieldDescription>
             <FieldGroup>
-              <form.Field
+              <form.AppField
                 name="target.branchName"
                 validators={{
                   onChange: ({ value }) =>
@@ -380,94 +263,44 @@ export function LaunchAgentForm() {
                 }}
               >
                 {(field) => (
-                  <Field data-invalid={field.state.meta.errors.length > 0}>
-                    <FieldLabel htmlFor="branchName">
-                      Target Branch (optional)
-                    </FieldLabel>
-                    <Input
-                      id="branchName"
-                      placeholder="feature/my-feature"
-                      value={field.state.value || ""}
-                      onChange={(e) =>
-                        field.handleChange(e.target.value || undefined)
-                      }
-                    />
-                    <FieldDescription>
-                      Custom branch name for the agent to create. Leave empty to
-                      auto-generate.
-                    </FieldDescription>
-                    <FieldError
-                      errors={field.state.meta.errors.map((e) => ({
-                        message: e?.toString(),
-                      }))}
-                    />
-                  </Field>
+                  <field.ControlledInput
+                    field={field}
+                    label="Target Branch (optional)"
+                    description="Custom branch name for the agent to create. Leave empty to auto-generate."
+                    placeholder="feature/my-feature"
+                  />
                 )}
-              </form.Field>
+              </form.AppField>
 
-              <form.Field name="target.autoCreatePr">
+              <form.AppField name="target.autoCreatePr">
                 {(field) => (
-                  <Field orientation="horizontal">
-                    <Switch
-                      id="autoCreatePr"
-                      checked={field.state.value}
-                      onCheckedChange={(checked) => field.handleChange(checked)}
-                    />
-                    <FieldContent>
-                      <FieldLabel htmlFor="autoCreatePr">
-                        Auto-create Pull Request
-                      </FieldLabel>
-                      <FieldDescription>
-                        Automatically create a PR when the agent completes
-                      </FieldDescription>
-                    </FieldContent>
-                  </Field>
+                  <field.ControlledSwitch
+                    field={field}
+                    label="Auto-create Pull Request"
+                    description="Automatically create a PR when the agent completes"
+                  />
                 )}
-              </form.Field>
+              </form.AppField>
 
-              <form.Field name="target.openAsCursorGithubApp">
+              <form.AppField name="target.openAsCursorGithubApp">
                 {(field) => (
-                  <Field orientation="horizontal">
-                    <Switch
-                      id="openAsCursorGithubApp"
-                      checked={field.state.value}
-                      onCheckedChange={(checked) => field.handleChange(checked)}
-                    />
-                    <FieldContent>
-                      <FieldLabel htmlFor="openAsCursorGithubApp">
-                        Open PR as Cursor GitHub App
-                      </FieldLabel>
-                      <FieldDescription>
-                        Open the pull request as the Cursor GitHub App instead
-                        of as your user account (only applies if auto-create PR
-                        is enabled)
-                      </FieldDescription>
-                    </FieldContent>
-                  </Field>
+                  <field.ControlledSwitch
+                    field={field}
+                    label="Open PR as Cursor GitHub App"
+                    description="Open the pull request as the Cursor GitHub App instead of as your user account (only applies if auto-create PR is enabled)"
+                  />
                 )}
-              </form.Field>
+              </form.AppField>
 
-              <form.Field name="target.skipReviewerRequest">
+              <form.AppField name="target.skipReviewerRequest">
                 {(field) => (
-                  <Field orientation="horizontal">
-                    <Switch
-                      id="skipReviewerRequest"
-                      checked={field.state.value}
-                      onCheckedChange={(checked) => field.handleChange(checked)}
-                    />
-                    <FieldContent>
-                      <FieldLabel htmlFor="skipReviewerRequest">
-                        Skip Adding Reviewer
-                      </FieldLabel>
-                      <FieldDescription>
-                        Skip adding you as a reviewer to the pull request (only
-                        applies if auto-create PR is enabled and PR is opened as
-                        Cursor GitHub App)
-                      </FieldDescription>
-                    </FieldContent>
-                  </Field>
+                  <field.ControlledSwitch
+                    field={field}
+                    label="Skip Adding Reviewer"
+                    description="Skip adding you as a reviewer to the pull request (only applies if auto-create PR is enabled and PR is opened as Cursor GitHub App)"
+                  />
                 )}
-              </form.Field>
+              </form.AppField>
             </FieldGroup>
           </FieldSet>
 
@@ -477,27 +310,18 @@ export function LaunchAgentForm() {
               Get notified about agent status changes
             </FieldDescription>
             <FieldGroup>
-              <form.Field name="webhook.url">
+              <form.AppField name="webhook.url">
                 {(field) => (
-                  <Field>
-                    <FieldLabel htmlFor="webhookUrl">Webhook URL</FieldLabel>
-                    <Input
-                      id="webhookUrl"
-                      placeholder="https://your-app.com/webhooks/cursor"
-                      value={field.state.value || ""}
-                      onChange={(e) =>
-                        field.handleChange(e.target.value || undefined)
-                      }
-                    />
-                    <FieldDescription>
-                      URL to receive webhook notifications about agent status
-                      changes
-                    </FieldDescription>
-                  </Field>
+                  <field.ControlledInput
+                    field={field}
+                    label="Webhook URL"
+                    description="URL to receive webhook notifications about agent status changes"
+                    placeholder="https://your-app.com/webhooks/cursor"
+                  />
                 )}
-              </form.Field>
+              </form.AppField>
 
-              <form.Field
+              <form.AppField
                 name="webhook.secret"
                 validators={{
                   onChange: ({ value }) =>
@@ -507,31 +331,15 @@ export function LaunchAgentForm() {
                 }}
               >
                 {(field) => (
-                  <Field data-invalid={field.state.meta.errors.length > 0}>
-                    <FieldLabel htmlFor="webhookSecret">
-                      Webhook Secret (Optional)
-                    </FieldLabel>
-                    <Input
-                      id="webhookSecret"
-                      type="password"
-                      placeholder="Your webhook secret (min 32 characters)"
-                      value={field.state.value || ""}
-                      onChange={(e) =>
-                        field.handleChange(e.target.value || undefined)
-                      }
-                    />
-                    <FieldDescription>
-                      Secret key for webhook payload verification (minimum 32
-                      characters)
-                    </FieldDescription>
-                    <FieldError
-                      errors={field.state.meta.errors.map((e) => ({
-                        message: e?.toString(),
-                      }))}
-                    />
-                  </Field>
+                  <field.ControlledInput
+                    field={field}
+                    label="Webhook Secret (Optional)"
+                    description="Secret key for webhook payload verification (minimum 32 characters)"
+                    type="password"
+                    placeholder="Your webhook secret (min 32 characters)"
+                  />
                 )}
-              </form.Field>
+              </form.AppField>
             </FieldGroup>
           </FieldSet>
         </FieldGroup>
@@ -572,24 +380,12 @@ export function LaunchAgentForm() {
         )}
 
         <div className="mt-8">
-          <form.Subscribe
-            selector={(state) => [state.canSubmit, state.isSubmitting]}
-          >
-            {([canSubmit, isSubmitting]) => (
-              <Button
-                type="submit"
-                className="w-full h-12 text-base"
-                disabled={!canSubmit || isSubmitting || launchAgent.isPending}
-              >
-                {isSubmitting || launchAgent.isPending ? (
-                  <Spinner className="h-5 w-5 mr-2" />
-                ) : (
-                  <Rocket className="h-5 w-5 mr-2" />
-                )}
-                Launch Agent
-              </Button>
-            )}
-          </form.Subscribe>
+          <form.SubscribeButton
+            formId={form.formId}
+            label="Launch Agent"
+            icon={<Rocket className="h-5 w-5" />}
+            className="w-full h-12 text-base"
+          />
         </div>
       </form>
     </>
