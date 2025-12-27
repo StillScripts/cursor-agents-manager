@@ -115,6 +115,12 @@ export function useSendFollowUp() {
       queryClient.invalidateQueries({
         queryKey: ["conversation", variables.id],
       })
+      queryClient.invalidateQueries({
+        queryKey: ["agent", variables.id],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ["agents"],
+      })
     },
   })
 }
