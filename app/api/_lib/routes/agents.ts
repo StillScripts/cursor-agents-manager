@@ -12,7 +12,7 @@ import {
 } from "@/lib/mock-data"
 import {
   type LaunchAgentRequest,
-  launchAgentSchema,
+  launchAgentRequestSchema,
 } from "@/lib/schemas/cursor/launch-agent"
 import type { Agent } from "@/lib/types"
 import { type AuthVariables, requireAuth } from "../middleware/auth"
@@ -99,7 +99,7 @@ app.get("/", zValidator("query", paginationSchema), async (c) => {
 })
 
 // POST /api/agents - Launch new agent
-app.post("/", zValidator("json", launchAgentSchema), async (c) => {
+app.post("/", zValidator("json", launchAgentRequestSchema), async (c) => {
   const validatedRequest: LaunchAgentRequest = c.req.valid("json")
   const simulationMode = c.get("simulationMode")
   const apiKey = c.get("apiKey")

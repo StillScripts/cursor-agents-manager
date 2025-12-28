@@ -11,6 +11,7 @@
     "check": "biome check .",
     "start": "next start",
     "test": "bun test",
+    "test:api": "bun test --preload ./app/api/_lib/__tests__/preload.ts app/api/_lib",
     "test:watch": "bun test --watch",
     "db:generate": "dotenv -e .env.local -- drizzle-kit generate",
     "db:push": "dotenv -e .env.local -- drizzle-kit push",
