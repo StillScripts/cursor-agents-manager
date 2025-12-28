@@ -3,7 +3,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 const STORAGE_KEY = "cursor-agent-branches"
-const DEFAULT_BRANCHES = ["master"]
 
 export interface Branch {
   name: string
@@ -25,19 +24,16 @@ async function fetchBranches(): Promise<Branch[]> {
         try {
           return JSON.parse(stored)
         } catch {
-          return [{ name: DEFAULT_BRANCHES[0] }]
+          return []
         }
       }
-      return [{ name: DEFAULT_BRANCHES[0] }]
+      return []
     }
     throw new Error("Failed to fetch branches")
   }
 
   const data: BranchesResponse = await response.json()
-  const branches = data.branches || []
-
-  // If no branches, return default
-  return branches.length > 0 ? branches : [{ name: DEFAULT_BRANCHES[0] }]
+  return data.branches || []
 }
 
 async function saveBranches(branchList: Branch[]): Promise<Branch[]> {
@@ -58,14 +54,13 @@ async function saveBranches(branchList: Branch[]): Promise<Branch[]> {
 export function useBranches() {
   const queryClient = useQueryClient()
 
-  const { data: branches = [{ name: DEFAULT_BRANCHES[0] }], isLoading } =
-    useQuery({
-      queryKey: ["branches"],
-      queryFn: fetchBranches,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    })
+  const branchesQuery = useQuery({
+    queryKey: ["branches"],
+    queryFn: fetchBranches,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
 
-  const mutation = useMutation({
+  const branchesMutation = useMutation({
     mutationFn: saveBranches,
     onSuccess: (data) => {
       queryClient.setQueryData(["branches"], data)
@@ -74,16 +69,10 @@ export function useBranches() {
     },
   })
 
-  const saveBranchesMutation = (branchList: Branch[]) => {
-    mutation.mutate(branchList)
-  }
-
   return {
-    branches,
-    isLoaded: !isLoading,
-    saveBranches: saveBranchesMutation,
-    isLoading,
-    isSaving: mutation.isPending,
-    error: mutation.error,
+    branchesQuery,
+    hasBranches:
+      branchesQuery.isSuccess && branchesQuery.data?.some((b) => b.name.trim()),
+    branchesMutation,
   }
 }

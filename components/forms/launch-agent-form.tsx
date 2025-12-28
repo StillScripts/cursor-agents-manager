@@ -19,7 +19,7 @@ import {
   type Model,
 } from "@/lib/schemas/cursor/launch-agent"
 
-const RespositorySelectField = ({ field }: { field: any }) => {
+const RepositorySelectField = ({ field }: { field: any }) => {
   const { repositoriesQuery, hasRepositories } = useRepositories()
 
   if (repositoriesQuery.isLoading) {
@@ -73,11 +73,63 @@ const RespositorySelectField = ({ field }: { field: any }) => {
   )
 }
 
+const BranchSelectField = ({ field }: { field: any }) => {
+  const { branchesQuery, hasBranches } = useBranches()
+
+  if (branchesQuery.isLoading) {
+    return (
+      <FieldSkeleton
+        label="Base Branch"
+        description="Manage branches in Settings"
+        variant="select"
+      />
+    )
+  }
+
+  if (!hasBranches) {
+    return (
+      <FieldGroup>
+        <field.ControlledSelect
+          field={field}
+          label="Base Branch"
+          description="You need to add branches in Settings to be able to select them"
+          placeholder="Select branch..."
+          options={[]}
+          disabled
+        />
+        <Link
+          href="/settings"
+          className="text-primary hover:underline inline-flex items-center gap-1"
+        >
+          <Settings className="h-3 w-3" />
+          Add branches in Settings for quick access
+        </Link>
+      </FieldGroup>
+    )
+  }
+
+  const options =
+    branchesQuery.data
+      ?.filter((b) => b.name.trim())
+      .map((b) => ({
+        value: b.name,
+        label: b.name,
+      })) || []
+
+  return (
+    <field.ControlledSelect
+      field={field}
+      label="Base Branch"
+      description="Manage branches in Settings"
+      placeholder="Select branch..."
+      options={options}
+    />
+  )
+}
+
 export function LaunchAgentForm() {
   const router = useRouter()
   const launchAgent = useLaunchAgent()
-  const { repositoriesQuery, hasRepositories } = useRepositories()
-  const { branches, isLoaded: branchesLoaded } = useBranches()
 
   // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
   const form = useAppForm<LaunchAgentFormData>({
@@ -110,8 +162,6 @@ export function LaunchAgentForm() {
       router.push("/")
     },
   })
-
-  const hasBranches = branches.length > 0 && branches.some((b) => b.name.trim())
 
   const errorMessage =
     launchAgent.error instanceof Error ? launchAgent.error.message : null
@@ -159,43 +209,11 @@ export function LaunchAgentForm() {
               </form.AppField>
 
               <form.AppField name="source.repository">
-                {(field) => <RespositorySelectField field={field} />}
+                {(field) => <RepositorySelectField field={field} />}
               </form.AppField>
 
-              <form.AppField
-                name="source.ref"
-                validators={{
-                  onChange: ({ value }) =>
-                    !value
-                      ? "Base branch is required"
-                      : value.length > 100
-                        ? "Branch name is too long"
-                        : undefined,
-                }}
-              >
-                {(field) =>
-                  true && branchesLoaded && hasBranches ? (
-                    <field.ControlledSelect
-                      field={field}
-                      label="Base Branch"
-                      description="Manage branches in Settings"
-                      placeholder="Select branch..."
-                      options={branches
-                        .filter((b) => b.name.trim())
-                        .map((branch) => ({
-                          value: branch.name,
-                          label: branch.name,
-                        }))}
-                    />
-                  ) : (
-                    <field.ControlledInput
-                      field={field}
-                      label="Base Branch"
-                      description="The branch to base changes on (branch name, tag, or commit hash)"
-                      placeholder="main"
-                    />
-                  )
-                }
+              <form.AppField name="source.ref">
+                {(field) => <BranchSelectField field={field} />}
               </form.AppField>
               <form.AppField name="model">
                 {(field) => (
