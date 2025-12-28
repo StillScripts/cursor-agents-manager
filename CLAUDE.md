@@ -23,9 +23,26 @@ bun run build
 # Start production server
 bun run start
 
-# Lint
+# Lint - USE THIS to check for errors
 bun run lint
 ```
+
+## Testing & Validation
+
+**IMPORTANT FOR AI AGENTS**: When validating code changes or checking for errors:
+
+✅ **DO**: Use `bun run lint` to check for errors and validate code
+- Fast and safe
+- Doesn't interfere with running dev servers
+- Catches TypeScript, linting, and formatting issues
+
+❌ **DON'T**: Run `bun run dev` to check for errors
+- Interferes with already-running dev servers
+- Causes port conflicts and lock file issues
+- Wastes resources and time
+- Provides no better validation than lint
+
+**Rule**: Always use `bun run lint` for validation. Never start the dev server just to check if code works.
 
 ## Environment Configuration
 

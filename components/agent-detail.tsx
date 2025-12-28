@@ -13,6 +13,8 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import {
   Accordion,
   AccordionContent,
@@ -273,9 +275,30 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
                                   : "Agent"}
                           </span>
                         </div>
-                        <p className="text-foreground whitespace-pre-wrap">
-                          {message.text || message.toolResult || "..."}
-                        </p>
+                        {message.type === "assistant_message" ? (
+                          <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-code:text-foreground prose-pre:bg-muted prose-pre:text-foreground prose-a:text-primary prose-blockquote:text-muted-foreground prose-ul:text-foreground prose-ol:text-foreground prose-li:text-foreground prose-h1:text-foreground prose-h2:text-foreground prose-h3:text-foreground prose-h4:text-foreground prose-h5:text-foreground prose-h6:text-foreground prose-hr:border-border prose-table:text-foreground prose-th:text-foreground prose-td:text-foreground">
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                a: ({ children, href }) => (
+                                  <a
+                                    href={href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    {children}
+                                  </a>
+                                ),
+                              }}
+                            >
+                              {message.text || "..."}
+                            </ReactMarkdown>
+                          </div>
+                        ) : (
+                          <p className="text-foreground whitespace-pre-wrap">
+                            {message.text || message.toolResult || "..."}
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>
