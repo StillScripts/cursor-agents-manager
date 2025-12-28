@@ -375,13 +375,141 @@ export const errorHandler = () =>
 4. Verify authentication still works
 5. Verify frontend functionality is unchanged
 
+## Better Auth + Hono Integration
+
+Better Auth is built on the standard Web API (Request/Response), which means it can integrate directly with Hono. There are two approaches:
+
+### Option A: Keep Better Auth Separate (Simpler)
+
+Keep `/api/auth/[...all]` as a Next.js route handler and have Hono handle everything else.
+
+**Pros:**
+- No changes to auth setup
+- The `nextCookies()` plugin works as expected
+- Simpler to implement
+
+**Cons:**
+- Two routing systems for `/api` routes
+- Slightly less unified codebase
+
+**Structure:**
+```
+app/api/
+├── auth/[...all]/route.ts    # Next.js route (Better Auth)
+└── [...route]/route.ts       # Hono catch-all (everything else)
+```
+
+### Option B: Integrate Better Auth into Hono (Unified)
+
+Mount Better Auth's handler directly in Hono using its raw request/response handling.
+
+**Implementation:**
+
+```typescript
+// app/api/_lib/routes/auth.ts
+import { Hono } from "hono"
+import { auth } from "@/lib/auth"
+
+const app = new Hono()
+
+// Mount Better Auth handler for all /auth/* routes
+app.all("/*", async (c) => {
+  // Better Auth's handler accepts a standard Web Request
+  // and returns a standard Web Response
+  const response = await auth.handler(c.req.raw)
+  return response
+})
+
+export { app as authApp }
+```
+
+```typescript
+// app/api/_lib/index.ts
+import { Hono } from "hono"
+import { authApp } from "./routes/auth"
+import { agentsApp } from "./routes/agents"
+// ... other imports
+
+const app = new Hono().basePath("/api")
+
+// Mount Better Auth FIRST (before other routes)
+app.route("/auth", authApp)
+
+// Then mount other routes
+app.route("/agents", agentsApp)
+app.route("/user", userApp)
+app.route("/models", modelsApp)
+
+export default app
+```
+
+**Pros:**
+- Unified routing through Hono
+- All API code in one place
+- Consistent middleware patterns possible
+
+**Cons:**
+- Need to verify cookie handling works correctly
+- The `nextCookies()` plugin may not work (designed for Next.js route handlers)
+- May need custom cookie handling if issues arise
+
+### Cookie Handling Considerations
+
+Better Auth sets cookies via the `Set-Cookie` header in its response. When integrating with Hono:
+
+1. **Standard Response passthrough** - Hono will pass through the Response from Better Auth, including all headers
+2. **If cookies don't work** - May need to explicitly handle the Set-Cookie header:
+
+```typescript
+app.all("/*", async (c) => {
+  const response = await auth.handler(c.req.raw)
+  
+  // If needed, manually copy important headers
+  const setCookie = response.headers.get("set-cookie")
+  if (setCookie) {
+    // Hono should handle this automatically, but if not:
+    c.header("set-cookie", setCookie)
+  }
+  
+  return response
+})
+```
+
+### Recommendation
+
+**Start with Option A** (keep separate) for the initial migration. This is safer and requires fewer changes. 
+
+Once the Hono migration is complete and tested, we can optionally migrate to Option B if a unified approach is desired. The key is to verify that:
+1. Session cookies are set correctly on login/signup
+2. Session validation works in the auth middleware
+3. Logout properly clears cookies
+
+### Session Validation in Hono Middleware
+
+Regardless of which option we choose, the auth middleware for protected routes will use `auth.api.getSession()`:
+
+```typescript
+// app/api/_lib/middleware/auth.ts
+import { createMiddleware } from "hono/factory"
+import { auth } from "@/lib/auth"
+
+export const requireAuth = createMiddleware(async (c, next) => {
+  // This works with both options - it reads cookies from the request
+  const session = await auth.api.getSession({ 
+    headers: c.req.raw.headers 
+  })
+  
+  if (!session) {
+    return c.json({ error: "Unauthorized" }, 401)
+  }
+  
+  c.set("session", session.session)
+  c.set("user", session.user)
+  await next()
+})
+```
+
 ## Special Considerations
-
-### Better Auth Integration
-
-**Keep Better Auth separate** - The `/api/auth/[...all]` route uses `toNextJsHandler` from Better Auth which has special handling for cookies and headers. We'll keep this as a Next.js route handler and NOT migrate it to Hono.
-
-The Hono routes will use `auth.api.getSession()` directly for authentication, which is already compatible.
 
 ### API Response Compatibility
 
@@ -395,8 +523,8 @@ All responses must maintain the same shape to avoid breaking the frontend:
 When using Hono with Next.js catch-all:
 - The catch-all is at `app/api/[...route]/route.ts`
 - The Hono app uses `.basePath("/api")`
-- Auth routes are at `app/api/auth/[...all]/route.ts` (not handled by Hono)
-- This means auth routes are matched first by Next.js before the catch-all
+- **Option A (separate):** Auth routes at `app/api/auth/[...all]/route.ts` are matched first by Next.js before the catch-all
+- **Option B (unified):** Auth routes are mounted in Hono at `/api/auth/*`
 
 ## Benefits of This Migration
 
@@ -412,12 +540,13 @@ When using Hono with Next.js catch-all:
 
 ### Create New Files
 - [ ] `app/api/_lib/index.ts` - Main Hono app
-- [ ] `app/api/_lib/middleware/auth.ts` - Auth middleware
+- [ ] `app/api/_lib/middleware/auth.ts` - Auth middleware (requireAuth)
 - [ ] `app/api/_lib/middleware/error-handler.ts` - Error handling
 - [ ] `app/api/_lib/middleware/simulation.ts` - Simulation mode detection
 - [ ] `app/api/_lib/routes/agents.ts` - Agents routes
 - [ ] `app/api/_lib/routes/user.ts` - User routes
 - [ ] `app/api/_lib/routes/models.ts` - Models route
+- [ ] `app/api/_lib/routes/auth.ts` - Better Auth routes (Option B only)
 - [ ] `app/api/_lib/utils/cursor-api.ts` - Cursor API client (optional refactor)
 - [ ] `app/api/[...route]/route.ts` - Catch-all handler
 
@@ -432,8 +561,8 @@ When using Hono with Next.js catch-all:
 - [ ] `app/api/user/branches/route.ts`
 - [ ] `app/api/models/route.ts`
 
-### Keep Unchanged
-- [x] `app/api/auth/[...all]/route.ts` - Better Auth (do not migrate)
+### Keep Unchanged (Option A) / Delete (Option B)
+- [x] `app/api/auth/[...all]/route.ts` - Better Auth (keep for Option A, delete for Option B)
 
 ## Validation Schemas
 
