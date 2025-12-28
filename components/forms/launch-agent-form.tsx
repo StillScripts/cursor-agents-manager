@@ -6,7 +6,13 @@ import { useRouter } from "next/navigation"
 import { FieldSkeleton } from "@/components/form-fields"
 import { PageHeader } from "@/components/page-header"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { FieldGroup } from "@/components/ui/field"
+import {
+  FieldDescription,
+  FieldGroup,
+  FieldLegend,
+  FieldSeparator,
+  FieldSet,
+} from "@/components/ui/field"
 import { CURSOR_MODEL_AUTO_VALUE, CURSOR_MODEL_OPTIONS } from "@/lib/constants"
 import { useLaunchAgent } from "@/lib/hooks/use-agents"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
@@ -23,13 +29,7 @@ const RepositorySelectField = ({ field }: { field: any }) => {
   const { repositoriesQuery, hasRepositories } = useRepositories()
 
   if (repositoriesQuery.isLoading) {
-    return (
-      <FieldSkeleton
-        label="Repository"
-        description="Manage repositories in Settings"
-        variant="select"
-      />
-    )
+    return <FieldSkeleton label="Repository" variant="select" />
   }
 
   if (!hasRepositories) {
@@ -66,7 +66,6 @@ const RepositorySelectField = ({ field }: { field: any }) => {
     <field.ControlledSelect
       field={field}
       label="Repository"
-      description="Manage repositories in Settings"
       placeholder="Select repository..."
       options={options}
     />
@@ -77,13 +76,7 @@ const BranchSelectField = ({ field }: { field: any }) => {
   const { branchesQuery, hasBranches } = useBranches()
 
   if (branchesQuery.isLoading) {
-    return (
-      <FieldSkeleton
-        label="Base Branch"
-        description="Manage branches in Settings"
-        variant="select"
-      />
-    )
+    return <FieldSkeleton label="Base Branch" variant="select" />
   }
 
   if (!hasBranches) {
@@ -120,7 +113,6 @@ const BranchSelectField = ({ field }: { field: any }) => {
     <field.ControlledSelect
       field={field}
       label="Base Branch"
-      description="Manage branches in Settings"
       placeholder="Select branch..."
       options={options}
     />
@@ -183,138 +175,152 @@ export function LaunchAgentForm() {
             }}
             className="p-4 overflow-hidden"
           >
-            <FieldGroup className="gap-6">
-              <form.AppField
-                name="prompt.text"
-                validators={{
-                  onChange: ({ value }) =>
-                    !value
-                      ? "Please describe the task"
-                      : value.length < 10
-                        ? "Please provide a more detailed task description (at least 10 characters)"
-                        : value.length > 5000
-                          ? "Task description is too long (maximum 5000 characters)"
-                          : undefined,
-                }}
-              >
-                {(field) => (
-                  <field.ControlledTextarea
-                    field={field}
-                    label="Task Description"
-                    description="Describe the task you want the agent to perform (10-5000 characters)"
-                    placeholder="Add a README.md file with installation instructions..."
-                    className="min-h-[120px]"
-                  />
-                )}
-              </form.AppField>
-
-              <form.AppField name="source.repository">
-                {(field) => <RepositorySelectField field={field} />}
-              </form.AppField>
-
-              <form.AppField name="source.ref">
-                {(field) => <BranchSelectField field={field} />}
-              </form.AppField>
-              <form.AppField name="model">
-                {(field) => (
-                  <field.ControlledSelect
-                    field={field}
-                    label="AI Model"
-                    description="Auto mode lets Cursor choose the best model for your task. You can also select a specific model if needed."
-                    placeholder="Select model..."
-                    options={Array.from(CURSOR_MODEL_OPTIONS)}
-                    onValueChange={(value) => {
-                      const modelValue: Model | undefined =
-                        value === "" || value === null
-                          ? undefined
-                          : (value as Model)
-                      field.handleChange(modelValue)
-                    }}
-                  />
-                )}
-              </form.AppField>
-            </FieldGroup>
-
-            <form.AppField
-              name="target.branchName"
-              validators={{
-                onChange: ({ value }) =>
-                  value && !/^[a-zA-Z0-9/_-]+$/.test(value)
-                    ? "Branch name can only contain letters, numbers, hyphens, underscores, and forward slashes"
-                    : undefined,
-              }}
-            >
-              {(field) => (
-                <field.ControlledInput
-                  field={field}
-                  label="Target Branch (optional)"
-                  description="Custom branch name for the agent to create. Leave empty to auto-generate."
-                  placeholder="feature/my-feature"
-                />
-              )}
-            </form.AppField>
-
-            <form.AppField name="target.autoCreatePr">
-              {(field) => (
-                <field.ControlledSwitch
-                  field={field}
-                  label="Auto-create Pull Request"
-                  description="Automatically create a PR when the agent completes"
-                />
-              )}
-            </form.AppField>
-
-            <form.AppField name="target.openAsCursorGithubApp">
-              {(field) => (
-                <field.ControlledSwitch
-                  field={field}
-                  label="Open PR as Cursor GitHub App"
-                  description="Open the pull request as the Cursor GitHub App instead of as your user account (only applies if auto-create PR is enabled)"
-                />
-              )}
-            </form.AppField>
-
-            <form.AppField name="target.skipReviewerRequest">
-              {(field) => (
-                <field.ControlledSwitch
-                  field={field}
-                  label="Skip Adding Reviewer"
-                  description="Skip adding you as a reviewer to the pull request (only applies if auto-create PR is enabled and PR is opened as Cursor GitHub App)"
-                />
-              )}
-            </form.AppField>
-
             <FieldGroup>
-              <form.AppField name="webhook.url">
-                {(field) => (
-                  <field.ControlledInput
-                    field={field}
-                    label="Webhook URL"
-                    description="URL to receive webhook notifications about agent status changes"
-                    placeholder="https://your-app.com/webhooks/cursor"
-                  />
-                )}
-              </form.AppField>
+              <FieldSet>
+                <FieldLegend>Task Details</FieldLegend>
+                <FieldDescription>
+                  Describe the task, and select the project and base branch.
+                </FieldDescription>
+                <FieldGroup>
+                  <form.AppField name="prompt.text">
+                    {(field) => (
+                      <field.ControlledTextarea
+                        field={field}
+                        label="Task Description"
+                        description="Describe the task you want the agent to perform (10-5000 characters)"
+                        placeholder="Add a README.md file with installation instructions..."
+                        className="min-h-[120px]"
+                      />
+                    )}
+                  </form.AppField>
 
-              <form.AppField
-                name="webhook.secret"
-                validators={{
-                  onChange: ({ value }) =>
-                    value && value.length < 32
-                      ? "Webhook secret must be at least 32 characters long"
-                      : undefined,
-                }}
-              >
-                {(field) => (
-                  <field.ControlledInput
-                    field={field}
-                    label="Webhook Secret (Optional)"
-                    description="Secret key for webhook payload verification (minimum 32 characters)"
-                    type="password"
-                    placeholder="Your webhook secret (min 32 characters)"
-                  />
-                )}
-              </form.AppField>
+                  <form.AppField name="source.repository">
+                    {(field) => <RepositorySelectField field={field} />}
+                  </form.AppField>
+
+                  <form.AppField name="source.ref">
+                    {(field) => <BranchSelectField field={field} />}
+                  </form.AppField>
+                  <form.AppField name="model">
+                    {(field) => (
+                      <field.ControlledSelect
+                        field={field}
+                        label="AI Model"
+                        description="Auto mode lets Cursor choose the best model for your task. You can also select a specific model if needed."
+                        placeholder="Select model..."
+                        options={Array.from(CURSOR_MODEL_OPTIONS)}
+                        onValueChange={(value) => {
+                          const modelValue: Model | undefined =
+                            value === "" || value === null
+                              ? undefined
+                              : (value as Model)
+                          field.handleChange(modelValue)
+                        }}
+                      />
+                    )}
+                  </form.AppField>
+                </FieldGroup>
+              </FieldSet>
+
+              <FieldSeparator />
+
+              <FieldSet>
+                <FieldLegend>GitHub Settings</FieldLegend>
+                <FieldDescription>
+                  Manage the branch name used for this task, and the settings
+                  related to GitHub.
+                </FieldDescription>
+                <FieldGroup>
+                  <form.AppField
+                    name="target.branchName"
+                    validators={{
+                      onChange: ({ value }) =>
+                        value && !/^[a-zA-Z0-9/_-]+$/.test(value)
+                          ? "Branch name can only contain letters, numbers, hyphens, underscores, and forward slashes"
+                          : undefined,
+                    }}
+                  >
+                    {(field) => (
+                      <field.ControlledInput
+                        field={field}
+                        label="Target Branch (optional)"
+                        description="Custom branch name for the agent to create. Leave empty to auto-generate."
+                        placeholder="feature/my-feature"
+                      />
+                    )}
+                  </form.AppField>
+
+                  <form.AppField name="target.autoCreatePr">
+                    {(field) => (
+                      <field.ControlledSwitch
+                        field={field}
+                        label="Auto-create Pull Request"
+                        description="Automatically create a PR when the agent completes"
+                      />
+                    )}
+                  </form.AppField>
+
+                  <form.AppField name="target.openAsCursorGithubApp">
+                    {(field) => (
+                      <field.ControlledSwitch
+                        field={field}
+                        label="Open PR as Cursor GitHub App"
+                        description="Open the pull request as the Cursor GitHub App instead of as your user account (only applies if auto-create PR is enabled)"
+                      />
+                    )}
+                  </form.AppField>
+
+                  <form.AppField name="target.skipReviewerRequest">
+                    {(field) => (
+                      <field.ControlledSwitch
+                        field={field}
+                        label="Skip Adding Reviewer"
+                        description="Skip adding you as a reviewer to the pull request (only applies if auto-create PR is enabled and PR is opened as Cursor GitHub App)"
+                      />
+                    )}
+                  </form.AppField>
+                </FieldGroup>
+              </FieldSet>
+              <FieldSeparator />
+              <FieldSet>
+                <FieldLegend>Webhook Settings</FieldLegend>
+                <FieldDescription>
+                  Configure a webhook to receive notifications about the agent's
+                  status.
+                </FieldDescription>
+                <FieldGroup>
+                  <form.AppField name="webhook.url">
+                    {(field) => (
+                      <field.ControlledInput
+                        field={field}
+                        label="Webhook URL"
+                        description="URL to receive webhook notifications about agent status changes"
+                        placeholder="https://your-app.com/webhooks/cursor"
+                      />
+                    )}
+                  </form.AppField>
+
+                  <form.AppField
+                    name="webhook.secret"
+                    validators={{
+                      onChange: ({ value }) =>
+                        value && value.length < 32
+                          ? "Webhook secret must be at least 32 characters long"
+                          : undefined,
+                    }}
+                  >
+                    {(field) => (
+                      <field.ControlledInput
+                        field={field}
+                        label="Webhook Secret (Optional)"
+                        description="Secret key for webhook payload verification (minimum 32 characters)"
+                        type="password"
+                        placeholder="Your webhook secret (min 32 characters)"
+                      />
+                    )}
+                  </form.AppField>
+                </FieldGroup>
+              </FieldSet>
             </FieldGroup>
             {launchAgent.isError && errorMessage && (
               <Alert variant="destructive" className="mt-6">
