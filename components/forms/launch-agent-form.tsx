@@ -19,10 +19,10 @@ import {
   FieldSeparator,
   FieldSet,
 } from "@/components/ui/field"
-import { CURSOR_MODEL_AUTO_VALUE, CURSOR_MODEL_OPTIONS } from "@/lib/constants"
 import { useLaunchAgent } from "@/lib/hooks/use-agents"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 import { useBranches } from "@/lib/hooks/use-branches"
+import { useModels } from "@/lib/hooks/use-models"
 import { useRepositories } from "@/lib/hooks/use-repositories"
 import {
   formDataToApiRequest,
@@ -125,6 +125,41 @@ const BranchSelectField = ({ field }: { field: any }) => {
   )
 }
 
+const ModelSelectField = ({ field }: { field: any }) => {
+  const { modelsQuery, hasModels } = useModels()
+
+  if (modelsQuery.isLoading) {
+    return <FieldSkeleton label="AI Model" variant="select" />
+  }
+
+  // Always add "Auto" option at the beginning
+  const autoOption = { value: "", label: "Auto (Recommended)" }
+  const modelOptions = hasModels
+    ? [
+        autoOption,
+        ...(modelsQuery.data?.map((model) => ({
+          value: model,
+          label: model,
+        })) || []),
+      ]
+    : [autoOption]
+
+  return (
+    <field.ControlledSelect
+      field={field}
+      label="AI Model"
+      description="Auto mode lets Cursor choose the best model for your task. You can also select a specific model if needed."
+      placeholder="Select model..."
+      options={modelOptions}
+      onValueChange={(value: string) => {
+        const modelValue: Model | undefined =
+          value === "" || value === null ? undefined : (value as Model)
+        field.handleChange(modelValue)
+      }}
+    />
+  )
+}
+
 export function LaunchAgentForm() {
   const router = useRouter()
   const launchAgent = useLaunchAgent()
@@ -140,7 +175,7 @@ export function LaunchAgentForm() {
         repository: "",
         ref: "",
       },
-      model: CURSOR_MODEL_AUTO_VALUE,
+      model: undefined,
       target: {
         autoCreatePr: true,
         openAsCursorGithubApp: false,
@@ -208,22 +243,7 @@ export function LaunchAgentForm() {
                     {(field) => <BranchSelectField field={field} />}
                   </form.AppField>
                   <form.AppField name="model">
-                    {(field) => (
-                      <field.ControlledSelect
-                        field={field}
-                        label="AI Model"
-                        description="Auto mode lets Cursor choose the best model for your task. You can also select a specific model if needed."
-                        placeholder="Select model..."
-                        options={Array.from(CURSOR_MODEL_OPTIONS)}
-                        onValueChange={(value) => {
-                          const modelValue: Model | undefined =
-                            value === "" || value === null
-                              ? undefined
-                              : (value as Model)
-                          field.handleChange(modelValue)
-                        }}
-                      />
-                    )}
+                    {(field) => <ModelSelectField field={field} />}
                   </form.AppField>
                 </FieldGroup>
               </FieldSet>
