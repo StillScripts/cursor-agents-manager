@@ -3,7 +3,7 @@ import { AgentsTable } from "@/components/agents-table"
 import { MobileShell } from "@/components/mobile-shell"
 
 export const metadata: Metadata = {
-  title: "Your Agents | Cursor Agent Manager",
+  title: "Your Agents",
   description: "Monitor and manage your Cursor background agents on the go",
 }
 
