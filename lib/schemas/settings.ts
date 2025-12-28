@@ -1,11 +1,5 @@
 import { z } from "zod"
 
-/**
- * Schema for settings form validation
- * Validates repositories and branches configured by the user
- */
-
-// Repository schema
 export const repositorySchema = z.object({
   url: z
     .string()
@@ -20,7 +14,6 @@ export const repositorySchema = z.object({
   id: z.number().optional().describe("Database ID"),
 })
 
-// Branch schema
 export const branchSchema = z.object({
   name: z
     .string()
@@ -29,8 +22,6 @@ export const branchSchema = z.object({
   id: z.number().optional().describe("Database ID"),
 })
 
-// Settings form schema - validates items that exist, but allows empty arrays
-// (the form filters out invalid/empty items before submission)
 export const settingsFormSchema = z.object({
   repositories: z
     .array(repositorySchema)
@@ -38,12 +29,10 @@ export const settingsFormSchema = z.object({
   branches: z.array(branchSchema).describe("User's saved branch names"),
 })
 
-// Type exports
 export type RepositoryFormData = z.infer<typeof repositorySchema>
 export type BranchFormData = z.infer<typeof branchSchema>
 export type SettingsFormData = z.infer<typeof settingsFormSchema>
 
-// Helper function to validate settings form data
 export function validateSettingsForm(data: unknown): SettingsFormData {
   return settingsFormSchema.parse(data)
 }

@@ -20,10 +20,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { useAppForm } from "@/lib/hooks/use-app-form"
 import { useBranches } from "@/lib/hooks/use-branches"
 import { useRepositories } from "@/lib/hooks/use-repositories"
-import {
-  type SettingsFormData,
-  settingsFormSchema,
-} from "@/lib/schemas/settings"
+import type { SettingsFormData } from "@/lib/schemas/settings"
 import { PageHeader } from "./page-header"
 
 const themeOptions = [
@@ -83,21 +80,18 @@ export function SettingsForm() {
       branches: [],
     },
     onSubmit: async ({ value }) => {
-      // Filter out invalid/empty items before validation
+      // Filter out invalid/empty items before saving
       const validRepos = value.repositories.filter(
         (r) => r.url.trim() && r.name.trim()
       )
       const validBranches = value.branches.filter((b) => b.name.trim())
 
-      // Validate with Zod schema
-      const validatedData = settingsFormSchema.parse({
-        repositories: validRepos,
-        branches:
-          validBranches.length > 0 ? validBranches : [{ name: "master" }],
-      })
+      // Ensure at least one branch exists
+      const branchesToSave =
+        validBranches.length > 0 ? validBranches : [{ name: "master" }]
 
-      repositoriesMutation.mutate(validatedData.repositories)
-      branchesMutation.mutate(validatedData.branches)
+      repositoriesMutation.mutate(validRepos)
+      branchesMutation.mutate(branchesToSave)
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     },
