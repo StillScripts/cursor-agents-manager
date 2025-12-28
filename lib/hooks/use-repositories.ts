@@ -54,13 +54,13 @@ async function saveRepositories(repos: Repository[]): Promise<Repository[]> {
 export function useRepositories() {
   const queryClient = useQueryClient()
 
-  const { data: repositories = [], isLoading } = useQuery({
+  const repositoriesQuery = useQuery({
     queryKey: ["repositories"],
     queryFn: fetchRepositories,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   })
 
-  const mutation = useMutation({
+  const repositoriesMutation = useMutation({
     mutationFn: saveRepositories,
     onSuccess: (data) => {
       queryClient.setQueryData(["repositories"], data)
@@ -69,16 +69,11 @@ export function useRepositories() {
     },
   })
 
-  const saveRepositoriesMutation = (repos: Repository[]) => {
-    mutation.mutate(repos)
-  }
-
   return {
-    repositories,
-    isLoaded: !isLoading,
-    saveRepositories: saveRepositoriesMutation,
-    isLoading,
-    isSaving: mutation.isPending,
-    error: mutation.error,
+    repositoriesQuery,
+    hasRepositories:
+      repositoriesQuery.isSuccess &&
+      repositoriesQuery.data?.some((r) => r.url.trim()),
+    repositoriesMutation,
   }
 }

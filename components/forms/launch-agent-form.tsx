@@ -1,9 +1,13 @@
 "use client"
 
-import { AlertCircle, ExternalLink, Rocket } from "lucide-react"
+import { AlertCircle, ExternalLink, Rocket, Settings } from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { FieldSkeleton } from "@/components/form-fields"
+import { PageHeader } from "@/components/page-header"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { FieldGroup } from "@/components/ui/field"
+import { CURSOR_MODEL_OPTIONS } from "@/lib/constants"
 import { useLaunchAgent } from "@/lib/hooks/use-agents"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 import { useBranches } from "@/lib/hooks/use-branches"
@@ -14,29 +18,65 @@ import {
   launchAgentFormSchema,
   type Model,
 } from "@/lib/schemas/cursor/launch-agent"
-import { PageHeader } from "./page-header"
 
-const modelOptions = [
-  { value: "", label: "Auto (Recommended)" },
-  { value: "claude-3-5-sonnet-20241022", label: "Claude 3.5 Sonnet (Latest)" },
-  { value: "claude-3-5-sonnet-20240620", label: "Claude 3.5 Sonnet (June)" },
-  { value: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku" },
-  { value: "claude-3-opus-20240229", label: "Claude 3 Opus" },
-  { value: "claude-3-sonnet-20240229", label: "Claude 3 Sonnet" },
-  { value: "claude-3-haiku-20240307", label: "Claude 3 Haiku" },
-  { value: "gpt-4o", label: "GPT-4o" },
-  { value: "gpt-4o-mini", label: "GPT-4o Mini" },
-  { value: "gpt-4-turbo", label: "GPT-4 Turbo" },
-  { value: "gpt-4", label: "GPT-4" },
-  { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo" },
-  { value: "o1-preview", label: "o1 Preview" },
-  { value: "o1-mini", label: "o1 Mini" },
-] as const
+const RespositorySelectField = ({ field }: { field: any }) => {
+  const { repositoriesQuery, hasRepositories } = useRepositories()
+
+  if (repositoriesQuery.isLoading) {
+    return (
+      <FieldSkeleton
+        label="Repository"
+        description="Manage repositories in Settings"
+        variant="select"
+      />
+    )
+  }
+
+  if (!hasRepositories) {
+    return (
+      <FieldGroup>
+        <field.ControlledSelect
+          field={field}
+          label="Repository"
+          description="You need to add repositories in Settings to be able to select them"
+          placeholder="Select repository..."
+          options={[]}
+          disabled
+        />
+        <Link
+          href="/settings"
+          className="text-primary hover:underline inline-flex items-center gap-1"
+        >
+          <Settings className="h-3 w-3" />
+          Add repositories in Settings for quick access
+        </Link>
+      </FieldGroup>
+    )
+  }
+
+  const options =
+    repositoriesQuery.data
+      ?.filter((r) => r.url.trim())
+      .map((r) => ({
+        value: r.url,
+        label: r.name,
+      })) || []
+
+  return (
+    <field.ControlledSelect
+      field={field}
+      label="Repository"
+      description="Manage repositories in Settings"
+      placeholder="Select repository..."
+      options={options}
+    />
+  )
+}
 
 export function LaunchAgentForm() {
   const router = useRouter()
   const launchAgent = useLaunchAgent()
-  const { repositories, isLoaded } = useRepositories()
+  const { repositoriesQuery, hasRepositories } = useRepositories()
   const { branches, isLoaded: branchesLoaded } = useBranches()
 
   // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
@@ -48,7 +88,7 @@ export function LaunchAgentForm() {
       },
       source: {
         repository: "",
-        ref: "main",
+        ref: "",
       },
       model: undefined,
       target: {
@@ -71,8 +111,6 @@ export function LaunchAgentForm() {
     },
   })
 
-  const hasRepositories =
-    repositories.length > 0 && repositories.some((r) => r.url.trim())
   const hasBranches = branches.length > 0 && branches.some((b) => b.name.trim())
 
   const errorMessage =
@@ -120,48 +158,8 @@ export function LaunchAgentForm() {
                 )}
               </form.AppField>
 
-              <form.AppField
-                name="source.repository"
-                validators={{
-                  onChange: ({ value }) => {
-                    if (!value) return "Repository is required"
-                    try {
-                      const url = new URL(value)
-                      if (url.hostname !== "github.com") {
-                        return "Must be a valid GitHub repository URL"
-                      }
-                      if (url.pathname.split("/").length < 3) {
-                        return "Must be a valid GitHub repository URL (e.g., https://github.com/owner/repo)"
-                      }
-                      return undefined
-                    } catch {
-                      return "Please enter a valid URL"
-                    }
-                  },
-                }}
-              >
-                {(field) =>
-                  isLoaded && hasRepositories ? (
-                    <field.ControlledSelect
-                      field={field}
-                      label="Repository"
-                      description="Manage repositories in Settings"
-                      options={repositories
-                        .filter((r) => r.url.trim())
-                        .map((repo) => ({
-                          value: repo.url,
-                          label: repo.name,
-                        }))}
-                    />
-                  ) : (
-                    <field.ControlledInput
-                      field={field}
-                      label="Repository"
-                      description="Add repositories in Settings for quick access"
-                      placeholder="https://github.com/your-org/your-repo"
-                    />
-                  )
-                }
+              <form.AppField name="source.repository">
+                {(field) => <RespositorySelectField field={field} />}
               </form.AppField>
 
               <form.AppField
@@ -176,11 +174,12 @@ export function LaunchAgentForm() {
                 }}
               >
                 {(field) =>
-                  isLoaded && branchesLoaded && hasBranches ? (
+                  true && branchesLoaded && hasBranches ? (
                     <field.ControlledSelect
                       field={field}
                       label="Base Branch"
                       description="Manage branches in Settings"
+                      placeholder="Select branch..."
                       options={branches
                         .filter((b) => b.name.trim())
                         .map((branch) => ({
@@ -204,10 +203,8 @@ export function LaunchAgentForm() {
                     field={field}
                     label="AI Model"
                     description="Auto mode lets Cursor choose the best model for your task. You can also select a specific model if needed."
-                    options={modelOptions.map((model) => ({
-                      value: model.value,
-                      label: model.label,
-                    }))}
+                    placeholder="Select model..."
+                    options={Array.from(CURSOR_MODEL_OPTIONS)}
                     onValueChange={(value) => {
                       const modelValue: Model | undefined =
                         value === "" || value === null

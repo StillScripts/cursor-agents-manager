@@ -18,8 +18,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
+import { cn } from "@/lib/utils"
 
 type FieldProps = {
   field: AnyFieldApi
@@ -128,19 +130,22 @@ export const ControlledSelect = ({
   onValueChange?: (value: string) => void
 } & Omit<ComponentProps<typeof SelectTrigger>, "children">) => {
   const fieldProps = getFieldProps(field, description, label)
+  const hasValue = Boolean(field.state.value)
   return (
     <ControlledField {...fieldProps}>
       <Select
-        value={field.state.value || ""}
+        value={field.state.value ?? null}
         onValueChange={(value) => {
           field.handleChange(value || undefined)
           onValueChange?.(value)
         }}
       >
         <SelectTrigger {...props}>
-          <SelectValue>
-            {!field.state.value && placeholder ? placeholder : undefined}
-          </SelectValue>
+          {hasValue ? (
+            <SelectValue />
+          ) : (
+            <span className="text-muted-foreground">{placeholder}</span>
+          )}
         </SelectTrigger>
         <SelectContent>
           {options.map((option) => (
@@ -261,6 +266,34 @@ export const ControlledSwitch = ({
           />
         )}
       </FieldContent>
+    </Field>
+  )
+}
+
+const skeletonHeights = {
+  input: "h-8",
+  textarea: "h-[120px]",
+  select: "h-8",
+} as const
+
+export const FieldSkeleton = ({
+  label,
+  description,
+  variant = "input",
+  className,
+}: {
+  label?: string
+  description?: string
+  variant?: keyof typeof skeletonHeights
+  className?: string
+}) => {
+  return (
+    <Field>
+      {label && <FieldLabel>{label}</FieldLabel>}
+      <Skeleton
+        className={cn(skeletonHeights[variant], "w-full rounded-lg", className)}
+      />
+      {description && <FieldDescription>{description}</FieldDescription>}
     </Field>
   )
 }
