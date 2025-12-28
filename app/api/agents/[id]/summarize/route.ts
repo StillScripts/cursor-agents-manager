@@ -5,6 +5,7 @@ import {
   getUserApiKey,
   isSimulationMode,
 } from "@/lib/api-utils"
+import { extractUserMessagesAndLastAssistant } from "@/lib/conversation-utils"
 import { getSimulatedConversation } from "@/lib/mock-data"
 import { CURSOR_API_URL } from "@/lib/api-utils"
 
@@ -63,17 +64,20 @@ export async function POST(
     )
   }
 
+  // Extract only user messages and last assistant message from each turn
+  // This saves tokens and focuses on the key information, as the last assistant
+  // message in each turn contains a summary of that response
+  const condensedMessages = extractUserMessagesAndLastAssistant(
+    conversation.messages
+  )
+
   // Format conversation for summarization
-  const conversationText = conversation.messages
-    .map((msg: any) => {
+  const conversationText = condensedMessages
+    .map((msg) => {
       if (msg.type === "user_message") {
         return `User: ${msg.text || ""}`
       } else if (msg.type === "assistant_message") {
         return `Agent: ${msg.text || ""}`
-      } else if (msg.type === "tool_call") {
-        return `Tool Call: ${msg.toolName} - ${JSON.stringify(msg.toolInput || {})}`
-      } else if (msg.type === "tool_result") {
-        return `Tool Result: ${msg.toolResult || ""}`
       }
       return ""
     })

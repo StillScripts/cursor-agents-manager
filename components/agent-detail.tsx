@@ -4,6 +4,8 @@ import { formatDistanceToNow } from "date-fns"
 import {
   Bot,
   ExternalLink,
+  Eye,
+  EyeOff,
   GitBranch,
   Send,
   Sparkles,
@@ -43,6 +45,7 @@ import {
   useSummarizeConversation,
 } from "@/lib/hooks/use-agents"
 import { cn } from "@/lib/utils"
+import { filterMessagesForDisplay } from "@/lib/conversation-utils"
 import { useToast } from "@/hooks/use-toast"
 import { PageHeader } from "./page-header"
 import { SimulationBanner } from "./simulation-banner"
@@ -57,6 +60,7 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
   const [followUpMessage, setFollowUpMessage] = useState("")
   const [openItems, setOpenItems] = useState<string[]>(["summary"])
   const [aiSummary, setAiSummary] = useState<string | null>(null)
+  const [showThinkingProcess, setShowThinkingProcess] = useState(false)
 
   const { data: agent, isLoading: agentLoading } = useAgent(agentId)
   const { data: conversation, isLoading: conversationLoading } =
@@ -294,9 +298,26 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {/* Summarize Button */}
+                    {/* Action Buttons */}
                     {conversation && conversation.messages.length > 0 && (
-                      <div className="flex justify-end mb-3">
+                      <div className="flex justify-between items-center gap-2 mb-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowThinkingProcess(!showThinkingProcess)}
+                        >
+                          {showThinkingProcess ? (
+                            <>
+                              <EyeOff className="h-4 w-4 mr-2" />
+                              Hide Thinking Process
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Show Thinking Process
+                            </>
+                          )}
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
@@ -308,11 +329,14 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
                           ) : (
                             <Sparkles className="h-4 w-4 mr-2" />
                           )}
-                          {aiSummary ? "Regenerate Summary" : "Summarize Conversation"}
+                          {aiSummary ? "Regenerate Summary" : "Summarize"}
                         </Button>
                       </div>
                     )}
-                    {conversation?.messages.map((message) => (
+                    {filterMessagesForDisplay(
+                      conversation?.messages || [],
+                      showThinkingProcess
+                    ).map((message) => (
                       <div
                         key={message.id}
                         className={cn(
