@@ -2,119 +2,246 @@ import { describe, expect, it } from "bun:test"
 import {
   formDataToApiRequest,
   type LaunchAgentFormData,
-  validateLaunchAgentRequest,
+  launchAgentFormSchema,
+  launchAgentRequestSchema,
+  promptSchema,
+  sourceSchema,
+  webhookSchema,
 } from "@/lib/schemas/cursor/launch-agent"
 
-describe("Launch Agent Schema", () => {
-  it("should validate a minimal valid request", () => {
-    const validRequest = {
-      prompt: {
-        text: "Add a README file",
-      },
-      source: {
-        repository: "https://github.com/user/repo",
-        ref: "main",
-      },
-    }
+// Test fixtures
+const validSource = {
+  repository: "https://github.com/user/repo",
+  ref: "main",
+}
 
-    expect(() => validateLaunchAgentRequest(validRequest)).not.toThrow()
+const validPrompt = {
+  text: "Add a README file",
+}
+
+const validFormPrompt = {
+  text: "Add a README file to the repository",
+}
+
+const validImage = {
+  data: "base64encodeddata",
+  dimension: { width: 1024, height: 768 },
+}
+
+const validTarget = {
+  autoCreatePr: true,
+  openAsCursorGithubApp: false,
+  skipReviewerRequest: false,
+  branchName: "feature/docs",
+}
+
+const validWebhook = {
+  url: "https://example.com/webhook",
+  secret: "a".repeat(32),
+}
+
+describe("promptSchema", () => {
+  it("accepts valid prompt with text only", () => {
+    expect(() => promptSchema.parse(validPrompt)).not.toThrow()
   })
 
-  it("should validate a complete request with all options", () => {
-    const completeRequest = {
-      prompt: {
-        text: "Add comprehensive documentation",
-        images: [
-          {
-            data: "base64encodeddata",
-            dimension: { width: 1024, height: 768 },
-          },
-        ],
-      },
-      source: {
-        repository: "https://github.com/user/repo",
-        ref: "main",
-      },
-      model: "claude-3-5-sonnet-20241022",
-      target: {
-        autoCreatePr: true,
-        openAsCursorGithubApp: false,
-        skipReviewerRequest: false,
-        branchName: "feature/docs",
-      },
-      webhook: {
-        url: "https://example.com/webhook",
-        secret: "a".repeat(32), // 32 character secret
-      },
-    }
-
-    expect(() => validateLaunchAgentRequest(completeRequest)).not.toThrow()
+  it("accepts prompt with images", () => {
+    const prompt = { ...validPrompt, images: [validImage] }
+    expect(() => promptSchema.parse(prompt)).not.toThrow()
   })
 
-  it("should reject invalid repository URLs", () => {
-    const invalidRequest = {
-      prompt: { text: "Test task" },
-      source: {
-        repository: "not-a-url",
-        ref: "main",
-      },
+  it("rejects prompt with more than 5 images", () => {
+    const prompt = {
+      ...validPrompt,
+      images: Array(6).fill(validImage),
     }
-
-    expect(() => validateLaunchAgentRequest(invalidRequest)).toThrow()
+    expect(() => promptSchema.parse(prompt)).toThrow()
   })
 
-  it("should reject non-GitHub repository URLs", () => {
-    const invalidRequest = {
-      prompt: { text: "Test task" },
-      source: {
+  it("rejects empty text", () => {
+    expect(() => promptSchema.parse({ text: "" })).toThrow()
+  })
+})
+
+describe("sourceSchema", () => {
+  it("accepts valid GitHub URL with ref", () => {
+    expect(() => sourceSchema.parse(validSource)).not.toThrow()
+  })
+
+  it("accepts valid GitHub URL without ref", () => {
+    const source = { repository: "https://github.com/user/repo" }
+    expect(() => sourceSchema.parse(source)).not.toThrow()
+  })
+
+  it("rejects non-URL string", () => {
+    expect(() =>
+      sourceSchema.parse({ repository: "not-a-url", ref: "main" })
+    ).toThrow()
+  })
+
+  it("rejects non-GitHub URLs", () => {
+    expect(() =>
+      sourceSchema.parse({
         repository: "https://gitlab.com/user/repo",
         ref: "main",
-      },
-    }
-
-    expect(() => validateLaunchAgentRequest(invalidRequest)).toThrow()
+      })
+    ).toThrow()
   })
 
-  it("should reject webhook secrets that are too short", () => {
-    const invalidRequest = {
-      prompt: { text: "Test task" },
-      source: {
+  it("rejects empty ref when provided", () => {
+    expect(() =>
+      sourceSchema.parse({
         repository: "https://github.com/user/repo",
-        ref: "main",
-      },
-      webhook: {
+        ref: "",
+      })
+    ).toThrow()
+  })
+})
+
+describe("webhookSchema", () => {
+  it("accepts valid webhook with secret", () => {
+    expect(() => webhookSchema.parse(validWebhook)).not.toThrow()
+  })
+
+  it("accepts webhook without secret", () => {
+    const webhook = { url: "https://example.com/webhook" }
+    expect(() => webhookSchema.parse(webhook)).not.toThrow()
+  })
+
+  it("rejects secret shorter than 32 characters", () => {
+    expect(() =>
+      webhookSchema.parse({
         url: "https://example.com/webhook",
         secret: "tooshort",
-      },
-    }
-
-    expect(() => validateLaunchAgentRequest(invalidRequest)).toThrow()
+      })
+    ).toThrow()
   })
 
-  it("should convert form data to API request correctly", () => {
-    const formData: LaunchAgentFormData = {
-      prompt: {
-        text: "Test task",
-      },
-      source: {
-        repository: "https://github.com/user/repo",
-        ref: "main",
-      },
+  it("rejects invalid URL", () => {
+    expect(() => webhookSchema.parse({ url: "not-a-url" })).toThrow()
+  })
+})
+
+describe("launchAgentRequestSchema", () => {
+  it("validates minimal request", () => {
+    const request = { prompt: validPrompt, source: validSource }
+    expect(() => launchAgentRequestSchema.parse(request)).not.toThrow()
+  })
+
+  it("validates request without ref", () => {
+    const request = {
+      prompt: validPrompt,
+      source: { repository: "https://github.com/user/repo" },
+    }
+    expect(() => launchAgentRequestSchema.parse(request)).not.toThrow()
+  })
+
+  it("validates complete request with all options", () => {
+    const request = {
+      prompt: { ...validPrompt, images: [validImage] },
+      source: validSource,
       model: "claude-3-5-sonnet-20241022",
-      target: {
-        autoCreatePr: true,
-        openAsCursorGithubApp: false,
-        skipReviewerRequest: false,
-        branchName: "feature/test",
-      },
-      webhook: {
-        url: "https://example.com/webhook",
-      },
+      target: validTarget,
+      webhook: validWebhook,
+    }
+    expect(() => launchAgentRequestSchema.parse(request)).not.toThrow()
+  })
+
+  it("accepts any string as model", () => {
+    const request = {
+      prompt: validPrompt,
+      source: validSource,
+      model: "future-model-2025",
+    }
+    expect(() => launchAgentRequestSchema.parse(request)).not.toThrow()
+  })
+})
+
+describe("launchAgentFormSchema", () => {
+  const validFormData = {
+    prompt: validFormPrompt,
+    source: validSource,
+    target: validTarget,
+  }
+
+  it("validates complete form data", () => {
+    expect(() => launchAgentFormSchema.parse(validFormData)).not.toThrow()
+  })
+
+  it("rejects prompt text shorter than 10 characters", () => {
+    const data = {
+      ...validFormData,
+      prompt: { text: "Too short" },
+    }
+    expect(() => launchAgentFormSchema.parse(data)).toThrow()
+  })
+
+  it("rejects prompt text longer than 5000 characters", () => {
+    const data = {
+      ...validFormData,
+      prompt: { text: "x".repeat(5001) },
+    }
+    expect(() => launchAgentFormSchema.parse(data)).toThrow()
+  })
+
+  it("requires ref in form source", () => {
+    const data = {
+      ...validFormData,
+      source: { repository: "https://github.com/user/repo" },
+    }
+    expect(() => launchAgentFormSchema.parse(data)).toThrow()
+  })
+
+  it("rejects ref longer than 100 characters", () => {
+    const data = {
+      ...validFormData,
+      source: { ...validSource, ref: "x".repeat(101) },
+    }
+    expect(() => launchAgentFormSchema.parse(data)).toThrow()
+  })
+
+  it("rejects invalid branch name characters", () => {
+    const data = {
+      ...validFormData,
+      target: { ...validTarget, branchName: "feature/docs with spaces" },
+    }
+    expect(() => launchAgentFormSchema.parse(data)).toThrow()
+  })
+
+  it("accepts valid branch name with special characters", () => {
+    const data = {
+      ...validFormData,
+      target: { ...validTarget, branchName: "feature/my-branch_v2" },
+    }
+    expect(() => launchAgentFormSchema.parse(data)).not.toThrow()
+  })
+
+  it("validates GitHub URL has owner and repo path", () => {
+    const data = {
+      ...validFormData,
+      source: { repository: "https://github.com", ref: "main" },
+    }
+    expect(() => launchAgentFormSchema.parse(data)).toThrow()
+  })
+})
+
+describe("formDataToApiRequest", () => {
+  const baseFormData: LaunchAgentFormData = {
+    prompt: validFormPrompt,
+    source: validSource,
+    target: validTarget,
+  }
+
+  it("converts complete form data to API request", () => {
+    const formData: LaunchAgentFormData = {
+      ...baseFormData,
+      model: "claude-3-5-sonnet-20241022",
+      webhook: { url: "https://example.com/webhook" },
     }
 
-    const apiRequest = formDataToApiRequest(formData)
+    const result = formDataToApiRequest(formData)
 
-    expect(apiRequest).toEqual({
+    expect(result).toEqual({
       prompt: formData.prompt,
       source: formData.source,
       model: formData.model,
@@ -123,58 +250,49 @@ describe("Launch Agent Schema", () => {
     })
   })
 
-  it("should omit undefined webhook from API request", () => {
-    const formData: LaunchAgentFormData = {
-      prompt: {
-        text: "Test task",
-      },
-      source: {
-        repository: "https://github.com/user/repo",
-        ref: "main",
-      },
-      model: "claude-3-5-sonnet-20241022",
-      target: {
-        autoCreatePr: true,
-        openAsCursorGithubApp: false,
-        skipReviewerRequest: false,
-      },
-    }
-
-    const apiRequest = formDataToApiRequest(formData)
-
-    expect(apiRequest.webhook).toBeUndefined()
-    expect(apiRequest).toEqual({
-      prompt: formData.prompt,
-      source: formData.source,
-      model: formData.model,
-      target: formData.target,
-    })
+  it("omits model when undefined", () => {
+    const result = formDataToApiRequest(baseFormData)
+    expect(result.model).toBeUndefined()
   })
 
-  it("should omit model from API request when auto mode is selected", () => {
+  it("omits webhook when undefined", () => {
+    const result = formDataToApiRequest(baseFormData)
+    expect(result.webhook).toBeUndefined()
+  })
+
+  it("omits webhook when url is empty", () => {
     const formData: LaunchAgentFormData = {
-      prompt: {
-        text: "Test task",
+      ...baseFormData,
+      webhook: { url: "" },
+    }
+    // The form validation would catch this, but formDataToApiRequest checks for truthy url
+    const result = formDataToApiRequest(formData)
+    expect(result.webhook).toBeUndefined()
+  })
+
+  it("includes target when any target field is set", () => {
+    const formData: LaunchAgentFormData = {
+      ...baseFormData,
+      target: {
+        autoCreatePr: false,
+        openAsCursorGithubApp: false,
+        skipReviewerRequest: false,
       },
-      source: {
-        repository: "https://github.com/user/repo",
-        ref: "main",
-      },
-      model: undefined, // Auto mode
+    }
+    const result = formDataToApiRequest(formData)
+    expect(result.target).toBeDefined()
+  })
+
+  it("omits branchName from target when not provided", () => {
+    const formData: LaunchAgentFormData = {
+      ...baseFormData,
       target: {
         autoCreatePr: true,
         openAsCursorGithubApp: false,
         skipReviewerRequest: false,
       },
     }
-
-    const apiRequest = formDataToApiRequest(formData)
-
-    expect(apiRequest.model).toBeUndefined()
-    expect(apiRequest).toEqual({
-      prompt: formData.prompt,
-      source: formData.source,
-      target: formData.target,
-    })
+    const result = formDataToApiRequest(formData)
+    expect(result.target?.branchName).toBeUndefined()
   })
 })
