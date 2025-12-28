@@ -3,7 +3,7 @@ import {
   formDataToApiRequest,
   type LaunchAgentFormData,
   validateLaunchAgentRequest,
-} from "../launch-agent"
+} from "@/lib/schemas/cursor/launch-agent"
 
 describe("Launch Agent Schema", () => {
   it("should validate a minimal valid request", () => {
