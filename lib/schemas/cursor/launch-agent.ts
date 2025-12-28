@@ -8,7 +8,6 @@ import { z } from "zod"
  * when launching new agents through the Cursor API.
  */
 
-// Image schema for prompt images
 export const promptImageSchema = z.object({
   data: z.string().describe("Base64-encoded image data"),
   dimension: z.object({
@@ -17,7 +16,6 @@ export const promptImageSchema = z.object({
   }),
 })
 
-// Prompt schema supporting text and optional images
 export const promptSchema = z.object({
   text: z.string().min(1).describe("The task description for the agent"),
   images: z
@@ -26,7 +24,6 @@ export const promptSchema = z.object({
     .describe("Optional array of images to include in the prompt"),
 })
 
-// Source repository configuration
 export const sourceSchema = z.object({
   repository: z
     .string()
@@ -45,7 +42,6 @@ export const sourceSchema = z.object({
     ),
 })
 
-// Webhook configuration for status notifications
 export const webhookSchema = z.object({
   url: z
     .string()
@@ -62,7 +58,6 @@ export const webhookSchema = z.object({
     ),
 })
 
-// Target configuration for the agent
 export const targetSchema = z.object({
   autoCreatePr: z
     .boolean()
@@ -90,8 +85,8 @@ export const targetSchema = z.object({
     ),
 })
 
-// Available models for the agent
 export const availableModels = [
+  "auto",
   "claude-3-5-sonnet-20241022",
   "claude-3-5-sonnet-20240620",
   "claude-3-5-haiku-20241022",
@@ -114,7 +109,6 @@ export const modelSchema = z
     "The AI model to use for the agent. If not specified, Cursor will automatically choose the best model"
   )
 
-// Main launch agent request schema
 export const launchAgentRequestSchema = z.object({
   prompt: promptSchema,
   source: sourceSchema,
@@ -123,7 +117,6 @@ export const launchAgentRequestSchema = z.object({
   webhook: webhookSchema.optional(),
 })
 
-// Response schema for launched agent
 export const launchAgentResponseSchema = z.object({
   id: z.string().describe("Unique identifier for the launched agent"),
   name: z.string().describe("Display name for the agent"),
@@ -149,7 +142,6 @@ export const launchAgentResponseSchema = z.object({
     .describe("Summary of what the agent accomplished"),
 })
 
-// Type exports for use throughout the application
 export type LaunchAgentRequest = z.infer<typeof launchAgentRequestSchema>
 export type LaunchAgentResponse = z.infer<typeof launchAgentResponseSchema>
 export type PromptImage = z.infer<typeof promptImageSchema>
@@ -159,9 +151,7 @@ export type Target = z.infer<typeof targetSchema>
 export type Webhook = z.infer<typeof webhookSchema>
 export type Model = z.infer<typeof modelSchema>
 
-// Form-specific schema with additional validation for the UI
 export const launchAgentFormSchema = launchAgentRequestSchema.extend({
-  // Additional form-specific validations can be added here
   prompt: promptSchema.extend({
     text: z
       .string()
@@ -204,17 +194,14 @@ export const launchAgentFormSchema = launchAgentRequestSchema.extend({
 
 export type LaunchAgentFormData = z.infer<typeof launchAgentFormSchema>
 
-// Helper function to validate launch agent requests
 export function validateLaunchAgentRequest(data: unknown): LaunchAgentRequest {
   return launchAgentRequestSchema.parse(data)
 }
 
-// Helper function to validate form data
 export function validateLaunchAgentForm(data: unknown): LaunchAgentFormData {
   return launchAgentFormSchema.parse(data)
 }
 
-// Helper function to convert form data to API request
 export function formDataToApiRequest(
   formData: LaunchAgentFormData
 ): LaunchAgentRequest {
@@ -251,22 +238,4 @@ export function formDataToApiRequest(
   }
 
   return request
-}
-
-// Default form values
-export const defaultFormValues: Partial<LaunchAgentFormData> = {
-  prompt: {
-    text: "",
-  },
-  source: {
-    repository: "",
-    ref: "main",
-  },
-  model: undefined, // Auto mode - let Cursor choose
-  target: {
-    autoCreatePr: true,
-    openAsCursorGithubApp: false,
-    skipReviewerRequest: false,
-    branchName: undefined,
-  },
 }
