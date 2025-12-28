@@ -149,12 +149,12 @@ export function LaunchAgentForm() {
       },
       webhook: undefined,
     },
+    validators: {
+      onSubmit: launchAgentFormSchema,
+    },
     onSubmit: async ({ value }) => {
-      // Validate form data
-      const validatedData = launchAgentFormSchema.parse(value)
-
-      // Convert to API request format
-      const apiRequest = formDataToApiRequest(validatedData)
+      // Convert to API request format (schema already validated by form validators)
+      const apiRequest = formDataToApiRequest(value as LaunchAgentFormData)
 
       await launchAgent.mutateAsync(apiRequest)
       router.push("/")
@@ -237,15 +237,7 @@ export function LaunchAgentForm() {
                   related to GitHub.
                 </FieldDescription>
                 <FieldGroup>
-                  <form.AppField
-                    name="target.branchName"
-                    validators={{
-                      onChange: ({ value }) =>
-                        value && !/^[a-zA-Z0-9/_-]+$/.test(value)
-                          ? "Branch name can only contain letters, numbers, hyphens, underscores, and forward slashes"
-                          : undefined,
-                    }}
-                  >
+                  <form.AppField name="target.branchName">
                     {(field) => (
                       <field.ControlledInput
                         field={field}
@@ -310,15 +302,7 @@ export function LaunchAgentForm() {
                           )}
                         </form.AppField>
 
-                        <form.AppField
-                          name="webhook.secret"
-                          validators={{
-                            onChange: ({ value }) =>
-                              value && value.length < 32
-                                ? "Webhook secret must be at least 32 characters long"
-                                : undefined,
-                          }}
-                        >
+                        <form.AppField name="webhook.secret">
                           {(field) => (
                             <field.ControlledInput
                               field={field}
