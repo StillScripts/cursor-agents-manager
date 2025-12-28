@@ -2,8 +2,6 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-const STORAGE_KEY = "cursor-agent-repositories"
-
 export interface Repository {
   url: string
   name: string
@@ -18,17 +16,6 @@ async function fetchRepositories(): Promise<Repository[]> {
   const response = await fetch("/api/user/repositories")
 
   if (!response.ok) {
-    // If unauthorized, try to migrate from localStorage
-    if (response.status === 401) {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) {
-        try {
-          return JSON.parse(stored)
-        } catch {
-          return []
-        }
-      }
-    }
     throw new Error("Failed to fetch repositories")
   }
 
@@ -64,8 +51,6 @@ export function useRepositories() {
     mutationFn: saveRepositories,
     onSuccess: (data) => {
       queryClient.setQueryData(["repositories"], data)
-      // Clear localStorage after successful migration
-      localStorage.removeItem(STORAGE_KEY)
     },
   })
 

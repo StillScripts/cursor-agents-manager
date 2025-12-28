@@ -134,7 +134,7 @@ export const ControlledSelect = ({
   return (
     <ControlledField {...fieldProps}>
       <Select
-        value={field.state.value ?? null}
+        value={field.state.value || null}
         onValueChange={(value) => {
           field.handleChange(value || undefined)
           onValueChange?.(value)

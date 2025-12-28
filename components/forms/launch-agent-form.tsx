@@ -7,7 +7,7 @@ import { FieldSkeleton } from "@/components/form-fields"
 import { PageHeader } from "@/components/page-header"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { FieldGroup } from "@/components/ui/field"
-import { CURSOR_MODEL_OPTIONS } from "@/lib/constants"
+import { CURSOR_MODEL_AUTO_VALUE, CURSOR_MODEL_OPTIONS } from "@/lib/constants"
 import { useLaunchAgent } from "@/lib/hooks/use-agents"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 import { useBranches } from "@/lib/hooks/use-branches"
@@ -142,7 +142,7 @@ export function LaunchAgentForm() {
         repository: "",
         ref: "",
       },
-      model: undefined,
+      model: CURSOR_MODEL_AUTO_VALUE,
       target: {
         autoCreatePr: true,
         openAsCursorGithubApp: false,

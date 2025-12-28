@@ -2,8 +2,10 @@
  * Static variables based on third party sources or core configurations
  **/
 
+export const CURSOR_MODEL_AUTO_VALUE = "Auto"
+
 export const CURSOR_MODEL_OPTIONS = [
-  { value: "", label: "Auto (Recommended)" },
+  { value: CURSOR_MODEL_AUTO_VALUE, label: "Auto (Recommended)" },
   { value: "claude-3-5-sonnet-20241022", label: "Claude 3.5 Sonnet (Latest)" },
   { value: "claude-3-5-sonnet-20240620", label: "Claude 3.5 Sonnet (June)" },
   { value: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku" },

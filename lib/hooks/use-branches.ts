@@ -2,8 +2,6 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-const STORAGE_KEY = "cursor-agent-branches"
-
 export interface Branch {
   name: string
   id?: number
@@ -17,18 +15,6 @@ async function fetchBranches(): Promise<Branch[]> {
   const response = await fetch("/api/user/branches")
 
   if (!response.ok) {
-    // If unauthorized, try to migrate from localStorage
-    if (response.status === 401) {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) {
-        try {
-          return JSON.parse(stored)
-        } catch {
-          return []
-        }
-      }
-      return []
-    }
     throw new Error("Failed to fetch branches")
   }
 
@@ -64,8 +50,6 @@ export function useBranches() {
     mutationFn: saveBranches,
     onSuccess: (data) => {
       queryClient.setQueryData(["branches"], data)
-      // Clear localStorage after successful migration
-      localStorage.removeItem(STORAGE_KEY)
     },
   })
 

@@ -223,8 +223,9 @@ export function formDataToApiRequest(
     source: formData.source,
   }
 
-  // Only include optional fields if they have values
-  if (formData.model) {
+  // Only include model if it's not "auto" (auto means let Cursor choose)
+  // @ts-expect-error - annoying for now getting used to Tanstack Form and BaseUI Select
+  if (formData.model && formData.model !== "Auto") {
     request.model = formData.model
   }
 
