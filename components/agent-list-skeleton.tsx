@@ -1,10 +1,24 @@
+import { RefreshCw } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PageHeader } from "./page-header"
 
 export function AgentListSkeleton() {
+  const refreshButton = (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8"
+      disabled
+      aria-label="Refresh agents"
+    >
+      <RefreshCw className="h-4 w-4 animate-spin" />
+    </Button>
+  )
+
   return (
     <>
-      <PageHeader title="Your Agents" />
+      <PageHeader title="Your Agents" action={refreshButton} />
       <div className="px-3 py-2">
         {/* Simulation banner skeleton */}
         <Skeleton className="h-10 w-full rounded-lg mb-3" />
