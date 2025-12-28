@@ -34,8 +34,8 @@ app/api/
 ## Proposed Hono Structure
 
 ```
-lib/
-├── api/
+app/api/
+├── _lib/
 │   ├── index.ts              # Main Hono app - combines all sub-apps
 │   ├── middleware/
 │   │   ├── auth.ts           # Authentication middleware
@@ -47,10 +47,11 @@ lib/
 │   │   └── models.ts         # /models routes
 │   └── utils/
 │       └── cursor-api.ts     # Cursor API client wrapper
-app/api/
 ├── auth/[...all]/route.ts    # Keep Better Auth separate (uses toNextJsHandler)
 └── [...route]/route.ts       # Hono catch-all handler
 ```
+
+> **Note:** The `_lib` folder uses an underscore prefix to prevent Next.js from treating it as a route segment. This is a Next.js convention for private folders.
 
 ## Dependencies to Add
 
@@ -60,7 +61,7 @@ bun add hono @hono/zod-validator
 
 ## Architecture Details
 
-### 1. Main Hono App (`lib/api/index.ts`)
+### 1. Main Hono App (`app/api/_lib/index.ts`)
 
 The main app combines all sub-apps and applies global middleware:
 
@@ -89,7 +90,7 @@ export default app
 export type AppType = typeof app
 ```
 
-### 2. Authentication Middleware (`lib/api/middleware/auth.ts`)
+### 2. Authentication Middleware (`app/api/_lib/middleware/auth.ts`)
 
 Reusable middleware for protected routes:
 
@@ -119,7 +120,7 @@ export const requireAuth = createMiddleware<{ Variables: AuthVariables }>(
 )
 ```
 
-### 3. Simulation Mode Middleware (`lib/api/middleware/simulation.ts`)
+### 3. Simulation Mode Middleware (`app/api/_lib/middleware/simulation.ts`)
 
 Detects whether to use mock data or real Cursor API:
 
@@ -144,7 +145,7 @@ export const withSimulationMode = createMiddleware<{ Variables: SimulationVariab
 )
 ```
 
-### 4. Agents Routes (`lib/api/routes/agents.ts`)
+### 4. Agents Routes (`app/api/_lib/routes/agents.ts`)
 
 Example of a modular route file with validation:
 
@@ -238,7 +239,7 @@ app.post("/:id/stop", async (c) => {
 export { app as agentsApp }
 ```
 
-### 5. User Routes (`lib/api/routes/user.ts`)
+### 5. User Routes (`app/api/_lib/routes/user.ts`)
 
 ```typescript
 import { Hono } from "hono"
@@ -304,7 +305,7 @@ export { app as userApp }
 
 ```typescript
 import { handle } from "hono/vercel"
-import app from "@/lib/api"
+import app from "@/app/api/_lib"
 
 // Export handlers for all HTTP methods
 export const GET = handle(app)
@@ -314,7 +315,7 @@ export const DELETE = handle(app)
 export const PATCH = handle(app)
 ```
 
-### 7. Error Handler Middleware (`lib/api/middleware/error-handler.ts`)
+### 7. Error Handler Middleware (`app/api/_lib/middleware/error-handler.ts`)
 
 ```typescript
 import { createMiddleware } from "hono/factory"
@@ -342,22 +343,22 @@ export const errorHandler = () =>
 
 ### Phase 1: Setup & Infrastructure
 1. Install dependencies: `bun add hono @hono/zod-validator`
-2. Create `lib/api/` directory structure
+2. Create `app/api/_lib/` directory structure
 3. Implement middleware files (auth, error-handler, simulation)
-4. Create main Hono app in `lib/api/index.ts`
+4. Create main Hono app in `app/api/_lib/index.ts`
 
 ### Phase 2: Migrate Routes (one domain at a time)
 1. **Models route** (simplest, good for testing)
-   - Create `lib/api/routes/models.ts`
+   - Create `app/api/_lib/routes/models.ts`
    - Test that `/api/models` works correctly
    
 2. **User routes** (api-key, repositories, branches)
-   - Create `lib/api/routes/user.ts`
+   - Create `app/api/_lib/routes/user.ts`
    - Migrate all three sub-routes
    - Test authentication middleware
    
 3. **Agents routes** (most complex)
-   - Create `lib/api/routes/agents.ts`
+   - Create `app/api/_lib/routes/agents.ts`
    - Migrate all agent operations
    - Test simulation mode middleware
 
@@ -410,14 +411,14 @@ When using Hono with Next.js catch-all:
 ## File Checklist
 
 ### Create New Files
-- [ ] `lib/api/index.ts` - Main Hono app
-- [ ] `lib/api/middleware/auth.ts` - Auth middleware
-- [ ] `lib/api/middleware/error-handler.ts` - Error handling
-- [ ] `lib/api/middleware/simulation.ts` - Simulation mode detection
-- [ ] `lib/api/routes/agents.ts` - Agents routes
-- [ ] `lib/api/routes/user.ts` - User routes
-- [ ] `lib/api/routes/models.ts` - Models route
-- [ ] `lib/api/utils/cursor-api.ts` - Cursor API client (optional refactor)
+- [ ] `app/api/_lib/index.ts` - Main Hono app
+- [ ] `app/api/_lib/middleware/auth.ts` - Auth middleware
+- [ ] `app/api/_lib/middleware/error-handler.ts` - Error handling
+- [ ] `app/api/_lib/middleware/simulation.ts` - Simulation mode detection
+- [ ] `app/api/_lib/routes/agents.ts` - Agents routes
+- [ ] `app/api/_lib/routes/user.ts` - User routes
+- [ ] `app/api/_lib/routes/models.ts` - Models route
+- [ ] `app/api/_lib/utils/cursor-api.ts` - Cursor API client (optional refactor)
 - [ ] `app/api/[...route]/route.ts` - Catch-all handler
 
 ### Delete Old Files (after migration complete)
