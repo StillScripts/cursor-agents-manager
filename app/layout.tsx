@@ -16,12 +16,14 @@ export const metadata: Metadata = {
     template: "%s | Cursor Agent Manager",
   },
   description: "Manage your Cursor background agents on the go",
-  //manifest: "/manifest.json",
-  // appleWebApp: {
-  //   capable: true,
-  //   statusBarStyle: "black-translucent",
-  //   title: "Cursor Agents",
-  // },
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
 }
 
 export const viewport: Viewport = {

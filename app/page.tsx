@@ -1,7 +1,11 @@
+import type { Metadata } from "next"
 import { AgentsTable } from "@/components/agents-table"
 import { MobileShell } from "@/components/mobile-shell"
 
-export const dynamic = "force-dynamic"
+export const metadata: Metadata = {
+  title: "Your Agents",
+  description: "Monitor and manage your Cursor background agents on the go",
+}
 
 export default function HomePage() {
   return (
