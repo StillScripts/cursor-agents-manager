@@ -20,6 +20,7 @@ export const promptSchema = z.object({
   text: z.string().min(1).describe("The task description for the agent"),
   images: z
     .array(promptImageSchema)
+    .max(5, "Maximum 5 images allowed")
     .optional()
     .describe("Optional array of images to include in the prompt"),
 })
@@ -36,7 +37,7 @@ export const sourceSchema = z.object({
   ref: z
     .string()
     .min(1)
-    .default("main")
+    .optional()
     .describe(
       "Git ref (branch name, tag, or commit hash) to use as the base branch"
     ),
@@ -85,25 +86,9 @@ export const targetSchema = z.object({
     ),
 })
 
-export const availableModels = [
-  "auto",
-  "claude-3-5-sonnet-20241022",
-  "claude-3-5-sonnet-20240620",
-  "claude-3-5-haiku-20241022",
-  "claude-3-opus-20240229",
-  "claude-3-sonnet-20240229",
-  "claude-3-haiku-20240307",
-  "gpt-4o",
-  "gpt-4o-mini",
-  "gpt-4-turbo",
-  "gpt-4",
-  "gpt-3.5-turbo",
-  "o1-preview",
-  "o1-mini",
-] as const
-
 export const modelSchema = z
-  .enum(availableModels)
+  .string()
+  .min(1)
   .optional()
   .describe(
     "The AI model to use for the agent. If not specified, Cursor will automatically choose the best model"
@@ -112,7 +97,7 @@ export const modelSchema = z
 export const launchAgentRequestSchema = z.object({
   prompt: promptSchema,
   source: sourceSchema,
-  model: modelSchema.optional(),
+  model: modelSchema,
   target: targetSchema.optional(),
   webhook: webhookSchema.optional(),
 })
@@ -210,9 +195,8 @@ export function formDataToApiRequest(
     source: formData.source,
   }
 
-  // Only include model if it's not "auto" (auto means let Cursor choose)
-  // @ts-expect-error - annoying for now getting used to Tanstack Form and BaseUI Select
-  if (formData.model && formData.model !== "Auto") {
+  // Only include model if provided (omitting lets Cursor auto-select)
+  if (formData.model) {
     request.model = formData.model
   }
 

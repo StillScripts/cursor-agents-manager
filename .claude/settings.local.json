@@ -12,7 +12,8 @@
       "Bash(bun pm:*)",
       "Bash(bun update:*)",
       "Bash(bun remove:*)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:cursor.com)"
     ]
   }
 }
