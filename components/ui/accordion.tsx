@@ -27,8 +27,9 @@ function AccordionItem({ className, ...props }: AccordionPrimitive.Item.Props) {
 function AccordionTrigger({
   className,
   children,
+  iconSharedClassName = "pointer-events-none shrink-0 size-4",
   ...props
-}: AccordionPrimitive.Trigger.Props) {
+}: AccordionPrimitive.Trigger.Props & { iconSharedClassName?: string }) {
   return (
     <AccordionPrimitive.Header className="flex">
       <AccordionPrimitive.Trigger
@@ -42,11 +43,17 @@ function AccordionTrigger({
         {children}
         <ChevronDown
           data-slot="accordion-trigger-icon"
-          className="pointer-events-none shrink-0 group-aria-expanded/accordion-trigger:hidden size-4"
+          className={cn(
+            iconSharedClassName,
+            "group-aria-expanded/accordion-trigger:hidden"
+          )}
         />
         <ChevronUp
           data-slot="accordion-trigger-icon"
-          className="pointer-events-none hidden shrink-0 group-aria-expanded/accordion-trigger:inline size-4"
+          className={cn(
+            iconSharedClassName,
+            "hidden group-aria-expanded/accordion-trigger:inline"
+          )}
         />
       </AccordionPrimitive.Trigger>
     </AccordionPrimitive.Header>

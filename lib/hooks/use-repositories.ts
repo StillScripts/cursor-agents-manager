@@ -2,8 +2,6 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-const STORAGE_KEY = "cursor-agent-repositories"
-
 export interface Repository {
   url: string
   name: string
@@ -18,17 +16,6 @@ async function fetchRepositories(): Promise<Repository[]> {
   const response = await fetch("/api/user/repositories")
 
   if (!response.ok) {
-    // If unauthorized, try to migrate from localStorage
-    if (response.status === 401) {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) {
-        try {
-          return JSON.parse(stored)
-        } catch {
-          return []
-        }
-      }
-    }
     throw new Error("Failed to fetch repositories")
   }
 
@@ -54,31 +41,24 @@ async function saveRepositories(repos: Repository[]): Promise<Repository[]> {
 export function useRepositories() {
   const queryClient = useQueryClient()
 
-  const { data: repositories = [], isLoading } = useQuery({
+  const repositoriesQuery = useQuery({
     queryKey: ["repositories"],
     queryFn: fetchRepositories,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   })
 
-  const mutation = useMutation({
+  const repositoriesMutation = useMutation({
     mutationFn: saveRepositories,
     onSuccess: (data) => {
       queryClient.setQueryData(["repositories"], data)
-      // Clear localStorage after successful migration
-      localStorage.removeItem(STORAGE_KEY)
     },
   })
 
-  const saveRepositoriesMutation = (repos: Repository[]) => {
-    mutation.mutate(repos)
-  }
-
   return {
-    repositories,
-    isLoaded: !isLoading,
-    saveRepositories: saveRepositoriesMutation,
-    isLoading,
-    isSaving: mutation.isPending,
-    error: mutation.error,
+    repositoriesQuery,
+    hasRepositories:
+      repositoriesQuery.isSuccess &&
+      repositoriesQuery.data?.some((r) => r.url.trim()),
+    repositoriesMutation,
   }
 }
