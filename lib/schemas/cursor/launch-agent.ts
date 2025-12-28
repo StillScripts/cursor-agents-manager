@@ -8,7 +8,6 @@ import { z } from "zod"
  * when launching new agents through the Cursor API.
  */
 
-// Image schema for prompt images
 export const promptImageSchema = z.object({
   data: z.string().describe("Base64-encoded image data"),
   dimension: z.object({
@@ -17,16 +16,15 @@ export const promptImageSchema = z.object({
   }),
 })
 
-// Prompt schema supporting text and optional images
 export const promptSchema = z.object({
   text: z.string().min(1).describe("The task description for the agent"),
   images: z
     .array(promptImageSchema)
+    .max(5, "Maximum 5 images allowed")
     .optional()
     .describe("Optional array of images to include in the prompt"),
 })
 
-// Source repository configuration
 export const sourceSchema = z.object({
   repository: z
     .string()
@@ -39,13 +37,12 @@ export const sourceSchema = z.object({
   ref: z
     .string()
     .min(1)
-    .default("main")
+    .optional()
     .describe(
       "Git ref (branch name, tag, or commit hash) to use as the base branch"
     ),
 })
 
-// Webhook configuration for status notifications
 export const webhookSchema = z.object({
   url: z
     .string()
@@ -62,7 +59,6 @@ export const webhookSchema = z.object({
     ),
 })
 
-// Target configuration for the agent
 export const targetSchema = z.object({
   autoCreatePr: z
     .boolean()
@@ -90,40 +86,22 @@ export const targetSchema = z.object({
     ),
 })
 
-// Available models for the agent
-export const availableModels = [
-  "claude-3-5-sonnet-20241022",
-  "claude-3-5-sonnet-20240620",
-  "claude-3-5-haiku-20241022",
-  "claude-3-opus-20240229",
-  "claude-3-sonnet-20240229",
-  "claude-3-haiku-20240307",
-  "gpt-4o",
-  "gpt-4o-mini",
-  "gpt-4-turbo",
-  "gpt-4",
-  "gpt-3.5-turbo",
-  "o1-preview",
-  "o1-mini",
-] as const
-
 export const modelSchema = z
-  .enum(availableModels)
+  .string()
+  .min(1)
   .optional()
   .describe(
     "The AI model to use for the agent. If not specified, Cursor will automatically choose the best model"
   )
 
-// Main launch agent request schema
 export const launchAgentRequestSchema = z.object({
   prompt: promptSchema,
   source: sourceSchema,
-  model: modelSchema.optional(),
+  model: modelSchema,
   target: targetSchema.optional(),
   webhook: webhookSchema.optional(),
 })
 
-// Response schema for launched agent
 export const launchAgentResponseSchema = z.object({
   id: z.string().describe("Unique identifier for the launched agent"),
   name: z.string().describe("Display name for the agent"),
@@ -149,7 +127,6 @@ export const launchAgentResponseSchema = z.object({
     .describe("Summary of what the agent accomplished"),
 })
 
-// Type exports for use throughout the application
 export type LaunchAgentRequest = z.infer<typeof launchAgentRequestSchema>
 export type LaunchAgentResponse = z.infer<typeof launchAgentResponseSchema>
 export type PromptImage = z.infer<typeof promptImageSchema>
@@ -159,9 +136,7 @@ export type Target = z.infer<typeof targetSchema>
 export type Webhook = z.infer<typeof webhookSchema>
 export type Model = z.infer<typeof modelSchema>
 
-// Form-specific schema with additional validation for the UI
 export const launchAgentFormSchema = launchAgentRequestSchema.extend({
-  // Additional form-specific validations can be added here
   prompt: promptSchema.extend({
     text: z
       .string()
@@ -204,17 +179,14 @@ export const launchAgentFormSchema = launchAgentRequestSchema.extend({
 
 export type LaunchAgentFormData = z.infer<typeof launchAgentFormSchema>
 
-// Helper function to validate launch agent requests
 export function validateLaunchAgentRequest(data: unknown): LaunchAgentRequest {
   return launchAgentRequestSchema.parse(data)
 }
 
-// Helper function to validate form data
 export function validateLaunchAgentForm(data: unknown): LaunchAgentFormData {
   return launchAgentFormSchema.parse(data)
 }
 
-// Helper function to convert form data to API request
 export function formDataToApiRequest(
   formData: LaunchAgentFormData
 ): LaunchAgentRequest {
@@ -223,9 +195,8 @@ export function formDataToApiRequest(
     source: formData.source,
   }
 
-  // Only include model if it's not "auto" (auto means let Cursor choose)
-  // @ts-expect-error - annoying for now getting used to Tanstack Form and BaseUI Select
-  if (formData.model && formData.model !== "Auto") {
+  // Only include model if provided (omitting lets Cursor auto-select)
+  if (formData.model) {
     request.model = formData.model
   }
 
@@ -251,22 +222,4 @@ export function formDataToApiRequest(
   }
 
   return request
-}
-
-// Default form values
-export const defaultFormValues: Partial<LaunchAgentFormData> = {
-  prompt: {
-    text: "",
-  },
-  source: {
-    repository: "",
-    ref: "main",
-  },
-  model: undefined, // Auto mode - let Cursor choose
-  target: {
-    autoCreatePr: true,
-    openAsCursorGithubApp: false,
-    skipReviewerRequest: false,
-    branchName: undefined,
-  },
 }
