@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FieldDescription, FieldGroup, FieldSet } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { useAppForm } from "@/lib/hooks/use-app-form"
 import { useBranches } from "@/lib/hooks/use-branches"
 import { useRepositories } from "@/lib/hooks/use-repositories"
@@ -152,32 +153,34 @@ export function SettingsForm() {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="grid grid-cols-3 gap-2">
+            <ToggleGroup
+              value={[theme || "system"]}
+              onValueChange={(values) => {
+                if (values.length > 0) {
+                  setTheme(values[0])
+                }
+              }}
+              variant="outline"
+              className="grid grid-cols-3 w-full"
+            >
               {themeOptions.map((option) => {
                 const Icon = option.icon
                 const isActive = theme === option.value
                 return (
-                  <button
+                  <ToggleGroupItem
                     key={option.value}
-                    onClick={() => setTheme(option.value)}
-                    className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all ${
-                      isActive
-                        ? "border-primary bg-primary/10"
-                        : "border-border bg-muted/50 hover:bg-muted"
-                    }`}
+                    value={option.value}
+                    className="flex flex-col gap-2 h-auto py-3 data-[state=on]:bg-primary/10 data-[state=on]:text-primary data-[state=on]:border-primary"
                   >
                     <Icon
-                      className={`h-5 w-5 ${isActive ? "text-primary" : "text-muted-foreground"}`}
+                      className="h-5 w-5"
+                      fill={isActive ? "currentColor" : "none"}
                     />
-                    <span
-                      className={`text-xs font-medium ${isActive ? "text-primary" : "text-muted-foreground"}`}
-                    >
-                      {option.label}
-                    </span>
-                  </button>
+                    <span className="text-xs font-medium">{option.label}</span>
+                  </ToggleGroupItem>
                 )
               })}
-            </div>
+            </ToggleGroup>
           </CardContent>
         </Card>
 
