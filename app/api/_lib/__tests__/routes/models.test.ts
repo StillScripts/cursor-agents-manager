@@ -1,12 +1,22 @@
 /**
  * Tests for /api/models routes
  *
+ * SIMULATION MODE:
+ * - withoutApiKey() → simulation mode (returns hardcoded model list)
+ * - withValidApiKey() → live mode (calls mocked Cursor API)
+ *
  * Run with: bun test --preload ./app/api/_lib/__tests__/preload.ts app/api/_lib/__tests__/routes/models.test.ts
  */
 
 import { afterEach, describe, expect, it } from "bun:test"
 import { modelsApp } from "../../routes/models"
-import { getMockState, resetMockState } from "../setup"
+import {
+  resetMockState,
+  setCursorApiError,
+  setCursorApiResponse,
+  withoutApiKey,
+  withValidApiKey,
+} from "../setup"
 
 describe("Models Routes", () => {
   afterEach(() => {
@@ -14,10 +24,9 @@ describe("Models Routes", () => {
   })
 
   describe("GET /", () => {
-    it("returns simulated models when in simulation mode (no API key)", async () => {
-      // Clear API keys to trigger simulation mode
-      const state = getMockState()
-      state.dbResults.apiKeys = []
+    it("returns simulated models when user has no API key", async () => {
+      // User has no Cursor API key → simulation mode
+      withoutApiKey()
 
       const res = await modelsApp.request("/")
 
@@ -30,16 +39,14 @@ describe("Models Routes", () => {
       expect(data.models).toContain("gpt-4o")
     })
 
-    it("returns live models when user has valid API key", async () => {
-      // Set up for live mode with a valid API key
-      const state = getMockState()
-      state.cursorApiResponse = {
-        ok: true,
-        status: 200,
-        data: {
-          models: ["claude-3-opus", "gpt-4-turbo"],
-        },
-      }
+    it("calls Cursor API when user has valid API key", async () => {
+      // User has valid Cursor API key → live mode
+      withValidApiKey("my-cursor-api-key-12345")
+
+      // Set up the expected response from Cursor API
+      setCursorApiResponse({
+        models: ["claude-3-opus", "gpt-4-turbo"],
+      })
 
       const res = await modelsApp.request("/")
 
@@ -49,13 +56,10 @@ describe("Models Routes", () => {
       expect(data.simulation).toBe(false)
     })
 
-    it("handles Cursor API errors gracefully", async () => {
-      const state = getMockState()
-      state.cursorApiResponse = {
-        ok: false,
-        status: 500,
-        data: { error: "Internal Server Error" },
-      }
+    it("handles Cursor API errors gracefully in live mode", async () => {
+      // User has API key → live mode, but API fails
+      withValidApiKey()
+      setCursorApiError(500)
 
       const res = await modelsApp.request("/")
 

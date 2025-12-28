@@ -1,6 +1,11 @@
 /**
  * Tests for /api/agents routes
  *
+ * SIMULATION MODE:
+ * Simulation mode is determined by whether the user has a valid Cursor API key:
+ * - withoutApiKey() → simulation mode (uses mock data)
+ * - withValidApiKey() → live mode (calls mocked Cursor API)
+ *
  * Tests cover:
  * - Authentication requirement
  * - Simulation vs Live mode handling
@@ -14,7 +19,12 @@
 
 import { afterEach, describe, expect, it } from "bun:test"
 import { agentsApp } from "../../routes/agents"
-import { getMockState, mockAgent, resetMockState } from "../setup"
+import {
+  mockAgent,
+  resetMockState,
+  withoutApiKey,
+  withoutAuthentication,
+} from "../setup"
 
 describe("Agents Routes", () => {
   afterEach(() => {
@@ -27,8 +37,7 @@ describe("Agents Routes", () => {
 
   describe("Authentication", () => {
     it("returns 401 when not authenticated", async () => {
-      const state = getMockState()
-      state.authenticated = false
+      withoutAuthentication()
 
       const res = await agentsApp.request("/")
 
@@ -43,10 +52,9 @@ describe("Agents Routes", () => {
   // ==========================================================================
 
   describe("GET / (List Agents)", () => {
-    it("returns paginated agents in simulation mode", async () => {
-      // Clear API keys to force simulation mode
-      const state = getMockState()
-      state.dbResults.apiKeys = []
+    it("returns paginated agents in simulation mode (no API key)", async () => {
+      // User has no Cursor API key → simulation mode
+      withoutApiKey()
 
       const res = await agentsApp.request("/")
 
@@ -59,8 +67,7 @@ describe("Agents Routes", () => {
     })
 
     it("respects page query parameter", async () => {
-      const state = getMockState()
-      state.dbResults.apiKeys = []
+      withoutApiKey()
 
       const res = await agentsApp.request("/?page=0&limit=1")
 
@@ -71,8 +78,7 @@ describe("Agents Routes", () => {
     })
 
     it("respects limit query parameter", async () => {
-      const state = getMockState()
-      state.dbResults.apiKeys = []
+      withoutApiKey()
 
       const res = await agentsApp.request("/?limit=5")
 
@@ -82,8 +88,7 @@ describe("Agents Routes", () => {
     })
 
     it("uses default pagination when no params provided", async () => {
-      const state = getMockState()
-      state.dbResults.apiKeys = []
+      withoutApiKey()
 
       const res = await agentsApp.request("/")
 
@@ -107,9 +112,8 @@ describe("Agents Routes", () => {
       },
     }
 
-    it("launches agent in simulation mode", async () => {
-      const state = getMockState()
-      state.dbResults.apiKeys = []
+    it("launches agent in simulation mode (no API key)", async () => {
+      withoutApiKey()
 
       const res = await agentsApp.request("/", {
         method: "POST",
@@ -125,6 +129,8 @@ describe("Agents Routes", () => {
     })
 
     it("accepts request with model specified", async () => {
+      withoutApiKey()
+
       const res = await agentsApp.request("/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -138,6 +144,8 @@ describe("Agents Routes", () => {
     })
 
     it("accepts request with target options", async () => {
+      withoutApiKey()
+
       const res = await agentsApp.request("/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -228,9 +236,8 @@ describe("Agents Routes", () => {
   // ==========================================================================
 
   describe("GET /:id (Agent Details)", () => {
-    it("returns agent details in simulation mode", async () => {
-      const state = getMockState()
-      state.dbResults.apiKeys = []
+    it("returns agent details in simulation mode (no API key)", async () => {
+      withoutApiKey()
 
       const res = await agentsApp.request(`/${mockAgent.id}`)
 
@@ -241,8 +248,7 @@ describe("Agents Routes", () => {
     })
 
     it("returns 404 for non-existent agent in simulation mode", async () => {
-      const state = getMockState()
-      state.dbResults.apiKeys = []
+      withoutApiKey()
 
       const res = await agentsApp.request("/non_existent_agent_id")
 
@@ -257,9 +263,8 @@ describe("Agents Routes", () => {
   // ==========================================================================
 
   describe("DELETE /:id (Delete Agent)", () => {
-    it("deletes agent in simulation mode", async () => {
-      const state = getMockState()
-      state.dbResults.apiKeys = []
+    it("deletes agent in simulation mode (no API key)", async () => {
+      withoutApiKey()
 
       const res = await agentsApp.request(`/${mockAgent.id}`, {
         method: "DELETE",
@@ -277,9 +282,8 @@ describe("Agents Routes", () => {
   // ==========================================================================
 
   describe("GET /:id/conversation", () => {
-    it("returns conversation in simulation mode", async () => {
-      const state = getMockState()
-      state.dbResults.apiKeys = []
+    it("returns conversation in simulation mode (no API key)", async () => {
+      withoutApiKey()
 
       const res = await agentsApp.request(`/${mockAgent.id}/conversation`)
 
@@ -290,8 +294,7 @@ describe("Agents Routes", () => {
     })
 
     it("returns placeholder for unknown agent in simulation mode", async () => {
-      const state = getMockState()
-      state.dbResults.apiKeys = []
+      withoutApiKey()
 
       const res = await agentsApp.request("/unknown_agent/conversation")
 
@@ -308,9 +311,8 @@ describe("Agents Routes", () => {
   // ==========================================================================
 
   describe("POST /:id/followup", () => {
-    it("sends followup message in simulation mode", async () => {
-      const state = getMockState()
-      state.dbResults.apiKeys = []
+    it("sends followup message in simulation mode (no API key)", async () => {
+      withoutApiKey()
 
       const res = await agentsApp.request(`/${mockAgent.id}/followup`, {
         method: "POST",
@@ -327,8 +329,7 @@ describe("Agents Routes", () => {
     })
 
     it("accepts message field as alternative to prompt", async () => {
-      const state = getMockState()
-      state.dbResults.apiKeys = []
+      withoutApiKey()
 
       const res = await agentsApp.request(`/${mockAgent.id}/followup`, {
         method: "POST",
@@ -347,9 +348,8 @@ describe("Agents Routes", () => {
   // ==========================================================================
 
   describe("POST /:id/stop", () => {
-    it("stops agent in simulation mode", async () => {
-      const state = getMockState()
-      state.dbResults.apiKeys = []
+    it("stops agent in simulation mode (no API key)", async () => {
+      withoutApiKey()
 
       const res = await agentsApp.request(`/${mockAgent.id}/stop`, {
         method: "POST",

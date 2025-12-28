@@ -5,60 +5,84 @@
  * module mocks before the actual modules are imported.
  *
  * Run tests with: bun test --preload ./app/api/_lib/__tests__/preload.ts
+ *
+ * SIMULATION MODE:
+ * Simulation mode is determined by whether the user has a valid Cursor API key.
+ * - When dbResults.apiKeys is empty → simulation mode (uses mock data)
+ * - When dbResults.apiKeys has a valid key → live mode (calls Cursor API)
  */
 
 import { mock } from "bun:test"
 
 // ============================================================================
+// Default Mock Data
+// ============================================================================
+
+const DEFAULT_API_KEY = {
+  id: "apikey_123",
+  userId: "user_123",
+  encryptedApiKey: "encrypted:cursor_api_key_abc123",
+  createdAt: new Date("2024-01-01"),
+  updatedAt: new Date("2024-01-01"),
+}
+
+const DEFAULT_REPOSITORIES = [
+  {
+    id: 1,
+    userId: "user_123",
+    url: "https://github.com/user/repo1",
+    name: "repo1",
+    createdAt: new Date("2024-01-01"),
+  },
+  {
+    id: 2,
+    userId: "user_123",
+    url: "https://github.com/user/repo2",
+    name: "repo2",
+    createdAt: new Date("2024-01-02"),
+  },
+]
+
+const DEFAULT_BRANCHES = [
+  {
+    id: 1,
+    userId: "user_123",
+    name: "main",
+    createdAt: new Date("2024-01-01"),
+  },
+  {
+    id: 2,
+    userId: "user_123",
+    name: "develop",
+    createdAt: new Date("2024-01-02"),
+  },
+]
+
+// ============================================================================
 // Mock State (shared across all tests)
 // ============================================================================
 
-// Use globalThis to share state between preload and test files
+/**
+ * Mock state controls the behavior of mocked modules.
+ *
+ * IMPORTANT: Simulation mode is determined by `dbResults.apiKeys`:
+ * - Empty array = no API key = simulation mode
+ * - Array with valid key = live mode (calls mocked Cursor API)
+ */
 const mockState = {
+  // Whether the user is authenticated (has valid session)
   authenticated: true,
-  simulationMode: true,
-  apiKey: null as string | null,
+
+  // Database results - controls what queries return
   dbResults: {
-    apiKeys: [
-      {
-        id: "apikey_123",
-        userId: "user_123",
-        encryptedApiKey: "encrypted:cursor_api_key_abc123",
-        createdAt: new Date("2024-01-01"),
-        updatedAt: new Date("2024-01-01"),
-      },
-    ],
-    repositories: [
-      {
-        id: 1,
-        userId: "user_123",
-        url: "https://github.com/user/repo1",
-        name: "repo1",
-        createdAt: new Date("2024-01-01"),
-      },
-      {
-        id: 2,
-        userId: "user_123",
-        url: "https://github.com/user/repo2",
-        name: "repo2",
-        createdAt: new Date("2024-01-02"),
-      },
-    ],
-    branches: [
-      {
-        id: 1,
-        userId: "user_123",
-        name: "main",
-        createdAt: new Date("2024-01-01"),
-      },
-      {
-        id: 2,
-        userId: "user_123",
-        name: "develop",
-        createdAt: new Date("2024-01-02"),
-      },
-    ],
+    // API keys determine simulation vs live mode
+    // Empty = simulation mode, has key = live mode
+    apiKeys: [{ ...DEFAULT_API_KEY }],
+    repositories: [...DEFAULT_REPOSITORIES],
+    branches: [...DEFAULT_BRANCHES],
   },
+
+  // Controls the mocked Cursor API response (only used in live mode)
   cursorApiResponse: {
     ok: true,
     status: 200,
@@ -181,7 +205,7 @@ mock.module("@/lib/encryption", () => ({
 }))
 
 // ============================================================================
-// Mock: @/lib/mock-data
+// Mock: @/lib/mock-data (simulation mode data)
 // ============================================================================
 
 const mockAgent = {
@@ -240,7 +264,7 @@ mock.module("@/lib/mock-data", () => ({
 }))
 
 // ============================================================================
-// Mock: Global fetch
+// Mock: Global fetch (Cursor API)
 // ============================================================================
 
 const originalFetch = globalThis.fetch
@@ -250,7 +274,7 @@ globalThis.fetch = (async (url: RequestInfo | URL, init?: RequestInit) => {
   const state = (globalThis as Record<string, unknown>)
     .__testMockState as typeof mockState
 
-  // Cursor API calls
+  // Cursor API calls (only reached in live mode when user has API key)
   if (urlStr.includes("api.cursor.com")) {
     if (!state.cursorApiResponse.ok) {
       return new Response(JSON.stringify({ error: "API Error" }), {

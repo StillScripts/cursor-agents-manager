@@ -1,6 +1,11 @@
 /**
  * Tests for /api/user routes
  *
+ * Note: User routes manage the user's Cursor API key, which determines
+ * whether the app operates in simulation mode or live mode.
+ * - No API key → simulation mode (mock data)
+ * - Valid API key → live mode (calls Cursor API)
+ *
  * Tests cover:
  * - Authentication requirement (401 for unauthenticated)
  * - API key management (GET, POST, DELETE /api-key)
@@ -13,7 +18,13 @@
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test"
 import { userApp } from "../../routes/user"
-import { getMockState, resetMockState } from "../setup"
+import {
+  getMockState,
+  resetMockState,
+  withoutApiKey,
+  withoutAuthentication,
+  withValidApiKey,
+} from "../setup"
 
 describe("User Routes", () => {
   beforeEach(() => {
@@ -30,8 +41,7 @@ describe("User Routes", () => {
 
   describe("Authentication", () => {
     it("returns 401 when not authenticated", async () => {
-      const state = getMockState()
-      state.authenticated = false
+      withoutAuthentication()
 
       const res = await userApp.request("/api-key")
 
@@ -53,6 +63,9 @@ describe("User Routes", () => {
 
   describe("GET /api-key", () => {
     it("returns hasApiKey: true when user has an API key", async () => {
+      // Default state has a valid API key
+      withValidApiKey()
+
       const res = await userApp.request("/api-key")
 
       expect(res.status).toBe(200)
@@ -62,8 +75,8 @@ describe("User Routes", () => {
     })
 
     it("returns hasApiKey: false when user has no API key", async () => {
-      const state = getMockState()
-      state.dbResults.apiKeys = []
+      // User has no Cursor API key → would be in simulation mode
+      withoutApiKey()
 
       const res = await userApp.request("/api-key")
 
@@ -73,6 +86,8 @@ describe("User Routes", () => {
     })
 
     it("returns masked API key for display", async () => {
+      withValidApiKey("cursor_api_key_abc123")
+
       const res = await userApp.request("/api-key")
 
       expect(res.status).toBe(200)

@@ -4,25 +4,31 @@
  * Mocks are set up in preload.ts - this file provides helper functions
  * for accessing and modifying mock state during tests.
  *
+ * SIMULATION MODE:
+ * Simulation mode is determined by whether the user has a valid Cursor API key.
+ * Use the helper functions below to control this in tests:
+ * - withValidApiKey() → live mode (calls mocked Cursor API)
+ * - withoutApiKey() → simulation mode (uses mock data)
+ *
  * Run tests with: bun test --preload ./app/api/_lib/__tests__/preload.ts app/api/_lib
  */
 
 // ============================================================================
-// Mock State Access
+// Type Definitions
 // ============================================================================
+
+type ApiKeyRecord = {
+  id: string
+  userId: string
+  encryptedApiKey: string
+  createdAt: Date
+  updatedAt: Date
+}
 
 type MockState = {
   authenticated: boolean
-  simulationMode: boolean
-  apiKey: string | null
   dbResults: {
-    apiKeys: Array<{
-      id: string
-      userId: string
-      encryptedApiKey: string
-      createdAt: Date
-      updatedAt: Date
-    }>
+    apiKeys: ApiKeyRecord[]
     repositories: Array<{
       id: number
       userId: string
@@ -44,6 +50,22 @@ type MockState = {
   }
 }
 
+// ============================================================================
+// Default Values
+// ============================================================================
+
+const DEFAULT_API_KEY: ApiKeyRecord = {
+  id: "apikey_123",
+  userId: "user_123",
+  encryptedApiKey: "encrypted:cursor_api_key_abc123",
+  createdAt: new Date("2024-01-01"),
+  updatedAt: new Date("2024-01-01"),
+}
+
+// ============================================================================
+// Mock State Access
+// ============================================================================
+
 /**
  * Get the current mock state
  */
@@ -52,23 +74,13 @@ export function getMockState(): MockState {
 }
 
 /**
- * Reset mock state to defaults
+ * Reset mock state to defaults (authenticated user with valid API key = live mode)
  */
 export function resetMockState(): void {
   const state = getMockState()
   state.authenticated = true
-  state.simulationMode = true
-  state.apiKey = null
   state.dbResults = {
-    apiKeys: [
-      {
-        id: "apikey_123",
-        userId: "user_123",
-        encryptedApiKey: "encrypted:cursor_api_key_abc123",
-        createdAt: new Date("2024-01-01"),
-        updatedAt: new Date("2024-01-01"),
-      },
-    ],
+    apiKeys: [{ ...DEFAULT_API_KEY }],
     repositories: [
       {
         id: 1,
@@ -104,6 +116,96 @@ export function resetMockState(): void {
     ok: true,
     status: 200,
     data: {},
+  }
+}
+
+// ============================================================================
+// API Key Control (determines simulation vs live mode)
+// ============================================================================
+
+/**
+ * Set up a valid API key for the user.
+ * This enables LIVE MODE - requests will call the mocked Cursor API.
+ *
+ * @param apiKey - Optional custom API key value (defaults to "cursor_api_key_abc123")
+ */
+export function withValidApiKey(apiKey = "cursor_api_key_abc123"): void {
+  const state = getMockState()
+  state.dbResults.apiKeys = [
+    {
+      ...DEFAULT_API_KEY,
+      encryptedApiKey: `encrypted:${apiKey}`,
+    },
+  ]
+}
+
+/**
+ * Remove the user's API key.
+ * This enables SIMULATION MODE - requests will use mock data.
+ */
+export function withoutApiKey(): void {
+  const state = getMockState()
+  state.dbResults.apiKeys = []
+}
+
+/**
+ * Check if the current mock state is in simulation mode.
+ * Simulation mode is active when the user has no valid API key.
+ */
+export function isInSimulationMode(): boolean {
+  const state = getMockState()
+  return state.dbResults.apiKeys.length === 0
+}
+
+// ============================================================================
+// Authentication Control
+// ============================================================================
+
+/**
+ * Set the user as authenticated (has valid session)
+ */
+export function withAuthentication(): void {
+  const state = getMockState()
+  state.authenticated = true
+}
+
+/**
+ * Set the user as unauthenticated (no session)
+ */
+export function withoutAuthentication(): void {
+  const state = getMockState()
+  state.authenticated = false
+}
+
+// ============================================================================
+// Cursor API Response Control
+// ============================================================================
+
+/**
+ * Configure the mocked Cursor API response.
+ * Only used in live mode (when user has a valid API key).
+ */
+export function setCursorApiResponse(
+  data: unknown,
+  options: { ok?: boolean; status?: number } = {}
+): void {
+  const state = getMockState()
+  state.cursorApiResponse = {
+    ok: options.ok ?? true,
+    status: options.status ?? 200,
+    data,
+  }
+}
+
+/**
+ * Configure the mocked Cursor API to return an error.
+ */
+export function setCursorApiError(status = 500): void {
+  const state = getMockState()
+  state.cursorApiResponse = {
+    ok: false,
+    status,
+    data: { error: "API Error" },
   }
 }
 
