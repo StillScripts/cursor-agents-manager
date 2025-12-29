@@ -4,10 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider } from "next-themes"
 import type React from "react"
 import { useState } from "react"
-import {
-  ToastProvider,
-  ToastViewport,
-} from "@/components/ui/toast"
+import { ToastProvider, ToastViewport } from "@/components/ui/toast"
 
 // Cache configuration constants
 const FIVE_MINUTES = 5 * 60 * 1000

@@ -205,6 +205,26 @@ mock.module("@/lib/encryption", () => ({
 }))
 
 // ============================================================================
+// Mock: ai (AI SDK for summarization)
+// ============================================================================
+
+mock.module("ai", () => ({
+  generateText: async () => ({
+    text: "This is a mock summary of the conversation. The user requested to add a README file, and the agent agreed to help.",
+  }),
+}))
+
+// ============================================================================
+// Mock: @ai-sdk/openai
+// ============================================================================
+
+mock.module("@ai-sdk/openai", () => ({
+  openai: () => ({
+    modelId: "gpt-4o-mini",
+  }),
+}))
+
+// ============================================================================
 // Mock: @/lib/mock-data (simulation mode data)
 // ============================================================================
 
@@ -292,5 +312,12 @@ globalThis.fetch = (async (url: RequestInfo | URL, init?: RequestInit) => {
   // Fallback to original fetch
   return originalFetch(url, init)
 }) as typeof fetch
+
+// ============================================================================
+// Environment Variables
+// ============================================================================
+
+// Set OpenAI API key for testing (required for summarization tests)
+process.env.OPENAI_API_KEY = "test_openai_api_key"
 
 console.log("[Test Preload] Mocks initialized")
