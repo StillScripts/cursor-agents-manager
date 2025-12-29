@@ -1,9 +1,12 @@
-import { openai } from "@ai-sdk/openai"
+import { createOpenAI } from "@ai-sdk/openai"
 import { zValidator } from "@hono/zod-validator"
 import { generateText } from "ai"
+import { eq } from "drizzle-orm"
 import { Hono } from "hono"
 import { z } from "zod"
 import { extractUserMessagesAndLastAssistant } from "@/lib/conversation-utils"
+import { db } from "@/lib/db"
+import { decryptData } from "@/lib/encryption"
 import {
   addMessageToConversation,
   addSimulatedAgent,
@@ -13,6 +16,7 @@ import {
   removeSimulatedAgent,
   updateSimulatedAgentStatus,
 } from "@/lib/mock-data"
+import { userApiKeys } from "@/lib/schema/auth-schema"
 import {
   type LaunchAgentRequest,
   launchAgentRequestSchema,
@@ -369,22 +373,43 @@ app.post("/:id/summarize", async (c) => {
     )
   }
 
-  // Check for OpenAI API key
-  const openaiApiKey = process.env.OPENAI_API_KEY
-  if (!openaiApiKey) {
+  // Get user's OpenAI API key from database
+  const user = c.get("user")
+  const [apiKeyRecord] = await db
+    .select()
+    .from(userApiKeys)
+    .where(eq(userApiKeys.userId, user.id))
+    .limit(1)
+
+  if (!apiKeyRecord || !apiKeyRecord.encryptedOpenaiApiKey) {
     return c.json(
       {
         error:
-          "OpenAI API key not configured. Please set OPENAI_API_KEY environment variable.",
+          "OpenAI API key not configured. Please add your OpenAI API key in Account settings to enable summaries.",
+      },
+      400
+    )
+  }
+
+  let openaiApiKey: string
+  try {
+    openaiApiKey = decryptData(apiKeyRecord.encryptedOpenaiApiKey)
+  } catch (error) {
+    console.error("Error decrypting OpenAI API key:", error)
+    return c.json(
+      {
+        error:
+          "Failed to decrypt OpenAI API key. Please update your API key in Account settings.",
       },
       500
     )
   }
 
   try {
-    // Generate summary using AI SDK
+    // Generate summary using AI SDK with user's API key
+    const openaiProvider = createOpenAI({ apiKey: openaiApiKey })
     const { text } = await generateText({
-      model: openai("gpt-4o-mini"),
+      model: openaiProvider("gpt-4o-mini"),
       prompt: `Please provide a concise summary of the following conversation between a user and a Cursor AI agent. Focus on:
 - The main task or goal
 - Key actions taken by the agent

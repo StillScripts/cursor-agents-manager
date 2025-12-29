@@ -67,7 +67,7 @@ export const userDatabases = sqliteTable("user_databases", {
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 })
 
-// Store encrypted Cursor API keys
+// Store encrypted API keys
 export const userApiKeys = sqliteTable("user_api_keys", {
   id: text("id").primaryKey(),
   userId: text("user_id")
@@ -75,6 +75,7 @@ export const userApiKeys = sqliteTable("user_api_keys", {
     .unique()
     .references(() => user.id, { onDelete: "cascade" }),
   encryptedApiKey: text("encrypted_api_key"), // Encrypted Cursor API key
+  encryptedOpenaiApiKey: text("encrypted_openai_api_key"), // Encrypted OpenAI API key
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 })

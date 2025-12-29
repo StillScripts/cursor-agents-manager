@@ -22,6 +22,7 @@ const DEFAULT_API_KEY = {
   id: "apikey_123",
   userId: "user_123",
   encryptedApiKey: "encrypted:cursor_api_key_abc123",
+  encryptedOpenaiApiKey: "encrypted:sk-test-openai-key-123",
   createdAt: new Date("2024-01-01"),
   updatedAt: new Date("2024-01-01"),
 }

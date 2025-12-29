@@ -110,6 +110,97 @@ app.delete("/api-key", async (c) => {
 })
 
 // ============================================================================
+// OpenAI API Key Routes
+// ============================================================================
+
+// GET /api/user/openai-api-key - Get OpenAI API key status (masked)
+app.get("/openai-api-key", async (c) => {
+  const user = c.get("user")
+
+  const [apiKey] = await db
+    .select()
+    .from(userApiKeys)
+    .where(eq(userApiKeys.userId, user.id))
+    .limit(1)
+
+  if (!apiKey || !apiKey.encryptedOpenaiApiKey) {
+    return c.json({ hasApiKey: false })
+  }
+
+  try {
+    const decrypted = decryptData(apiKey.encryptedOpenaiApiKey)
+    const masked = `${decrypted.substring(0, 8)}...${decrypted.substring(decrypted.length - 4)}`
+
+    return c.json({
+      hasApiKey: true,
+      masked,
+      createdAt: apiKey.createdAt,
+      updatedAt: apiKey.updatedAt,
+    })
+  } catch (error) {
+    console.error("Error decrypting OpenAI API key:", error)
+    return c.json({ hasApiKey: false })
+  }
+})
+
+// POST /api/user/openai-api-key - Save or update OpenAI API key
+app.post("/openai-api-key", zValidator("json", apiKeySchema), async (c) => {
+  const user = c.get("user")
+  const { apiKey } = c.req.valid("json")
+
+  const encryptedKey = encryptData(apiKey)
+
+  try {
+    // Check if user already has an API key record
+    const [existing] = await db
+      .select()
+      .from(userApiKeys)
+      .where(eq(userApiKeys.userId, user.id))
+      .limit(1)
+
+    if (existing) {
+      await db
+        .update(userApiKeys)
+        .set({
+          encryptedOpenaiApiKey: encryptedKey,
+          updatedAt: new Date(),
+        })
+        .where(eq(userApiKeys.userId, user.id))
+    } else {
+      await db.insert(userApiKeys).values({
+        id: crypto.randomUUID(),
+        userId: user.id,
+        encryptedOpenaiApiKey: encryptedKey,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+    }
+
+    return c.json({ success: true })
+  } catch (error) {
+    console.error("Error saving OpenAI API key:", error)
+    return c.json({ error: "Failed to save OpenAI API key" }, 500)
+  }
+})
+
+// DELETE /api/user/openai-api-key - Delete OpenAI API key
+app.delete("/openai-api-key", async (c) => {
+  const user = c.get("user")
+
+  try {
+    await db
+      .update(userApiKeys)
+      .set({ encryptedOpenaiApiKey: null, updatedAt: new Date() })
+      .where(eq(userApiKeys.userId, user.id))
+
+    return c.json({ success: true })
+  } catch (error) {
+    console.error("Error deleting OpenAI API key:", error)
+    return c.json({ error: "Failed to delete OpenAI API key" }, 500)
+  }
+})
+
+// ============================================================================
 // Repository Routes
 // ============================================================================
 
