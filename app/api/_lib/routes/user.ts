@@ -54,44 +54,43 @@ app.get("/api-key", async (c) => {
 
 // POST /api/user/api-key - Save or update API key
 app.post("/api-key", zValidator("json", apiKeySchema), async (c) => {
-    const user = c.get("user")
-    const { apiKey } = c.req.valid("json")
+  const user = c.get("user")
+  const { apiKey } = c.req.valid("json")
 
-    const encryptedKey = encryptData(apiKey)
+  const encryptedKey = encryptData(apiKey)
 
-    try {
-      // Check if user already has an API key
-      const [existing] = await db
-        .select()
-        .from(userApiKeys)
-        .where(eq(userApiKeys.userId, user.id))
-        .limit(1)
+  try {
+    // Check if user already has an API key
+    const [existing] = await db
+      .select()
+      .from(userApiKeys)
+      .where(eq(userApiKeys.userId, user.id))
+      .limit(1)
 
-      if (existing) {
-        await db
-          .update(userApiKeys)
-          .set({
-            encryptedApiKey: encryptedKey,
-            updatedAt: new Date(),
-          })
-          .where(eq(userApiKeys.userId, user.id))
-      } else {
-        await db.insert(userApiKeys).values({
-          id: crypto.randomUUID(),
-          userId: user.id,
+    if (existing) {
+      await db
+        .update(userApiKeys)
+        .set({
           encryptedApiKey: encryptedKey,
-          createdAt: new Date(),
           updatedAt: new Date(),
         })
-      }
-
-      return c.json({ success: true })
-    } catch (error) {
-      console.error("Error saving API key:", error)
-      return c.json({ error: "Failed to save API key" }, 500)
+        .where(eq(userApiKeys.userId, user.id))
+    } else {
+      await db.insert(userApiKeys).values({
+        id: crypto.randomUUID(),
+        userId: user.id,
+        encryptedApiKey: encryptedKey,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
     }
+
+    return c.json({ success: true })
+  } catch (error) {
+    console.error("Error saving API key:", error)
+    return c.json({ error: "Failed to save API key" }, 500)
   }
-)
+})
 
 // DELETE /api/user/api-key - Delete API key
 app.delete("/api-key", async (c) => {
@@ -196,43 +195,39 @@ app.get("/branches", async (c) => {
 })
 
 // POST /api/user/branches - Save all branches (replace existing)
-app.post(
-  "/branches",
-  zValidator("json", branchesRequestSchema),
-  async (c) => {
-    const user = c.get("user")
-    const { branches: branchList } = c.req.valid("json")
+app.post("/branches", zValidator("json", branchesRequestSchema), async (c) => {
+  const user = c.get("user")
+  const { branches: branchList } = c.req.valid("json")
 
-    try {
-      // Delete all branches for the user and then insert new
-      await db.delete(branches).where(eq(branches.userId, user.id))
+  try {
+    // Delete all branches for the user and then insert new
+    await db.delete(branches).where(eq(branches.userId, user.id))
 
-      if (branchList.length > 0) {
-        const validBranches = branchList
-          .filter((b) => b.name?.trim())
-          .map((b) => ({
-            userId: user.id,
-            name: b.name.trim(),
-            createdAt: new Date(),
-          }))
+    if (branchList.length > 0) {
+      const validBranches = branchList
+        .filter((b) => b.name?.trim())
+        .map((b) => ({
+          userId: user.id,
+          name: b.name.trim(),
+          createdAt: new Date(),
+        }))
 
-        if (validBranches.length > 0) {
-          await db.insert(branches).values(validBranches)
-        }
+      if (validBranches.length > 0) {
+        await db.insert(branches).values(validBranches)
       }
-
-      const updatedBranches = await db
-        .select()
-        .from(branches)
-        .where(eq(branches.userId, user.id))
-        .orderBy(branches.createdAt)
-
-      return c.json({ branches: updatedBranches })
-    } catch (error) {
-      console.error("Error saving branches:", error)
-      return c.json({ error: "Failed to save branches" }, 500)
     }
+
+    const updatedBranches = await db
+      .select()
+      .from(branches)
+      .where(eq(branches.userId, user.id))
+      .orderBy(branches.createdAt)
+
+    return c.json({ branches: updatedBranches })
+  } catch (error) {
+    console.error("Error saving branches:", error)
+    return c.json({ error: "Failed to save branches" }, 500)
   }
-)
+})
 
 export { app as userApp }
