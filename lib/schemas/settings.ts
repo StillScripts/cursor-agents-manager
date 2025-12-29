@@ -1,5 +1,22 @@
 import { z } from "zod"
 
+// ============================================================================
+// API Key Schema
+// ============================================================================
+
+export const apiKeySchema = z.object({
+  apiKey: z
+    .string()
+    .min(10, "API key must be at least 10 characters")
+    .describe("Cursor API key"),
+})
+
+export type ApiKeyFormData = z.infer<typeof apiKeySchema>
+
+// ============================================================================
+// Repository Schema
+// ============================================================================
+
 export const repositorySchema = z.object({
   url: z
     .string()
@@ -14,6 +31,10 @@ export const repositorySchema = z.object({
   id: z.number().optional().describe("Database ID"),
 })
 
+// ============================================================================
+// Branch Schema
+// ============================================================================
+
 export const branchSchema = z.object({
   name: z
     .string()
@@ -21,6 +42,24 @@ export const branchSchema = z.object({
     .describe("Branch name (e.g., main, develop, staging)"),
   id: z.number().optional().describe("Database ID"),
 })
+
+export type BranchFormData = z.infer<typeof branchSchema>
+
+// ============================================================================
+// Request Body Schemas (for API routes)
+// ============================================================================
+
+export const repositoriesRequestSchema = z.object({
+  repositories: z.array(repositorySchema),
+})
+
+export const branchesRequestSchema = z.object({
+  branches: z.array(branchSchema),
+})
+
+// ============================================================================
+// Settings Form Schema
+// ============================================================================
 
 export const settingsFormSchema = z.object({
   repositories: z
@@ -30,7 +69,6 @@ export const settingsFormSchema = z.object({
 })
 
 export type RepositoryFormData = z.infer<typeof repositorySchema>
-export type BranchFormData = z.infer<typeof branchSchema>
 export type SettingsFormData = z.infer<typeof settingsFormSchema>
 
 export function validateSettingsForm(data: unknown): SettingsFormData {

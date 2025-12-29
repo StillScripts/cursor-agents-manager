@@ -2,11 +2,15 @@ import crypto from "node:crypto"
 import { zValidator } from "@hono/zod-validator"
 import { eq } from "drizzle-orm"
 import { Hono } from "hono"
-import { z } from "zod"
 import { db } from "@/lib/db"
 import { decryptData, encryptData } from "@/lib/encryption"
 import { userApiKeys } from "@/lib/schema/auth-schema"
 import { branches, repositories } from "@/lib/schema/user-schema"
+import {
+  apiKeySchema,
+  branchesRequestSchema,
+  repositoriesRequestSchema,
+} from "@/lib/schemas/settings"
 import { type AuthVariables, requireAuth } from "../middleware/auth"
 
 const app = new Hono<{ Variables: AuthVariables }>()
@@ -49,15 +53,7 @@ app.get("/api-key", async (c) => {
 })
 
 // POST /api/user/api-key - Save or update API key
-app.post(
-  "/api-key",
-  zValidator(
-    "json",
-    z.object({
-      apiKey: z.string().min(10, "API key must be at least 10 characters"),
-    })
-  ),
-  async (c) => {
+app.post("/api-key", zValidator("json", apiKeySchema), async (c) => {
     const user = c.get("user")
     const { apiKey } = c.req.valid("json")
 
@@ -72,7 +68,6 @@ app.post(
         .limit(1)
 
       if (existing) {
-        // Update existing
         await db
           .update(userApiKeys)
           .set({
@@ -81,7 +76,6 @@ app.post(
           })
           .where(eq(userApiKeys.userId, user.id))
       } else {
-        // Insert new
         await db.insert(userApiKeys).values({
           id: crypto.randomUUID(),
           userId: user.id,
@@ -141,26 +135,15 @@ app.get("/repositories", async (c) => {
 // POST /api/user/repositories - Save all repositories (replace existing)
 app.post(
   "/repositories",
-  zValidator(
-    "json",
-    z.object({
-      repositories: z.array(
-        z.object({
-          url: z.string(),
-          name: z.string(),
-        })
-      ),
-    })
-  ),
+  zValidator("json", repositoriesRequestSchema),
   async (c) => {
     const user = c.get("user")
     const { repositories: repos } = c.req.valid("json")
 
     try {
-      // Delete existing repositories for this user
+      // Delete all repositories for the user and then insert new
       await db.delete(repositories).where(eq(repositories.userId, user.id))
 
-      // Insert new repositories
       if (repos.length > 0) {
         const validRepos = repos
           .filter((r) => r.url?.trim() && r.name?.trim())
@@ -176,7 +159,6 @@ app.post(
         }
       }
 
-      // Fetch updated repositories
       const updatedRepos = await db
         .select()
         .from(repositories)
@@ -216,25 +198,15 @@ app.get("/branches", async (c) => {
 // POST /api/user/branches - Save all branches (replace existing)
 app.post(
   "/branches",
-  zValidator(
-    "json",
-    z.object({
-      branches: z.array(
-        z.object({
-          name: z.string(),
-        })
-      ),
-    })
-  ),
+  zValidator("json", branchesRequestSchema),
   async (c) => {
     const user = c.get("user")
     const { branches: branchList } = c.req.valid("json")
 
     try {
-      // Delete existing branches for this user
+      // Delete all branches for the user and then insert new
       await db.delete(branches).where(eq(branches.userId, user.id))
 
-      // Insert new branches
       if (branchList.length > 0) {
         const validBranches = branchList
           .filter((b) => b.name?.trim())
@@ -249,7 +221,6 @@ app.post(
         }
       }
 
-      // Fetch updated branches
       const updatedBranches = await db
         .select()
         .from(branches)
