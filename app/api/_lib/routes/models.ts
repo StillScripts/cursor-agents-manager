@@ -1,5 +1,8 @@
 import { Hono } from "hono"
-import { withSimulationMode } from "../middleware/simulation"
+import {
+  type SimulationVariables,
+  withSimulationMode,
+} from "../middleware/simulation"
 
 const SIMULATED_MODELS = [
   "claude-3-5-sonnet-20241022",
@@ -9,7 +12,7 @@ const SIMULATED_MODELS = [
   "o1-preview",
 ]
 
-const app = new Hono()
+const app = new Hono<{ Variables: SimulationVariables }>()
 
 // Apply simulation mode detection
 app.use("*", withSimulationMode)

@@ -32,11 +32,6 @@ const app = new Hono<{ Variables: Variables }>()
 app.use("*", requireAuth)
 app.use("*", withSimulationMode)
 
-// Helper to simulate network delay
-async function simulateDelay() {
-  await new Promise((resolve) => setTimeout(resolve, 2000))
-}
-
 // Query params schema for pagination
 const paginationSchema = z.object({
   page: z
@@ -60,8 +55,6 @@ app.get("/", zValidator("query", paginationSchema), async (c) => {
   const apiKey = c.get("apiKey")
 
   if (simulationMode) {
-    await simulateDelay()
-
     const { agents, total, totalPages } = getSimulatedAgentsPaginated(
       page,
       limit
@@ -112,7 +105,6 @@ app.post("/", zValidator("json", launchAgentRequestSchema), async (c) => {
 
   if (simulationMode) {
     console.log("[API /agents POST] Running in SIMULATION mode")
-    await simulateDelay()
 
     const newAgent: Agent = {
       id: `bc_${Math.random().toString(36).substr(2, 9)}`,
