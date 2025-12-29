@@ -1,16 +1,17 @@
 import crypto from "node:crypto"
 import { zValidator } from "@hono/zod-validator"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { Hono } from "hono"
 import { db } from "@/lib/db"
 import { decryptData, encryptData } from "@/lib/encryption"
 import { userApiKeys } from "@/lib/schema/auth-schema"
-import { branches, repositories } from "@/lib/schema/user-schema"
+import { branches, repositories, timeLogs } from "@/lib/schema/user-schema"
 import {
   apiKeySchema,
   branchesRequestSchema,
   repositoriesRequestSchema,
 } from "@/lib/schemas/settings"
+import { z } from "zod"
 import { type AuthVariables, requireAuth } from "../middleware/auth"
 
 const app = new Hono<{ Variables: AuthVariables }>()
@@ -227,6 +228,69 @@ app.post("/branches", zValidator("json", branchesRequestSchema), async (c) => {
   } catch (error) {
     console.error("Error saving branches:", error)
     return c.json({ error: "Failed to save branches" }, 500)
+  }
+})
+
+// ============================================================================
+// Time Log Routes
+// ============================================================================
+
+const timeLogSchema = z.object({
+  taskId: z.string().min(1),
+  activityType: z.enum(["task_creation", "conversation_review"]),
+  startTime: z.number().int().positive(),
+  endTime: z.number().int().positive().optional(),
+  duration: z.number().int().nonnegative().optional(),
+})
+
+// POST /api/user/time-logs - Save a time log
+app.post("/time-logs", zValidator("json", timeLogSchema), async (c) => {
+  const user = c.get("user")
+  const data = c.req.valid("json")
+
+  try {
+    // Calculate duration if not provided
+    const duration =
+      data.duration ??
+      (data.endTime ? data.endTime - data.startTime : undefined)
+
+    await db.insert(timeLogs).values({
+      userId: user.id,
+      taskId: data.taskId,
+      activityType: data.activityType,
+      startTime: new Date(data.startTime),
+      endTime: data.endTime ? new Date(data.endTime) : null,
+      duration: duration ?? null,
+      createdAt: new Date(),
+    })
+
+    return c.json({ success: true })
+  } catch (error) {
+    console.error("Error saving time log:", error)
+    return c.json({ error: "Failed to save time log" }, 500)
+  }
+})
+
+// GET /api/user/time-logs - Get time logs for a task (optional taskId query param)
+app.get("/time-logs", async (c) => {
+  const user = c.get("user")
+  const taskId = c.req.query("taskId")
+
+  try {
+    const conditions = taskId
+      ? and(eq(timeLogs.userId, user.id), eq(timeLogs.taskId, taskId))
+      : eq(timeLogs.userId, user.id)
+
+    const logs = await db
+      .select()
+      .from(timeLogs)
+      .where(conditions)
+      .orderBy(timeLogs.createdAt)
+
+    return c.json({ timeLogs: logs })
+  } catch (error) {
+    console.error("Error fetching time logs:", error)
+    return c.json({ error: "Failed to fetch time logs" }, 500)
   }
 })
 

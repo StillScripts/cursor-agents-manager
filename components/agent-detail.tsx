@@ -12,7 +12,7 @@ import {
   Wrench,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import {
@@ -42,6 +42,7 @@ import {
   useSendFollowUp,
   useStopAgent,
 } from "@/lib/hooks/use-agents"
+import { useTimeTracking } from "@/lib/hooks/use-time-tracking"
 import { cn } from "@/lib/utils"
 import { PageHeader } from "./page-header"
 import { SimulationBanner } from "./simulation-banner"
@@ -62,6 +63,47 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
   const stopAgent = useStopAgent()
   const deleteAgent = useDeleteAgent()
   const sendFollowUp = useSendFollowUp()
+
+  // Time tracking for conversation review
+  const timeTracking = useTimeTracking({
+    activityType: "conversation_review",
+    taskId: agentId,
+    autoStart: true, // Start automatically when component mounts
+    onSave: async (timeLog) => {
+      const response = await fetch("/api/user/time-logs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(timeLog),
+      })
+      if (!response.ok) {
+        throw new Error("Failed to save time log")
+      }
+    },
+  })
+
+  // Save time log periodically (every 5 minutes) and on unmount
+  useEffect(() => {
+    if (!agentId || !timeTracking.isTracking) return
+
+    // Save every 5 minutes while tracking (continue tracking after save)
+    const saveInterval = setInterval(() => {
+      if (timeTracking.isTracking && timeTracking.saveTimeLogAndContinue) {
+        timeTracking.saveTimeLogAndContinue(agentId).catch((error) => {
+          console.error("Failed to save time log periodically:", error)
+        })
+      }
+    }, 5 * 60 * 1000) // 5 minutes
+
+    // Save and stop on unmount
+    return () => {
+      clearInterval(saveInterval)
+      if (timeTracking.isTracking) {
+        timeTracking.saveTimeLog(agentId).catch((error) => {
+          console.error("Failed to save time log on unmount:", error)
+        })
+      }
+    }
+  }, [agentId, timeTracking.isTracking, timeTracking.saveTimeLog, timeTracking.saveTimeLogAndContinue])
 
   const handleStop = async () => {
     await stopAgent.mutateAsync(agentId)
