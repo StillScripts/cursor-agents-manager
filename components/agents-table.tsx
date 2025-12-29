@@ -6,11 +6,11 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { Bot, ChevronLeft, ChevronRight } from "lucide-react"
+import { Bot, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
-import { useAgents } from "@/lib/hooks/use-agents"
+import { useAgents, useRefreshAgents } from "@/lib/hooks/use-agents"
 import type { Agent } from "@/lib/types"
 import { AgentCard } from "./agent-card"
 import { AgentListSkeleton } from "./agent-list-skeleton"
@@ -29,6 +29,7 @@ export function AgentsTable() {
   const limit = 20
 
   const { data, isLoading, error, isFetching } = useAgents(page, limit)
+  const { refresh } = useRefreshAgents()
 
   const table = useReactTable({
     data: data?.agents ?? [],
@@ -51,9 +52,22 @@ export function AgentsTable() {
     return <AgentListSkeleton />
   }
 
+  const refreshButton = (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8"
+      onClick={() => refresh()}
+      disabled={isFetching}
+      aria-label="Refresh agents"
+    >
+      <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+    </Button>
+  )
+
   return (
     <>
-      <PageHeader title="Your Agents" />
+      <PageHeader title="Your Agents" action={refreshButton} />
       {data?.simulation && <SimulationBanner />}
 
       <div className="flex-1 overflow-auto">

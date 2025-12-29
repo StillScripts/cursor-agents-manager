@@ -11,7 +11,11 @@
       "WebFetch(domain:tanstack.com)",
       "Bash(bun pm:*)",
       "Bash(bun update:*)",
-      "Bash(bun remove:*)"
+      "Bash(bun remove:*)",
+      "WebSearch",
+      "WebFetch(domain:cursor.com)",
+      "Bash(bun test:*)",
+      "Bash(bun run test:*)"
     ]
   }
 }

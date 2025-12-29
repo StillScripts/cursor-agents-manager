@@ -1,11 +1,22 @@
 import { z } from "zod"
 
-/**
- * Schema for settings form validation
- * Validates repositories and branches configured by the user
- */
+// ============================================================================
+// API Key Schema
+// ============================================================================
 
-// Repository schema
+export const apiKeySchema = z.object({
+  apiKey: z
+    .string()
+    .min(10, "API key must be at least 10 characters")
+    .describe("Cursor API key"),
+})
+
+export type ApiKeyFormData = z.infer<typeof apiKeySchema>
+
+// ============================================================================
+// Repository Schema
+// ============================================================================
+
 export const repositorySchema = z.object({
   url: z
     .string()
@@ -20,7 +31,10 @@ export const repositorySchema = z.object({
   id: z.number().optional().describe("Database ID"),
 })
 
-// Branch schema
+// ============================================================================
+// Branch Schema
+// ============================================================================
+
 export const branchSchema = z.object({
   name: z
     .string()
@@ -29,8 +43,24 @@ export const branchSchema = z.object({
   id: z.number().optional().describe("Database ID"),
 })
 
-// Settings form schema - validates items that exist, but allows empty arrays
-// (the form filters out invalid/empty items before submission)
+export type BranchFormData = z.infer<typeof branchSchema>
+
+// ============================================================================
+// Request Body Schemas (for API routes)
+// ============================================================================
+
+export const repositoriesRequestSchema = z.object({
+  repositories: z.array(repositorySchema),
+})
+
+export const branchesRequestSchema = z.object({
+  branches: z.array(branchSchema),
+})
+
+// ============================================================================
+// Settings Form Schema
+// ============================================================================
+
 export const settingsFormSchema = z.object({
   repositories: z
     .array(repositorySchema)
@@ -38,12 +68,9 @@ export const settingsFormSchema = z.object({
   branches: z.array(branchSchema).describe("User's saved branch names"),
 })
 
-// Type exports
 export type RepositoryFormData = z.infer<typeof repositorySchema>
-export type BranchFormData = z.infer<typeof branchSchema>
 export type SettingsFormData = z.infer<typeof settingsFormSchema>
 
-// Helper function to validate settings form data
 export function validateSettingsForm(data: unknown): SettingsFormData {
   return settingsFormSchema.parse(data)
 }

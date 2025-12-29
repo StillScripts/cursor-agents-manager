@@ -8,16 +8,33 @@ import type {
   PaginatedAgentsResponse,
 } from "@/lib/types"
 
+// Cache configuration constants
+const FIVE_MINUTES = 5 * 60 * 1000
+
+export const AGENTS_QUERY_KEY = ["agents"] as const
+
 export function useAgents(page = 0, limit = 20) {
   return useQuery<PaginatedAgentsResponse>({
-    queryKey: ["agents", page, limit],
+    queryKey: [...AGENTS_QUERY_KEY, page, limit],
     queryFn: async () => {
       const response = await fetch(`/api/agents?page=${page}&limit=${limit}`)
       if (!response.ok) throw new Error("Failed to fetch agents")
       return response.json()
     },
-    refetchInterval: 10000,
+    // Refetch every 5 minutes in the background
+    refetchInterval: FIVE_MINUTES,
+    // Keep refetching even when the window is not focused
+    refetchIntervalInBackground: false,
   })
+}
+
+export function useRefreshAgents() {
+  const queryClient = useQueryClient()
+
+  return {
+    refresh: () =>
+      queryClient.invalidateQueries({ queryKey: AGENTS_QUERY_KEY }),
+  }
 }
 
 export function useAgent(id: string) {
@@ -114,6 +131,12 @@ export function useSendFollowUp() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: ["conversation", variables.id],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ["agent", variables.id],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ["agents"],
       })
     },
   })
