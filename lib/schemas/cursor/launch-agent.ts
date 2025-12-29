@@ -39,7 +39,7 @@ export const sourceSchema = z.object({
     .min(1)
     .optional()
     .describe(
-      "Git ref (branch name, tag, or commit hash) to use as the base branch"
+      "Git ref (branch name, tag, or commit hash) to use as the base branch. If not provided, Cursor will use the default branch"
     ),
 })
 

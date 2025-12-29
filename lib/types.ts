@@ -11,7 +11,7 @@ export interface Agent {
   status: AgentStatus
   source: {
     repository: string
-    ref: string
+    ref?: string
   }
   target: {
     url: string

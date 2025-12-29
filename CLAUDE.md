@@ -68,11 +68,11 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 CURSOR_API_KEY=your-cursor-api-key
 ```
 
-**Simulation Mode**: The app automatically enters simulation mode (using mock data) when a user doesn't have a valid API key configured in their account. Mode detection happens in `lib/api-utils.ts:isSimulationMode()` which:
+**Simulation Mode**: The app automatically enters simulation mode (using mock data) when a user doesn't have a valid API key configured in their account. Mode detection happens via the `withSimulationMode` Hono middleware in `app/api/_lib/middleware/simulation.ts` which:
 1. Checks the user's session from the request headers
 2. Queries the `user_api_keys` table for their encrypted API key
-3. Returns `true` if no API key exists or if it's invalid (< 10 chars, contains placeholders)
-4. Returns `false` if a valid API key exists (enabling live mode)
+3. Sets `simulationMode: true` if no API key exists or if it's invalid (< 10 chars, contains placeholders)
+4. Sets `simulationMode: false` and `apiKey` if a valid API key exists (enabling live mode)
 
 ## Architecture
 
@@ -135,23 +135,46 @@ app/
 ├── settings/page.tsx         # Settings page
 ├── account/page.tsx          # Account page
 ├── layout.tsx                # Root layout with providers
-└── api/                      # API routes (Next.js Route Handlers)
-    ├── auth/[...all]/        # Better Auth endpoints (GET, POST)
-    ├── user/                 # User data endpoints (authenticated)
-    │   ├── api-key/          # GET (status), POST (save), DELETE
-    │   ├── repositories/     # GET (list), POST (save all)
-    │   └── branches/         # GET (list), POST (save all)
-    └── agents/               # Agent operations (simulation or live mode)
-        ├── route.ts          # GET (list), POST (launch)
-        └── [id]/
-            ├── route.ts      # GET (details), DELETE
-            ├── conversation/route.ts  # GET conversation
-            ├── followup/route.ts      # POST follow-up message
-            └── stop/route.ts          # POST stop agent
+└── api/
+    ├── _lib/                 # Hono API implementation (private folder)
+    │   ├── index.ts          # Main Hono app - combines all routes
+    │   ├── middleware/
+    │   │   ├── auth.ts       # requireAuth middleware
+    │   │   ├── error-handler.ts  # Global error handling
+    │   │   └── simulation.ts # Simulation mode detection
+    │   └── routes/
+    │       ├── agents.ts     # /api/agents routes
+    │       ├── models.ts     # /api/models routes
+    │       └── user.ts       # /api/user routes
+    ├── auth/[...all]/route.ts  # Better Auth (Next.js handler)
+    └── [...route]/route.ts     # Hono catch-all handler
 ```
+
+### Hono API Architecture
+
+The API layer uses **Hono** mounted as a catch-all route handler. This provides:
+- **Modular routes** - Each domain (agents, user, models) in separate files
+- **Type-safe validation** - `@hono/zod-validator` for request validation
+- **Middleware composition** - Reusable auth and simulation mode middleware
+- **Cleaner code** - Chainable routes with typed context
+
+**Key Files**:
+- `app/api/_lib/index.ts` - Main Hono app that mounts all route sub-apps
+- `app/api/_lib/middleware/auth.ts` - `requireAuth` middleware sets `user` and `session` in context
+- `app/api/_lib/middleware/simulation.ts` - `withSimulationMode` sets `simulationMode` and `apiKey`
+- `app/api/_lib/routes/agents.ts` - All agent CRUD operations
+- `app/api/_lib/routes/user.ts` - API key, repositories, branches management
+- `app/api/_lib/routes/models.ts` - Available models list
+- `app/api/[...route]/route.ts` - Next.js catch-all that delegates to Hono
+
+**Note**: Better Auth remains as a separate Next.js route handler at `app/api/auth/[...all]/route.ts` because it requires special cookie handling via `toNextJsHandler`.
 
 ### Key Directories
 
+- `app/api/_lib/`: **Hono API implementation** (private folder, not a route)
+  - `index.ts`: Main Hono app combining all routes
+  - `middleware/`: Reusable Hono middleware (auth, error-handler, simulation)
+  - `routes/`: Route modules (agents.ts, user.ts, models.ts)
 - `components/`: React components (UI components in `components/ui/`)
   - `components/api-key-manager.tsx`: API key management UI component
   - `components/account-screen.tsx`: Account page with user info and API key management
@@ -162,7 +185,6 @@ app/
   - `lib/db.ts`: Drizzle database connection
   - `lib/encryption.ts`: AES-256-GCM encryption for API keys
   - `lib/types.ts`: TypeScript types for Agent, AgentMessage, etc.
-  - `lib/api-utils.ts`: API configuration, simulation mode detection, user API key retrieval
   - `lib/mock-data.ts`: Simulated data for development/demo
   - `lib/schema/`: Database schemas
     - `auth-schema.ts`: Better Auth tables + user_api_keys
@@ -220,12 +242,12 @@ Agent API routes follow REST conventions:
 
 All agent responses include a `simulation: boolean` field indicating the mode.
 
-**Mode Detection**: Each agent API route calls `isSimulationMode(request)` which:
+**Mode Detection**: The `withSimulationMode` middleware (applied to agents and models routes) handles this:
 1. Extracts session from request headers using `auth.api.getSession()`
-2. If no session, returns `true` (simulation mode)
-3. Queries `user_api_keys` table for user's encrypted API key
-4. Decrypts the API key if found
-5. Returns `true` if no key, invalid key, or key too short; otherwise `false` (live mode)
+2. Queries `user_api_keys` table for user's encrypted API key
+3. Decrypts the API key if found
+4. Sets `c.get("simulationMode")` to `true` if no key, invalid key, or key too short
+5. Sets `c.get("apiKey")` with the decrypted key for live mode requests
 
 ### UI Architecture
 
