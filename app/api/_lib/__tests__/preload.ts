@@ -220,9 +220,14 @@ mock.module("ai", () => ({
 // ============================================================================
 
 mock.module("@ai-sdk/openai", () => ({
-  openai: () => ({
-    modelId: "gpt-4o-mini",
-  }),
+  createOpenAI: (options?: { apiKey?: string }) => {
+    // Return a provider function that accepts a model ID
+    return (modelId: string) => ({
+      modelId,
+      provider: "openai",
+      ...options,
+    })
+  },
 }))
 
 // ============================================================================
