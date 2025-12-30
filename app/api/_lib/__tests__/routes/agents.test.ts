@@ -363,6 +363,38 @@ describe("Agents Routes", () => {
   })
 
   // ==========================================================================
+  // POST /:id/summarize
+  // ==========================================================================
+
+  describe("POST /:id/summarize", () => {
+    it("summarizes conversation in simulation mode (no API key)", async () => {
+      withoutApiKey()
+
+      const res = await agentsApp.request(`/${mockAgent.id}/summarize`, {
+        method: "POST",
+      })
+
+      expect(res.status).toBe(200)
+      const data = await res.json()
+      expect(data.summary).toBeDefined()
+      expect(typeof data.summary).toBe("string")
+      expect(data.summary.length).toBeGreaterThan(0)
+    })
+
+    it("returns 404 for non-existent conversation in simulation mode", async () => {
+      withoutApiKey()
+
+      const res = await agentsApp.request("/non_existent_agent/summarize", {
+        method: "POST",
+      })
+
+      expect(res.status).toBe(404)
+      const data = await res.json()
+      expect(data.error).toBe("Conversation not found")
+    })
+  })
+
+  // ==========================================================================
   // Route Not Found
   // ==========================================================================
 

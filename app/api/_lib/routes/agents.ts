@@ -1,6 +1,12 @@
+import { createOpenAI } from "@ai-sdk/openai"
 import { zValidator } from "@hono/zod-validator"
+import { generateText } from "ai"
+import { eq } from "drizzle-orm"
 import { Hono } from "hono"
 import { z } from "zod"
+import { extractUserMessagesAndLastAssistant } from "@/lib/conversation-utils"
+import { db } from "@/lib/db"
+import { decryptData } from "@/lib/encryption"
 import {
   addMessageToConversation,
   addSimulatedAgent,
@@ -10,11 +16,12 @@ import {
   removeSimulatedAgent,
   updateSimulatedAgentStatus,
 } from "@/lib/mock-data"
+import { userApiKeys } from "@/lib/schema/auth-schema"
 import {
   type LaunchAgentRequest,
   launchAgentRequestSchema,
 } from "@/lib/schemas/cursor/launch-agent"
-import type { Agent } from "@/lib/types"
+import type { Agent, AgentConversation } from "@/lib/types"
 import { type AuthVariables, requireAuth } from "../middleware/auth"
 import {
   type SimulationVariables,
@@ -295,6 +302,130 @@ app.get("/:id/conversation", async (c) => {
   } catch (error) {
     console.error("Error fetching conversation:", error)
     return c.json({ error: "Failed to fetch conversation" }, 500)
+  }
+})
+
+// POST /api/agents/:id/summarize - Summarize conversation
+app.post("/:id/summarize", async (c) => {
+  const id = c.req.param("id")
+  const simulationMode = c.get("simulationMode")
+  const apiKey = c.get("apiKey")
+
+  // Get conversation
+  let conversation: AgentConversation | null = null
+  if (simulationMode) {
+    conversation = getSimulatedConversation(id)
+    if (!conversation) {
+      return c.json({ error: "Conversation not found" }, 404)
+    }
+  } else {
+    try {
+      const response = await fetch(`${CURSOR_API_URL}/${id}/conversation`, {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
+
+      conversation = await response.json()
+    } catch (error) {
+      console.error("Error fetching conversation:", error)
+      return c.json({ error: "Failed to fetch conversation" }, 500)
+    }
+  }
+
+  // Check if conversation has messages
+  if (
+    !conversation ||
+    !conversation.messages ||
+    conversation.messages.length === 0
+  ) {
+    return c.json({ error: "No conversation messages to summarize" }, 400)
+  }
+
+  // Extract only user messages and last assistant message from each turn
+  // This saves tokens and focuses on the key information, as the last assistant
+  // message in each turn contains a summary of that response
+  const condensedMessages = extractUserMessagesAndLastAssistant(
+    conversation.messages
+  )
+
+  // Format conversation for summarization
+  const conversationText = condensedMessages
+    .map((msg) => {
+      if (msg.type === "user_message") {
+        return `User: ${msg.text || ""}`
+      } else if (msg.type === "assistant_message") {
+        return `Agent: ${msg.text || ""}`
+      }
+      return ""
+    })
+    .filter(Boolean)
+    .join("\n\n")
+
+  if (!conversationText.trim()) {
+    return c.json(
+      { error: "Conversation has no meaningful content to summarize" },
+      400
+    )
+  }
+
+  // Get user's OpenAI API key from database
+  const user = c.get("user")
+  const [apiKeyRecord] = await db
+    .select()
+    .from(userApiKeys)
+    .where(eq(userApiKeys.userId, user.id))
+    .limit(1)
+
+  if (!apiKeyRecord || !apiKeyRecord.encryptedOpenaiApiKey) {
+    return c.json(
+      {
+        error:
+          "OpenAI API key not configured. Please add your OpenAI API key in Account settings to enable summaries.",
+      },
+      400
+    )
+  }
+
+  let openaiApiKey: string
+  try {
+    openaiApiKey = decryptData(apiKeyRecord.encryptedOpenaiApiKey)
+  } catch (error) {
+    console.error("Error decrypting OpenAI API key:", error)
+    return c.json(
+      {
+        error:
+          "Failed to decrypt OpenAI API key. Please update your API key in Account settings.",
+      },
+      500
+    )
+  }
+
+  try {
+    // Generate summary using AI SDK with user's API key
+    const openaiProvider = createOpenAI({ apiKey: openaiApiKey })
+    const { text } = await generateText({
+      model: openaiProvider("gpt-4o-mini"),
+      prompt: `Please provide a concise summary of the following conversation between a user and a Cursor AI agent. Focus on:
+- The main task or goal
+- Key actions taken by the agent
+- Important decisions or outcomes
+- Any errors or issues encountered
+
+Conversation:
+${conversationText}
+
+Summary:`,
+    })
+
+    return c.json({ summary: text })
+  } catch (error) {
+    console.error("Error generating summary:", error)
+    return c.json({ error: "Failed to generate summary" }, 500)
   }
 })
 
