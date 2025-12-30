@@ -42,6 +42,16 @@ type MockState = {
       name: string
       createdAt: Date
     }>
+    timeLogs: Array<{
+      id: number
+      userId: string
+      taskId: string
+      activityType: "task_creation" | "conversation_review"
+      startTime: Date
+      endTime: Date | null
+      duration: number | null
+      createdAt: Date
+    }>
   }
   cursorApiResponse: {
     ok: boolean
@@ -109,6 +119,28 @@ export function resetMockState(): void {
         userId: "user_123",
         name: "develop",
         createdAt: new Date("2024-01-02"),
+      },
+    ],
+    timeLogs: [
+      {
+        id: 1,
+        userId: "user_123",
+        taskId: "bc_agent123",
+        activityType: "task_creation",
+        startTime: new Date("2024-01-01T10:00:00Z"),
+        endTime: new Date("2024-01-01T10:05:00Z"),
+        duration: 5 * 60 * 1000,
+        createdAt: new Date("2024-01-01T10:05:00Z"),
+      },
+      {
+        id: 2,
+        userId: "user_123",
+        taskId: "bc_agent123",
+        activityType: "conversation_review",
+        startTime: new Date("2024-01-01T11:00:00Z"),
+        endTime: new Date("2024-01-01T11:10:00Z"),
+        duration: 10 * 60 * 1000,
+        createdAt: new Date("2024-01-01T11:10:00Z"),
       },
     ],
   }

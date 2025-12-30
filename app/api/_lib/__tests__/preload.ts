@@ -58,6 +58,29 @@ const DEFAULT_BRANCHES = [
   },
 ]
 
+const DEFAULT_TIME_LOGS = [
+  {
+    id: 1,
+    userId: "user_123",
+    taskId: "bc_agent123",
+    activityType: "task_creation" as const,
+    startTime: new Date("2024-01-01T10:00:00Z"),
+    endTime: new Date("2024-01-01T10:05:00Z"),
+    duration: 5 * 60 * 1000, // 5 minutes in milliseconds
+    createdAt: new Date("2024-01-01T10:05:00Z"),
+  },
+  {
+    id: 2,
+    userId: "user_123",
+    taskId: "bc_agent123",
+    activityType: "conversation_review" as const,
+    startTime: new Date("2024-01-01T11:00:00Z"),
+    endTime: new Date("2024-01-01T11:10:00Z"),
+    duration: 10 * 60 * 1000, // 10 minutes in milliseconds
+    createdAt: new Date("2024-01-01T11:10:00Z"),
+  },
+]
+
 // ============================================================================
 // Mock State (shared across all tests)
 // ============================================================================
@@ -80,6 +103,7 @@ const mockState = {
     apiKeys: [{ ...DEFAULT_API_KEY }],
     repositories: [...DEFAULT_REPOSITORIES],
     branches: [...DEFAULT_BRANCHES],
+    timeLogs: [...DEFAULT_TIME_LOGS],
   },
 
   // Controls the mocked Cursor API response (only used in live mode)
@@ -138,34 +162,111 @@ mock.module("@/lib/auth", () => ({
 
 const createChainableMock = () => {
   let currentTable: string | null = null
+  let whereConditions: Array<{ field: string; value: unknown }> = []
 
   const getResults = () => {
     const state = (globalThis as Record<string, unknown>)
       .__testMockState as typeof mockState
+    let results: unknown[] = []
+    
     switch (currentTable) {
       case "userApiKeys":
-        return state.dbResults.apiKeys
+        results = state.dbResults.apiKeys
+        break
       case "repositories":
-        return state.dbResults.repositories
+        results = state.dbResults.repositories
+        break
       case "branches":
-        return state.dbResults.branches
+        results = state.dbResults.branches
+        break
+      case "timeLogs":
+        results = state.dbResults.timeLogs
+        break
       default:
         return []
     }
+
+    // Apply where conditions - handle both single eq() and and(eq(), eq())
+    // For user-specific tables, always filter by userId if not already filtered
+    if (currentTable === "timeLogs" || currentTable === "repositories" || currentTable === "branches") {
+      const hasUserIdFilter = whereConditions.some(c => c.field === "userId")
+      if (!hasUserIdFilter) {
+        // Default to filtering by the test user
+        whereConditions.push({ field: "userId", value: "user_123" })
+      }
+    }
+    
+    if (whereConditions.length > 0) {
+      results = results.filter((item) => {
+        if (typeof item !== "object" || item === null) return false
+        const itemObj = item as Record<string, unknown>
+        return whereConditions.every((condition) => {
+          // Handle nested objects (drizzle conditions can be nested)
+          const fieldValue = itemObj[condition.field]
+          return fieldValue === condition.value
+        })
+      })
+    }
+
+    return results
+  }
+
+  const extractConditions = (condition: unknown): void => {
+    if (!condition || typeof condition !== "object") return
+    
+    const cond = condition as Record<string, unknown>
+    
+    // Drizzle's eq() and and() return objects with a specific structure
+    // For testing, we'll check for the actual values that get passed
+    // The condition object may have nested structures from and() or eq()
+    
+    // Try to extract userId and taskId from the condition
+    // Drizzle conditions are complex, so we'll use a simple approach:
+    // Check if the condition object has properties that match our fields
+    const checkNested = (obj: unknown, depth = 0): void => {
+      if (depth > 3 || !obj || typeof obj !== "object") return
+      
+      const objRecord = obj as Record<string, unknown>
+      
+      // Check for direct field matches
+      if ("userId" in objRecord && objRecord.userId !== undefined) {
+        whereConditions.push({ field: "userId", value: objRecord.userId })
+      }
+      if ("taskId" in objRecord && objRecord.taskId !== undefined) {
+        whereConditions.push({ field: "taskId", value: objRecord.taskId })
+      }
+      if ("id" in objRecord && objRecord.id !== undefined) {
+        whereConditions.push({ field: "id", value: objRecord.id })
+      }
+      
+      // Recursively check nested objects (for and() conditions)
+      Object.values(objRecord).forEach((value) => {
+        if (value && typeof value === "object") {
+          checkNested(value, depth + 1)
+        }
+      })
+    }
+    
+    checkNested(cond)
   }
 
   const chainMock: Record<string, unknown> = {
     from: (table: unknown) => {
+      whereConditions = []
       if (table && typeof table === "object") {
         const tableObj = table as Record<string, unknown>
         if ("encryptedApiKey" in tableObj) currentTable = "userApiKeys"
         else if ("url" in tableObj) currentTable = "repositories"
-        else if ("name" in tableObj && !("url" in tableObj))
+        else if ("name" in tableObj && !("url" in tableObj) && !("activityType" in tableObj))
           currentTable = "branches"
+        else if ("activityType" in tableObj) currentTable = "timeLogs"
       }
       return chainMock
     },
-    where: () => chainMock,
+    where: (condition: unknown) => {
+      extractConditions(condition)
+      return chainMock
+    },
     orderBy: () => Promise.resolve(getResults()),
     limit: () => Promise.resolve(getResults()),
   }
