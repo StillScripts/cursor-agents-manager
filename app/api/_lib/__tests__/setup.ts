@@ -21,6 +21,7 @@ type ApiKeyRecord = {
   id: string
   userId: string
   encryptedApiKey: string
+  encryptedOpenaiApiKey?: string
   createdAt: Date
   updatedAt: Date
 }
@@ -68,6 +69,7 @@ const DEFAULT_API_KEY: ApiKeyRecord = {
   id: "apikey_123",
   userId: "user_123",
   encryptedApiKey: "encrypted:cursor_api_key_abc123",
+  encryptedOpenaiApiKey: "encrypted:sk-test-openai-key-123",
   createdAt: new Date("2024-01-01"),
   updatedAt: new Date("2024-01-01"),
 }
@@ -172,12 +174,18 @@ export function withValidApiKey(apiKey = "cursor_api_key_abc123"): void {
 }
 
 /**
- * Remove the user's API key.
+ * Remove the user's Cursor API key.
  * This enables SIMULATION MODE - requests will use mock data.
+ * OpenAI API key is preserved for summarization features.
  */
 export function withoutApiKey(): void {
   const state = getMockState()
-  state.dbResults.apiKeys = []
+  state.dbResults.apiKeys = [
+    {
+      ...DEFAULT_API_KEY,
+      encryptedApiKey: "",
+    },
+  ]
 }
 
 /**

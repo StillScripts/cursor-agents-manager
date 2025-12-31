@@ -15,6 +15,13 @@
       "when": 1766739726364,
       "tag": "0001_broken_epoch",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1767013154330,
+      "tag": "0002_burly_toad",
+      "breakpoints": true
     }
   ]
 }
