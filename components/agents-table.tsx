@@ -116,7 +116,13 @@ export function AgentsTable() {
                     </span>
                   ) : (
                     <span>
-                      Page {page + 1} of {data.totalPages} ({data.total} agents)
+                      Page {page + 1}
+                      {data.totalPages != null &&
+                        typeof data.totalPages === "number" &&
+                        data.totalPages > 0 && (
+                          <> of {data.totalPages}</>
+                        )}{" "}
+                      ({data.total} agents)
                     </span>
                   )}
                 </div>
