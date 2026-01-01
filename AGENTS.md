@@ -25,7 +25,27 @@ bun run start
 
 # Lint - USE THIS to check for errors
 bun run lint
+
+# Format code with Biome (CRITICAL - run before committing)
+bun run lint:fix
+# OR
+bun run format
 ```
+
+## Code Formatting (CRITICAL)
+
+**⚠️ CRITICAL FOR AI AGENTS**: Before committing any code changes, you **MUST** run Biome's formatting autofix:
+
+```bash
+bun run lint:fix
+```
+
+This command will:
+- Auto-fix linting issues
+- Format code according to project standards
+- Ensure consistent code style across the codebase
+
+**Rule**: **ALWAYS** run `bun run lint:fix` before committing code. This is mandatory and non-negotiable. The repository does not use pre-commit hooks, so agents must manually ensure code is properly formatted.
 
 ## Testing & Validation
 
