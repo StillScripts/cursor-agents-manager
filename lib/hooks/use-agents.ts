@@ -8,6 +8,22 @@ import type {
   PaginatedAgentsResponse,
 } from "@/lib/types"
 
+// Types for time logs
+export interface TimeLogEntry {
+  id: number
+  userId: string
+  taskId: string
+  activityType: "task_creation" | "conversation_review"
+  startTime: Date
+  endTime: Date | null
+  duration: number | null
+  createdAt: Date
+}
+
+export interface TimeLogsResponse {
+  timeLogs: TimeLogEntry[]
+}
+
 // Cache configuration constants
 const FIVE_MINUTES = 5 * 60 * 1000
 
@@ -162,5 +178,21 @@ export function useSummarizeConversation() {
         localStorage.setItem(key, data.summary)
       }
     },
+  })
+}
+
+export function useAgentTimeLogs(taskId: string) {
+  return useQuery<TimeLogsResponse>({
+    queryKey: ["timeLogs", taskId],
+    queryFn: async () => {
+      const response = await fetch(`/api/user/time-logs?taskId=${taskId}`)
+      if (!response.ok) throw new Error("Failed to fetch time logs")
+      return response.json()
+    },
+    enabled: !!taskId,
+    // Don't throw errors, just fail gracefully
+    retry: false,
+    // Don't refetch on window focus since time logs don't change often
+    refetchOnWindowFocus: false,
   })
 }
