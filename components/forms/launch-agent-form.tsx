@@ -24,6 +24,7 @@ import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 import { useBranches } from "@/lib/hooks/use-branches"
 import { useModels } from "@/lib/hooks/use-models"
 import { useRepositories } from "@/lib/hooks/use-repositories"
+import { useTimeTracking } from "@/lib/hooks/use-time-tracking"
 import {
   formDataToApiRequest,
   type LaunchAgentFormData,
@@ -164,6 +165,9 @@ export function LaunchAgentForm() {
   const router = useRouter()
   const launchAgent = useLaunchAgent()
 
+  // Time tracking for task creation
+  const timeTracking = useTimeTracking()
+
   // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
   const form = useAppForm<LaunchAgentFormData>({
     defaultValues: {
@@ -191,7 +195,30 @@ export function LaunchAgentForm() {
       // Convert to API request format (schema already validated by form validators)
       const apiRequest = formDataToApiRequest(value as LaunchAgentFormData)
 
-      await launchAgent.mutateAsync(apiRequest)
+      // Capture start time before launching
+      const startTime = timeTracking.startsAt
+
+      // Launch the agent
+      const result = await launchAgent.mutateAsync(apiRequest)
+
+      // Save time log with the task ID from the response
+      if (result?.id && startTime) {
+        try {
+          await fetch("/api/user/time-logs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              taskId: result.id,
+              activityType: "task_creation",
+              startTime,
+            }),
+          })
+        } catch (error) {
+          console.error("Failed to save time log:", error)
+          // Don't block navigation if time log save fails
+        }
+      }
+
       router.push("/")
     },
   })
@@ -231,6 +258,15 @@ export function LaunchAgentForm() {
                         description="Describe the task you want the agent to perform (10-5000 characters)"
                         placeholder="Add a README.md file with installation instructions..."
                         className="min-h-[120px]"
+                        onFocus={() => {
+                          // Start tracking when user focuses on the textarea
+                          if (!timeTracking.isTracking) {
+                            timeTracking.start()
+                          }
+                        }}
+                        onChange={(e) => {
+                          field.handleChange(e.target.value)
+                        }}
                       />
                     )}
                   </form.AppField>

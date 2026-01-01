@@ -15,7 +15,8 @@
       "WebSearch",
       "WebFetch(domain:cursor.com)",
       "Bash(bun test:*)",
-      "Bash(bun run test:*)"
+      "Bash(bun run test:*)",
+      "Bash(bun run lint:fix:*)"
     ]
   }
 }

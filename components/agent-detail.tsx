@@ -1,8 +1,10 @@
 "use client"
 
+import { useQueryClient } from "@tanstack/react-query"
 import { formatDistanceToNow } from "date-fns"
 import {
   Bot,
+  Clock,
   ExternalLink,
   Eye,
   EyeOff,
@@ -43,11 +45,13 @@ import { filterMessagesForDisplay } from "@/lib/conversation-utils"
 import {
   useAgent,
   useAgentConversation,
+  useAgentTimeLogs,
   useDeleteAgent,
   useSendFollowUp,
   useStopAgent,
   useSummarizeConversation,
 } from "@/lib/hooks/use-agents"
+import { useTimeTracking } from "@/lib/hooks/use-time-tracking"
 import { cn } from "@/lib/utils"
 import { PageHeader } from "./page-header"
 import { SimulationBanner } from "./simulation-banner"
@@ -67,10 +71,12 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
   const { data: agent, isLoading: agentLoading } = useAgent(agentId)
   const { data: conversation, isLoading: conversationLoading } =
     useAgentConversation(agentId)
+  const { data: timeLogsData } = useAgentTimeLogs(agentId)
   const stopAgent = useStopAgent()
   const deleteAgent = useDeleteAgent()
   const sendFollowUp = useSendFollowUp()
   const summarizeConversation = useSummarizeConversation()
+  const queryClient = useQueryClient()
   const { toast } = useToast()
 
   // Load summary from localStorage on mount
@@ -91,6 +97,14 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
     }
   }, [summarizeConversation.isSuccess, summarizeConversation.data])
 
+  // Time tracking for conversation review (auto-start on mount)
+  const timeTracking = useTimeTracking()
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Only want to start once on mount
+  useEffect(() => {
+    timeTracking.start()
+  }, [])
+
   const handleStop = async () => {
     await stopAgent.mutateAsync(agentId)
   }
@@ -102,8 +116,34 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
 
   const handleSendFollowUp = async () => {
     if (!followUpMessage.trim()) return
+
+    // Capture start time before sending
+    const startTime = timeTracking.startsAt
+
     await sendFollowUp.mutateAsync({ id: agentId, message: followUpMessage })
     setFollowUpMessage("")
+
+    // Save time log after successful follow-up
+    if (startTime) {
+      try {
+        await fetch("/api/user/time-logs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            taskId: agentId,
+            activityType: "conversation_review",
+            startTime,
+          }),
+        })
+        // Invalidate time logs query to update displayed total
+        queryClient.invalidateQueries({ queryKey: ["timeLogs", agentId] })
+        // Reset timer after saving
+        timeTracking.stop()
+        timeTracking.start()
+      } catch (error) {
+        console.error("Failed to save time log:", error)
+      }
+    }
   }
 
   const handleSummarize = async () => {
@@ -155,6 +195,31 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
     agent.status === "FINISHED" ||
     agent.status === "ERROR"
 
+  // Calculate total time spent from time logs (duration = endTime - startTime)
+  // Falls back to createdAt if endTime is null (for future "ongoing" task support)
+  const totalTimeSpent = timeLogsData?.timeLogs.reduce((total, log) => {
+    const start = new Date(log.startTime).getTime()
+    const end = new Date(log.endTime ?? log.createdAt).getTime()
+    return total + (end - start)
+  }, 0)
+
+  // Format duration in a human-readable way
+  const formatDuration = (ms: number) => {
+    const seconds = Math.floor(ms / 1000)
+    const minutes = Math.floor(seconds / 60)
+    const hours = Math.floor(minutes / 60)
+
+    if (hours > 0) {
+      const remainingMinutes = minutes % 60
+      return `${hours}h ${remainingMinutes}m`
+    }
+    if (minutes > 0) {
+      const remainingSeconds = seconds % 60
+      return `${minutes}m ${remainingSeconds}s`
+    }
+    return `${seconds}s`
+  }
+
   return (
     <>
       <PageHeader title={agent.name} showBack expandable />
@@ -183,6 +248,16 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
                     })}
                   </span>
                 </div>
+
+                {typeof totalTimeSpent === "number" && totalTimeSpent > 0 && (
+                  <div className="flex items-center gap-2 text-sm py-2 px-3 bg-primary/10 rounded-lg border border-primary/20">
+                    <Clock className="h-4 w-4 text-primary" />
+                    <span className="text-muted-foreground">Time spent:</span>
+                    <span className="text-foreground font-medium">
+                      {formatDuration(totalTimeSpent)}
+                    </span>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">

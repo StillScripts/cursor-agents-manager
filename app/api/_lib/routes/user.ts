@@ -1,11 +1,12 @@
 import crypto from "node:crypto"
 import { zValidator } from "@hono/zod-validator"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { Hono } from "hono"
+import { z } from "zod"
 import { db } from "@/lib/db"
 import { decryptData, encryptData } from "@/lib/encryption"
 import { userApiKeys } from "@/lib/schema/auth-schema"
-import { branches, repositories } from "@/lib/schema/user-schema"
+import { branches, repositories, timeLogs } from "@/lib/schema/user-schema"
 import {
   apiKeySchema,
   branchesRequestSchema,
@@ -318,6 +319,61 @@ app.post("/branches", zValidator("json", branchesRequestSchema), async (c) => {
   } catch (error) {
     console.error("Error saving branches:", error)
     return c.json({ error: "Failed to save branches" }, 500)
+  }
+})
+
+// ============================================================================
+// Time Log Routes
+// ============================================================================
+
+const timeLogSchema = z.object({
+  taskId: z.string().min(1),
+  activityType: z.enum(["task_creation", "conversation_review"]),
+  startTime: z.number().int().positive(),
+})
+
+// POST /api/user/time-logs - Save a time log
+app.post("/time-logs", zValidator("json", timeLogSchema), async (c) => {
+  const user = c.get("user")
+  const data = c.req.valid("json")
+
+  try {
+    await db.insert(timeLogs).values({
+      userId: user.id,
+      taskId: data.taskId,
+      activityType: data.activityType,
+      startTime: new Date(data.startTime),
+      endTime: new Date(), // Server sets end time
+      createdAt: new Date(),
+    })
+
+    return c.json({ success: true })
+  } catch (error) {
+    console.error("Error saving time log:", error)
+    return c.json({ error: "Failed to save time log" }, 500)
+  }
+})
+
+// GET /api/user/time-logs - Get time logs for a task (optional taskId query param)
+app.get("/time-logs", async (c) => {
+  const user = c.get("user")
+  const taskId = c.req.query("taskId")
+
+  try {
+    const conditions = taskId
+      ? and(eq(timeLogs.userId, user.id), eq(timeLogs.taskId, taskId))
+      : eq(timeLogs.userId, user.id)
+
+    const logs = await db
+      .select()
+      .from(timeLogs)
+      .where(conditions)
+      .orderBy(timeLogs.createdAt)
+
+    return c.json({ timeLogs: logs })
+  } catch (error) {
+    console.error("Error fetching time logs:", error)
+    return c.json({ error: "Failed to fetch time logs" }, 500)
   }
 })
 
