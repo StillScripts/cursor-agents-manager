@@ -27,10 +27,7 @@ export function PWAInstaller() {
       setShowInstallButton(true)
     }
 
-    window.addEventListener(
-      "beforeinstallprompt",
-      handleBeforeInstallPrompt,
-    )
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
 
     // Check if app was installed
     window.addEventListener("appinstalled", () => {
@@ -42,7 +39,7 @@ export function PWAInstaller() {
     return () => {
       window.removeEventListener(
         "beforeinstallprompt",
-        handleBeforeInstallPrompt,
+        handleBeforeInstallPrompt
       )
     }
   }, [])

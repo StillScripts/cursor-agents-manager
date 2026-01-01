@@ -4,10 +4,7 @@ import { useEffect } from "react"
 
 export function PWARegister() {
   useEffect(() => {
-    if (
-      typeof window !== "undefined" &&
-      "serviceWorker" in navigator
-    ) {
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       // Register service worker
       window.addEventListener("load", () => {
         navigator.serviceWorker
@@ -15,13 +12,16 @@ export function PWARegister() {
           .then((registration) => {
             console.log(
               "Service Worker registered successfully:",
-              registration.scope,
+              registration.scope
             )
 
             // Check for updates every hour
-            setInterval(() => {
-              registration.update()
-            }, 60 * 60 * 1000)
+            setInterval(
+              () => {
+                registration.update()
+              },
+              60 * 60 * 1000
+            )
 
             // Handle updates
             registration.addEventListener("updatefound", () => {
@@ -33,11 +33,7 @@ export function PWARegister() {
                     navigator.serviceWorker.controller
                   ) {
                     // New service worker available, prompt user to reload
-                    if (
-                      confirm(
-                        "New version available! Reload to update?",
-                      )
-                    ) {
+                    if (confirm("New version available! Reload to update?")) {
                       newWorker.postMessage({ type: "SKIP_WAITING" })
                       window.location.reload()
                     }
@@ -53,15 +49,12 @@ export function PWARegister() {
 
       // Handle service worker updates
       let refreshing = false
-      navigator.serviceWorker.addEventListener(
-        "controllerchange",
-        () => {
-          if (!refreshing) {
-            refreshing = true
-            window.location.reload()
-          }
-        },
-      )
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (!refreshing) {
+          refreshing = true
+          window.location.reload()
+        }
+      })
     }
   }, [])
 
