@@ -3,6 +3,7 @@
 import { formatDistanceToNow } from "date-fns"
 import {
   Bot,
+  Clock,
   ExternalLink,
   Eye,
   EyeOff,
@@ -43,6 +44,7 @@ import { filterMessagesForDisplay } from "@/lib/conversation-utils"
 import {
   useAgent,
   useAgentConversation,
+  useAgentTimeLogs,
   useDeleteAgent,
   useSendFollowUp,
   useStopAgent,
@@ -68,6 +70,7 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
   const { data: agent, isLoading: agentLoading } = useAgent(agentId)
   const { data: conversation, isLoading: conversationLoading } =
     useAgentConversation(agentId)
+  const { data: timeLogsData } = useAgentTimeLogs(agentId)
   const stopAgent = useStopAgent()
   const deleteAgent = useDeleteAgent()
   const sendFollowUp = useSendFollowUp()
@@ -92,46 +95,13 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
     }
   }, [summarizeConversation.isSuccess, summarizeConversation.data])
 
-  // Time tracking for conversation review
-  const timeTracking = useTimeTracking({
-    activityType: "conversation_review",
-    taskId: agentId,
-    autoStart: true, // Start automatically when component mounts
-    onSave: async (timeLog) => {
-      const response = await fetch("/api/user/time-logs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(timeLog),
-      })
-      if (!response.ok) {
-        throw new Error("Failed to save time log")
-      }
-    },
-  })
+  // Time tracking for conversation review (auto-start on mount)
+  const timeTracking = useTimeTracking()
 
-  // Save time log periodically (every 5 minutes) and on unmount
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Only want to start once on mount
   useEffect(() => {
-    if (!agentId || !timeTracking.isTracking) return
-
-    // Save every 5 minutes while tracking (continue tracking after save)
-    const saveInterval = setInterval(() => {
-      if (timeTracking.isTracking && timeTracking.saveTimeLogAndContinue) {
-        timeTracking.saveTimeLogAndContinue(agentId).catch((error) => {
-          console.error("Failed to save time log periodically:", error)
-        })
-      }
-    }, 5 * 60 * 1000) // 5 minutes
-
-    // Save and stop on unmount
-    return () => {
-      clearInterval(saveInterval)
-      if (timeTracking.isTracking) {
-        timeTracking.saveTimeLog(agentId).catch((error) => {
-          console.error("Failed to save time log on unmount:", error)
-        })
-      }
-    }
-  }, [agentId, timeTracking.isTracking, timeTracking.saveTimeLog, timeTracking.saveTimeLogAndContinue])
+    timeTracking.start()
+  }, [])
 
   const handleStop = async () => {
     await stopAgent.mutateAsync(agentId)
@@ -144,8 +114,32 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
 
   const handleSendFollowUp = async () => {
     if (!followUpMessage.trim()) return
+
+    // Get duration before sending
+    const duration = timeTracking.getDuration()
+
     await sendFollowUp.mutateAsync({ id: agentId, message: followUpMessage })
     setFollowUpMessage("")
+
+    // Save time log after successful follow-up
+    if (duration > 0) {
+      try {
+        await fetch("/api/user/time-logs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            taskId: agentId,
+            activityType: "conversation_review",
+            duration,
+          }),
+        })
+        // Reset timer after saving
+        timeTracking.stop()
+        timeTracking.start()
+      } catch (error) {
+        console.error("Failed to save time log:", error)
+      }
+    }
   }
 
   const handleSummarize = async () => {
@@ -197,6 +191,28 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
     agent.status === "FINISHED" ||
     agent.status === "ERROR"
 
+  // Calculate total time spent from time logs
+  const totalTimeSpent = timeLogsData?.timeLogs.reduce((total, log) => {
+    return total + (log.duration || 0)
+  }, 0)
+
+  // Format duration in a human-readable way
+  const formatDuration = (ms: number) => {
+    const seconds = Math.floor(ms / 1000)
+    const minutes = Math.floor(seconds / 60)
+    const hours = Math.floor(minutes / 60)
+
+    if (hours > 0) {
+      const remainingMinutes = minutes % 60
+      return `${hours}h ${remainingMinutes}m`
+    }
+    if (minutes > 0) {
+      const remainingSeconds = seconds % 60
+      return `${minutes}m ${remainingSeconds}s`
+    }
+    return `${seconds}s`
+  }
+
   return (
     <>
       <PageHeader title={agent.name} showBack expandable />
@@ -225,6 +241,16 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
                     })}
                   </span>
                 </div>
+
+                {typeof totalTimeSpent === "number" && totalTimeSpent > 0 && (
+                  <div className="flex items-center gap-2 text-sm py-2 px-3 bg-primary/10 rounded-lg border border-primary/20">
+                    <Clock className="h-4 w-4 text-primary" />
+                    <span className="text-muted-foreground">Time spent:</span>
+                    <span className="text-foreground font-medium">
+                      {formatDuration(totalTimeSpent)}
+                    </span>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">

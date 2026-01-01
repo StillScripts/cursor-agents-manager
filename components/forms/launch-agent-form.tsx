@@ -166,20 +166,7 @@ export function LaunchAgentForm() {
   const launchAgent = useLaunchAgent()
 
   // Time tracking for task creation
-  const timeTracking = useTimeTracking({
-    activityType: "task_creation",
-    autoStart: false,
-    onSave: async (timeLog) => {
-      const response = await fetch("/api/user/time-logs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(timeLog),
-      })
-      if (!response.ok) {
-        throw new Error("Failed to save time log")
-      }
-    },
-  })
+  const timeTracking = useTimeTracking()
 
   // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
   const form = useAppForm<LaunchAgentFormData>({
@@ -208,13 +195,24 @@ export function LaunchAgentForm() {
       // Convert to API request format (schema already validated by form validators)
       const apiRequest = formDataToApiRequest(value as LaunchAgentFormData)
 
+      // Get duration before launching
+      const duration = timeTracking.isTracking ? timeTracking.getDuration() : 0
+
       // Launch the agent
       const result = await launchAgent.mutateAsync(apiRequest)
 
       // Save time log with the task ID from the response
-      if (result?.id && timeTracking.isTracking) {
+      if (result?.id && duration > 0) {
         try {
-          await timeTracking.saveTimeLog(result.id)
+          await fetch("/api/user/time-logs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              taskId: result.id,
+              activityType: "task_creation",
+              duration,
+            }),
+          })
         } catch (error) {
           console.error("Failed to save time log:", error)
           // Don't block navigation if time log save fails
@@ -263,14 +261,10 @@ export function LaunchAgentForm() {
                         onFocus={() => {
                           // Start tracking when user focuses on the textarea
                           if (!timeTracking.isTracking) {
-                            timeTracking.startTracking()
+                            timeTracking.start()
                           }
                         }}
                         onChange={(e) => {
-                          // Start tracking when user starts typing
-                          if (!timeTracking.isTracking && e.target.value.trim()) {
-                            timeTracking.startTracking()
-                          }
                           field.handleChange(e.target.value)
                         }}
                       />
