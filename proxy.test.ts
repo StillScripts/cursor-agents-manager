@@ -1,23 +1,24 @@
 /**
- * Tests for Next.js middleware authentication logic
+ * Tests for Next.js middleware proxy function
  *
  * Tests cover:
  * - Route protection for (authenticated) routes
  * - Access control for (unauthenticated) routes
  * - Redirect behavior for authenticated/unauthenticated users
  * - API auth routes access
+ * - Static file handling
  *
- * Run with: bun test --preload ./app/api/_lib/__tests__/preload.ts middleware.test.ts
+ * Run with: bun test --preload ./app/api/_lib/__tests__/preload.ts proxy.test.ts
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test"
 import { NextRequest } from "next/server"
 import { getMockState, resetMockState } from "./app/api/_lib/__tests__/setup"
 
-// Import middleware (auth is already mocked in preload.ts)
-import { middleware } from "./middleware"
+// Import proxy function (auth is already mocked in preload.ts)
+import { proxy } from "./proxy"
 
-describe("Next.js Middleware - Authentication", () => {
+describe("Next.js Middleware Proxy - Authentication", () => {
   beforeEach(() => {
     resetMockState()
   })
@@ -45,12 +46,11 @@ describe("Next.js Middleware - Authentication", () => {
 
   describe("(authenticated) routes", () => {
     it("allows access when user has valid session", async () => {
-      // Default state has authenticated user
       const state = getMockState()
       state.authenticated = true
 
       const request = createRequest("/")
-      const response = await middleware(request)
+      const response = await proxy(request)
 
       expect(response.status).toBe(200)
     })
@@ -60,7 +60,7 @@ describe("Next.js Middleware - Authentication", () => {
       state.authenticated = true
 
       const request = createRequest("/account")
-      const response = await middleware(request)
+      const response = await proxy(request)
 
       expect(response.status).toBe(200)
     })
@@ -70,7 +70,7 @@ describe("Next.js Middleware - Authentication", () => {
       state.authenticated = true
 
       const request = createRequest("/settings")
-      const response = await middleware(request)
+      const response = await proxy(request)
 
       expect(response.status).toBe(200)
     })
@@ -80,7 +80,7 @@ describe("Next.js Middleware - Authentication", () => {
       state.authenticated = true
 
       const request = createRequest("/agent/bc_agent123")
-      const response = await middleware(request)
+      const response = await proxy(request)
 
       expect(response.status).toBe(200)
     })
@@ -90,7 +90,7 @@ describe("Next.js Middleware - Authentication", () => {
       state.authenticated = false
 
       const request = createRequest("/")
-      const response = await middleware(request)
+      const response = await proxy(request)
 
       expect(response.status).toBe(307) // Temporary redirect
       const location = response.headers.get("location")
@@ -103,7 +103,7 @@ describe("Next.js Middleware - Authentication", () => {
       state.authenticated = false
 
       const request = createRequest("/account")
-      const response = await middleware(request)
+      const response = await proxy(request)
 
       expect(response.status).toBe(307)
       const location = response.headers.get("location")
@@ -116,7 +116,7 @@ describe("Next.js Middleware - Authentication", () => {
       state.authenticated = false
 
       const request = createRequest("/agent/bc_agent123")
-      const response = await middleware(request)
+      const response = await proxy(request)
 
       expect(response.status).toBe(307)
       const location = response.headers.get("location")
@@ -135,7 +135,7 @@ describe("Next.js Middleware - Authentication", () => {
       state.authenticated = false
 
       const request = createRequest("/login")
-      const response = await middleware(request)
+      const response = await proxy(request)
 
       expect(response.status).toBe(200)
     })
@@ -145,7 +145,7 @@ describe("Next.js Middleware - Authentication", () => {
       state.authenticated = false
 
       const request = createRequest("/signup")
-      const response = await middleware(request)
+      const response = await proxy(request)
 
       expect(response.status).toBe(200)
     })
@@ -155,7 +155,7 @@ describe("Next.js Middleware - Authentication", () => {
       state.authenticated = true
 
       const request = createRequest("/login")
-      const response = await middleware(request)
+      const response = await proxy(request)
 
       expect(response.status).toBe(307)
       const location = response.headers.get("location")
@@ -167,7 +167,7 @@ describe("Next.js Middleware - Authentication", () => {
       state.authenticated = true
 
       const request = createRequest("/signup")
-      const response = await middleware(request)
+      const response = await proxy(request)
 
       expect(response.status).toBe(307)
       const location = response.headers.get("location")
@@ -185,7 +185,7 @@ describe("Next.js Middleware - Authentication", () => {
       state.authenticated = false
 
       const request = createRequest("/api/auth/sign-in")
-      const response = await middleware(request)
+      const response = await proxy(request)
 
       expect(response.status).toBe(200)
     })
@@ -195,7 +195,7 @@ describe("Next.js Middleware - Authentication", () => {
       state.authenticated = true
 
       const request = createRequest("/api/auth/sign-in")
-      const response = await middleware(request)
+      const response = await proxy(request)
 
       expect(response.status).toBe(200)
     })
@@ -205,7 +205,7 @@ describe("Next.js Middleware - Authentication", () => {
       state.authenticated = false
 
       const request = createRequest("/api/agents")
-      const response = await middleware(request)
+      const response = await proxy(request)
 
       expect(response.status).toBe(307)
       const location = response.headers.get("location")
@@ -218,7 +218,53 @@ describe("Next.js Middleware - Authentication", () => {
       state.authenticated = true
 
       const request = createRequest("/api/agents")
-      const response = await middleware(request)
+      const response = await proxy(request)
+
+      expect(response.status).toBe(200)
+    })
+  })
+
+  // ==========================================================================
+  // Static Files and Public Routes
+  // ==========================================================================
+
+  describe("static files and public routes", () => {
+    it("allows access to /_next/static files", async () => {
+      const state = getMockState()
+      state.authenticated = false
+
+      const request = createRequest("/_next/static/chunks/main.js")
+      const response = await proxy(request)
+
+      expect(response.status).toBe(200)
+    })
+
+    it("allows access to /manifest.json", async () => {
+      const state = getMockState()
+      state.authenticated = false
+
+      const request = createRequest("/manifest.json")
+      const response = await proxy(request)
+
+      expect(response.status).toBe(200)
+    })
+
+    it("allows access to files with extensions (static assets)", async () => {
+      const state = getMockState()
+      state.authenticated = false
+
+      const request = createRequest("/icon.svg")
+      const response = await proxy(request)
+
+      expect(response.status).toBe(200)
+    })
+
+    it("allows access to image files", async () => {
+      const state = getMockState()
+      state.authenticated = false
+
+      const request = createRequest("/placeholder.jpg")
+      const response = await proxy(request)
 
       expect(response.status).toBe(200)
     })
@@ -234,7 +280,7 @@ describe("Next.js Middleware - Authentication", () => {
       state.authenticated = false
 
       const request = createRequest("/account?tab=settings")
-      const response = await middleware(request)
+      const response = await proxy(request)
 
       expect(response.status).toBe(307)
       const location = response.headers.get("location")
@@ -247,7 +293,7 @@ describe("Next.js Middleware - Authentication", () => {
       state.authenticated = false
 
       const request = createRequest("/agent/bc_123/conversation")
-      const response = await middleware(request)
+      const response = await proxy(request)
 
       expect(response.status).toBe(307)
       const location = response.headers.get("location")
@@ -262,7 +308,7 @@ describe("Next.js Middleware - Authentication", () => {
       state.authenticated = false
 
       const request = createRequest("/")
-      const response = await middleware(request)
+      const response = await proxy(request)
 
       expect(response.status).toBe(307)
       const location = response.headers.get("location")
