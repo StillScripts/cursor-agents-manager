@@ -73,7 +73,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className="antialiased font-sans overflow-hidden"
+        className="antialiased font-sans overflow-hidden md:overflow-visible"
         suppressHydrationWarning
       >
         <Providers>{children}</Providers>
