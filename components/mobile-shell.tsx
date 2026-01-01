@@ -1,5 +1,3 @@
-"use client"
-
 import type { ReactNode } from "react"
 import { BottomNav } from "./bottom-nav"
 import { DesktopHeader } from "./desktop-header"
@@ -15,9 +13,7 @@ export function MobileShell({ children }: MobileShellProps) {
       <div className="hidden md:flex flex-col min-h-screen bg-background">
         <DesktopHeader />
         <main className="flex-1 pt-16">
-          <div className="max-w-7xl mx-auto px-6 py-8">
-            {children}
-          </div>
+          <div className="max-w-7xl mx-auto px-6 py-8">{children}</div>
         </main>
       </div>
 
