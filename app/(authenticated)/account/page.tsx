@@ -1,6 +1,5 @@
 import type { Metadata } from "next"
 import { AccountScreen } from "@/components/account-screen"
-import { MobileShell } from "@/components/mobile-shell"
 
 export const metadata: Metadata = {
   title: "Account",
@@ -8,9 +7,5 @@ export const metadata: Metadata = {
 }
 
 export default function AccountPage() {
-  return (
-    <MobileShell>
-      <AccountScreen />
-    </MobileShell>
-  )
+  return <AccountScreen />
 }

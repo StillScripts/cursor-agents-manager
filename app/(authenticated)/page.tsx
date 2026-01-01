@@ -1,6 +1,5 @@
 import type { Metadata } from "next"
 import { AgentsTable } from "@/components/agents-table"
-import { MobileShell } from "@/components/mobile-shell"
 
 export const metadata: Metadata = {
   title: "Your Agents",
@@ -8,9 +7,5 @@ export const metadata: Metadata = {
 }
 
 export default function HomePage() {
-  return (
-    <MobileShell>
-      <AgentsTable />
-    </MobileShell>
-  )
+  return <AgentsTable />
 }
