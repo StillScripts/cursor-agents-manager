@@ -503,17 +503,6 @@ describe("User Routes", () => {
       expect(data.timeLogs.length).toBe(0)
     })
 
-    // Note: This test is skipped because the mock's condition extraction has
-    // limitations with Drizzle's and() queries. The actual API correctly filters.
-    it.skip("returns empty array when taskId has no matching logs", async () => {
-      const res = await userApp.request("/time-logs?taskId=bc_nonexistent")
-
-      expect(res.status).toBe(200)
-      const data = await res.json()
-      expect(data.timeLogs).toBeArray()
-      expect(data.timeLogs.length).toBe(0)
-    })
-
     it("requires authentication", async () => {
       withoutAuthentication()
 
