@@ -1,21 +1,15 @@
 "use client"
 
-import { Bot, Plus, User } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { navItems } from "@/app/(authenticated)/_components/nav-items"
 import { cn } from "@/lib/utils"
-
-const navItems = [
-  { href: "/", icon: Bot, label: "Agents" },
-  { href: "/new", icon: Plus, label: "New" },
-  { href: "/account", icon: User, label: "Account" },
-]
 
 export function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border safe-area-bottom z-50">
+    <nav className="fixed md:hidden bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border safe-area-bottom z-50">
       <div className="max-w-md mx-auto flex items-center justify-around h-16">
         {navItems.map((item) => {
           const isActive =
