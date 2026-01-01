@@ -330,7 +330,6 @@ const timeLogSchema = z.object({
   taskId: z.string().min(1),
   activityType: z.enum(["task_creation", "conversation_review"]),
   startTime: z.number().int().positive(),
-  endTime: z.number().int().positive().optional(),
   duration: z.number().int().nonnegative().optional(),
 })
 
@@ -340,18 +339,20 @@ app.post("/time-logs", zValidator("json", timeLogSchema), async (c) => {
   const data = c.req.valid("json")
 
   try {
+    // Use current time for endTime if not provided
+    const now = Date.now()
+    const endTime = now
+
     // Calculate duration if not provided
-    const duration =
-      data.duration ??
-      (data.endTime ? data.endTime - data.startTime : undefined)
+    const duration = data.duration ?? endTime - data.startTime
 
     await db.insert(timeLogs).values({
       userId: user.id,
       taskId: data.taskId,
       activityType: data.activityType,
       startTime: new Date(data.startTime),
-      endTime: data.endTime ? new Date(data.endTime) : null,
-      duration: duration ?? null,
+      endTime: new Date(endTime),
+      duration,
       createdAt: new Date(),
     })
 

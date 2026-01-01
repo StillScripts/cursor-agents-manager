@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 export function useTimeTracking() {
   const [elapsedTime, setElapsedTime] = useState(0)
   const [isTracking, setIsTracking] = useState(false)
+  const [startsAt, setStartsAt] = useState<number | null>(null)
   const startTimeRef = useRef<number | null>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -17,7 +18,9 @@ export function useTimeTracking() {
     // Use ref check instead of state to avoid dependency
     if (startTimeRef.current !== null) return
 
-    startTimeRef.current = Date.now()
+    const now = Date.now()
+    startTimeRef.current = now
+    setStartsAt(now)
     setIsTracking(true)
     setElapsedTime(0)
   }, [])
@@ -28,6 +31,7 @@ export function useTimeTracking() {
 
     const duration = Date.now() - startTimeRef.current
     setIsTracking(false)
+    setStartsAt(null)
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
       intervalRef.current = null
@@ -73,6 +77,7 @@ export function useTimeTracking() {
   return {
     elapsedTime, // Current elapsed time in ms
     isTracking,
+    startsAt, // Timestamp when tracking started (for API calls)
     start,
     stop,
     getDuration,

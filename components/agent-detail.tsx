@@ -1,5 +1,6 @@
 "use client"
 
+import { useQueryClient } from "@tanstack/react-query"
 import { formatDistanceToNow } from "date-fns"
 import {
   Bot,
@@ -75,6 +76,7 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
   const deleteAgent = useDeleteAgent()
   const sendFollowUp = useSendFollowUp()
   const summarizeConversation = useSummarizeConversation()
+  const queryClient = useQueryClient()
   const { toast } = useToast()
 
   // Load summary from localStorage on mount
@@ -115,14 +117,14 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
   const handleSendFollowUp = async () => {
     if (!followUpMessage.trim()) return
 
-    // Get duration before sending
-    const duration = timeTracking.getDuration()
+    // Capture start time before sending
+    const startTime = timeTracking.startsAt
 
     await sendFollowUp.mutateAsync({ id: agentId, message: followUpMessage })
     setFollowUpMessage("")
 
     // Save time log after successful follow-up
-    if (duration > 0) {
+    if (startTime) {
       try {
         await fetch("/api/user/time-logs", {
           method: "POST",
@@ -130,9 +132,11 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
           body: JSON.stringify({
             taskId: agentId,
             activityType: "conversation_review",
-            duration,
+            startTime,
           }),
         })
+        // Invalidate time logs query to update displayed total
+        queryClient.invalidateQueries({ queryKey: ["timeLogs", agentId] })
         // Reset timer after saving
         timeTracking.stop()
         timeTracking.start()

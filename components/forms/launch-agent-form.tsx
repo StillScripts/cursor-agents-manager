@@ -195,14 +195,14 @@ export function LaunchAgentForm() {
       // Convert to API request format (schema already validated by form validators)
       const apiRequest = formDataToApiRequest(value as LaunchAgentFormData)
 
-      // Get duration before launching
-      const duration = timeTracking.isTracking ? timeTracking.getDuration() : 0
+      // Capture start time before launching
+      const startTime = timeTracking.startsAt
 
       // Launch the agent
       const result = await launchAgent.mutateAsync(apiRequest)
 
       // Save time log with the task ID from the response
-      if (result?.id && duration > 0) {
+      if (result?.id && startTime) {
         try {
           await fetch("/api/user/time-logs", {
             method: "POST",
@@ -210,7 +210,7 @@ export function LaunchAgentForm() {
             body: JSON.stringify({
               taskId: result.id,
               activityType: "task_creation",
-              duration,
+              startTime,
             }),
           })
         } catch (error) {
