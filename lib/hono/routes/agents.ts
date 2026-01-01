@@ -7,6 +7,11 @@ import { z } from "zod"
 import { extractUserMessagesAndLastAssistant } from "@/lib/conversation-utils"
 import { db } from "@/lib/db"
 import { decryptData } from "@/lib/encryption"
+import { type AuthVariables, requireAuth } from "@/lib/hono/middleware/auth"
+import {
+  type SimulationVariables,
+  withSimulationMode,
+} from "@/lib/hono/middleware/simulation"
 import {
   addMessageToConversation,
   addSimulatedAgent,
@@ -22,11 +27,6 @@ import {
   launchAgentRequestSchema,
 } from "@/lib/schemas/cursor/launch-agent"
 import type { Agent, AgentConversation } from "@/lib/types"
-import { type AuthVariables, requireAuth } from "../middleware/auth"
-import {
-  type SimulationVariables,
-  withSimulationMode,
-} from "../middleware/simulation"
 
 const CURSOR_API_URL = "https://api.cursor.com/v0/agents"
 

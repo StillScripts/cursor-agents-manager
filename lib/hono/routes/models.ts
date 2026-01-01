@@ -2,7 +2,7 @@ import { Hono } from "hono"
 import {
   type SimulationVariables,
   withSimulationMode,
-} from "../middleware/simulation"
+} from "@/lib/hono/middleware/simulation"
 
 const SIMULATED_MODELS = [
   "claude-3-5-sonnet-20241022",

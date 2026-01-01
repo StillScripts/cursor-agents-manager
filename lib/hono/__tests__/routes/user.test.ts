@@ -17,14 +17,14 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test"
-import { userApp } from "../../routes/user"
 import {
   getMockState,
   resetMockState,
   withoutApiKey,
   withoutAuthentication,
   withValidApiKey,
-} from "../setup"
+} from "@/lib/hono/__tests__/setup"
+import { userApp } from "@/lib/hono/routes/user"
 
 describe("User Routes", () => {
   beforeEach(() => {

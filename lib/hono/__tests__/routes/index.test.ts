@@ -10,8 +10,8 @@
  */
 
 import { afterEach, describe, expect, it } from "bun:test"
-import app from "../../index"
-import { resetMockState } from "../setup"
+import app from "@/lib/hono"
+import { resetMockState } from "@/lib/hono/__tests__/setup"
 
 describe("Main Hono App", () => {
   afterEach(() => {

@@ -18,13 +18,13 @@
  */
 
 import { afterEach, describe, expect, it } from "bun:test"
-import { agentsApp } from "../../routes/agents"
 import {
   mockAgent,
   resetMockState,
   withoutApiKey,
   withoutAuthentication,
-} from "../setup"
+} from "@/lib/hono/__tests__/setup"
+import { agentsApp } from "@/lib/hono/routes/agents"
 
 describe("Agents Routes", () => {
   afterEach(() => {

@@ -9,14 +9,14 @@
  */
 
 import { afterEach, describe, expect, it } from "bun:test"
-import { modelsApp } from "../../routes/models"
 import {
   resetMockState,
   setCursorApiError,
   setCursorApiResponse,
   withoutApiKey,
   withValidApiKey,
-} from "../setup"
+} from "@/lib/hono/__tests__/setup"
+import { modelsApp } from "@/lib/hono/routes/models"
 
 describe("Models Routes", () => {
   afterEach(() => {
