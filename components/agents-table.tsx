@@ -119,9 +119,7 @@ export function AgentsTable() {
                       Page {page + 1}
                       {data.totalPages != null &&
                         typeof data.totalPages === "number" &&
-                        data.totalPages > 0 && (
-                          <> of {data.totalPages}</>
-                        )}{" "}
+                        data.totalPages > 0 && <> of {data.totalPages}</>}{" "}
                       ({data.total} agents)
                     </span>
                   )}
