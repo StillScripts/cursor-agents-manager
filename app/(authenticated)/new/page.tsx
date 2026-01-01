@@ -1,6 +1,5 @@
 import type { Metadata } from "next"
 import { LaunchAgentForm } from "@/components/forms/launch-agent-form"
-import { MobileShell } from "@/components/mobile-shell"
 
 export const metadata: Metadata = {
   title: "Launch New Agent",
@@ -8,9 +7,5 @@ export const metadata: Metadata = {
 }
 
 export default function NewAgentPage() {
-  return (
-    <MobileShell>
-      <LaunchAgentForm />
-    </MobileShell>
-  )
+  return <LaunchAgentForm />
 }

@@ -1,5 +1,4 @@
 import type { Metadata } from "next"
-import { MobileShell } from "@/components/mobile-shell"
 import { SettingsForm } from "@/components/settings-form"
 
 export const metadata: Metadata = {
@@ -8,9 +7,5 @@ export const metadata: Metadata = {
 }
 
 export default function SettingsPage() {
-  return (
-    <MobileShell>
-      <SettingsForm />
-    </MobileShell>
-  )
+  return <SettingsForm />
 }

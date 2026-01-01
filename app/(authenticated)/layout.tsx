@@ -2,11 +2,7 @@ import type { ReactNode } from "react"
 import { BottomNav } from "@/app/(authenticated)/_components/bottom-nav"
 import { DesktopHeader } from "@/app/(authenticated)/_components/desktop-header"
 
-interface MobileShellProps {
-  children: ReactNode
-}
-
-export function MobileShell({ children }: MobileShellProps) {
+export default function Layout({ children }: { children: ReactNode }) {
   return (
     <>
       {/* Desktop Layout */}
