@@ -1,23 +1,18 @@
 // Service Worker for Cursor Agent Manager PWA
 // Version: 1.0.0
 
-const CACHE_NAME = 'cursor-agent-manager-v1'
-const RUNTIME_CACHE = 'cursor-agent-manager-runtime-v1'
+const CACHE_NAME = "cursor-agent-manager-v1"
+const RUNTIME_CACHE = "cursor-agent-manager-runtime-v1"
 
 // Assets to cache on install
-const PRECACHE_ASSETS = [
-  '/',
-  '/login',
-  '/signup',
-  '/manifest.json',
-]
+const PRECACHE_ASSETS = ["/", "/login", "/signup", "/manifest.json"]
 
 // Install event - cache static assets
-self.addEventListener('install', (event) => {
+self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(PRECACHE_ASSETS).catch((err) => {
-        console.warn('Failed to precache some assets:', err)
+        console.warn("Failed to precache some assets:", err)
       })
     })
   )
@@ -25,15 +20,13 @@ self.addEventListener('install', (event) => {
 })
 
 // Activate event - clean up old caches
-self.addEventListener('activate', (event) => {
+self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
           .filter((cacheName) => {
-            return (
-              cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE
-            )
+            return cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE
           })
           .map((cacheName) => {
             return caches.delete(cacheName)
@@ -45,7 +38,7 @@ self.addEventListener('activate', (event) => {
 })
 
 // Fetch event - serve from cache, fallback to network
-self.addEventListener('fetch', (event) => {
+self.addEventListener("fetch", (event) => {
   const { request } = event
   const url = new URL(request.url)
 
@@ -55,12 +48,12 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Skip API requests (they should always be fresh)
-  if (url.pathname.startsWith('/api/')) {
+  if (url.pathname.startsWith("/api/")) {
     return
   }
 
   // Skip auth requests (they need to be fresh)
-  if (url.pathname.startsWith('/api/auth/')) {
+  if (url.pathname.startsWith("/api/auth/")) {
     return
   }
 
@@ -73,7 +66,11 @@ self.addEventListener('fetch', (event) => {
       return fetch(request)
         .then((response) => {
           // Don't cache non-successful responses
-          if (!response || response.status !== 200 || response.type !== 'basic') {
+          if (
+            !response ||
+            response.status !== 200 ||
+            response.type !== "basic"
+          ) {
             return response
           }
 
@@ -89,8 +86,8 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => {
           // If network fails and we're on a navigation request, return offline page
-          if (request.mode === 'navigate') {
-            return caches.match('/')
+          if (request.mode === "navigate") {
+            return caches.match("/")
           }
         })
     })
@@ -98,8 +95,8 @@ self.addEventListener('fetch', (event) => {
 })
 
 // Message event - handle messages from the app
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
     self.skipWaiting()
   }
 })
