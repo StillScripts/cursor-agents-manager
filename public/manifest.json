@@ -1,0 +1,53 @@
+{
+  "name": "Cursor Agent Manager",
+  "short_name": "Agent Manager",
+  "description": "Manage your Cursor background agents on the go",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "https://example.com/example.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://example.com/example.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "New Agent",
+      "short_name": "New",
+      "description": "Launch a new agent",
+      "url": "/new",
+      "icons": [
+        {
+          "src": "https://example.com/example.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Agents",
+      "short_name": "Agents",
+      "description": "View all agents",
+      "url": "/",
+      "icons": [
+        {
+          "src": "https://example.com/example.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}
