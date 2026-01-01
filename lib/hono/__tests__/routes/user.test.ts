@@ -17,14 +17,14 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test"
-import { userApp } from "../../routes/user"
 import {
   getMockState,
   resetMockState,
   withoutApiKey,
   withoutAuthentication,
   withValidApiKey,
-} from "../setup"
+} from "@/lib/hono/__tests__/setup"
+import { userApp } from "@/lib/hono/routes/user"
 
 describe("User Routes", () => {
   beforeEach(() => {
@@ -496,17 +496,6 @@ describe("User Routes", () => {
       state.dbResults.timeLogs = []
 
       const res = await userApp.request("/time-logs")
-
-      expect(res.status).toBe(200)
-      const data = await res.json()
-      expect(data.timeLogs).toBeArray()
-      expect(data.timeLogs.length).toBe(0)
-    })
-
-    // Note: This test is skipped because the mock's condition extraction has
-    // limitations with Drizzle's and() queries. The actual API correctly filters.
-    it.skip("returns empty array when taskId has no matching logs", async () => {
-      const res = await userApp.request("/time-logs?taskId=bc_nonexistent")
 
       expect(res.status).toBe(200)
       const data = await res.json()

@@ -5,6 +5,7 @@ import { Hono } from "hono"
 import { z } from "zod"
 import { db } from "@/lib/db"
 import { decryptData, encryptData } from "@/lib/encryption"
+import { type AuthVariables, requireAuth } from "@/lib/hono/middleware/auth"
 import { userApiKeys } from "@/lib/schema/auth-schema"
 import { branches, repositories, timeLogs } from "@/lib/schema/user-schema"
 import {
@@ -12,7 +13,6 @@ import {
   branchesRequestSchema,
   repositoriesRequestSchema,
 } from "@/lib/schemas/settings"
-import { type AuthVariables, requireAuth } from "../middleware/auth"
 
 const app = new Hono<{ Variables: AuthVariables }>()
 

@@ -5,7 +5,6 @@ import { agentsApp } from "./routes/agents"
 import { modelsApp } from "./routes/models"
 import { userApp } from "./routes/user"
 
-// Create main Hono app with /api base path
 const app = new Hono().basePath("/api")
 
 // Global middleware

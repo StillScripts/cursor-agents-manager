@@ -1,8 +1,10 @@
-import { handle } from "hono/vercel"
-import app from "@/app/api/_lib"
+/**
+ * Server-side functionality is fully powered by Hono routes
+ */
 
-// Export handlers for all HTTP methods
-// Hono will route requests to the appropriate sub-app
+import { handle } from "hono/vercel"
+import app from "@/lib/hono"
+
 export const GET = handle(app)
 export const POST = handle(app)
 export const PUT = handle(app)
