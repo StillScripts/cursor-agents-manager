@@ -2,6 +2,7 @@ import crypto from "node:crypto"
 import { zValidator } from "@hono/zod-validator"
 import { and, eq } from "drizzle-orm"
 import { Hono } from "hono"
+import { z } from "zod"
 import { db } from "@/lib/db"
 import { decryptData, encryptData } from "@/lib/encryption"
 import { userApiKeys } from "@/lib/schema/auth-schema"
@@ -11,7 +12,6 @@ import {
   branchesRequestSchema,
   repositoriesRequestSchema,
 } from "@/lib/schemas/settings"
-import { z } from "zod"
 import { type AuthVariables, requireAuth } from "../middleware/auth"
 
 const app = new Hono<{ Variables: AuthVariables }>()
