@@ -14,15 +14,15 @@ const fontMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Cursor Agent Manager",
-    template: "%s | Cursor Agent Manager",
+    default: "Cursor Agentd",
+    template: "%s | Cursor Agentd",
   },
   description: "Manage your Cursor background agents on the go",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Agent Manager",
+    title: "Agentd",
   },
   icons: {
     icon: [
@@ -84,7 +84,7 @@ export default function RootLayout({
           name="apple-mobile-web-app-status-bar-style"
           content="black-translucent"
         />
-        <meta name="apple-mobile-web-app-title" content="Agent Manager" />
+        <meta name="apple-mobile-web-app-title" content="Agentd" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="mobile-web-app-capable" content="yes" />
         <script
