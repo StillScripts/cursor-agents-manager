@@ -195,9 +195,12 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
     agent.status === "FINISHED" ||
     agent.status === "ERROR"
 
-  // Calculate total time spent from time logs
+  // Calculate total time spent from time logs (duration = endTime - startTime)
+  // Falls back to createdAt if endTime is null (for future "ongoing" task support)
   const totalTimeSpent = timeLogsData?.timeLogs.reduce((total, log) => {
-    return total + (log.duration || 0)
+    const start = new Date(log.startTime).getTime()
+    const end = new Date(log.endTime ?? log.createdAt).getTime()
+    return total + (end - start)
   }, 0)
 
   // Format duration in a human-readable way

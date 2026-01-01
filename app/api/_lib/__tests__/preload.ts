@@ -67,7 +67,6 @@ const DEFAULT_TIME_LOGS = [
     activityType: "task_creation" as const,
     startTime: new Date("2024-01-01T10:00:00Z"),
     endTime: new Date("2024-01-01T10:05:00Z"),
-    duration: 5 * 60 * 1000, // 5 minutes in milliseconds
     createdAt: new Date("2024-01-01T10:05:00Z"),
   },
   {
@@ -77,7 +76,6 @@ const DEFAULT_TIME_LOGS = [
     activityType: "conversation_review" as const,
     startTime: new Date("2024-01-01T11:00:00Z"),
     endTime: new Date("2024-01-01T11:10:00Z"),
-    duration: 10 * 60 * 1000, // 10 minutes in milliseconds
     createdAt: new Date("2024-01-01T11:10:00Z"),
   },
 ]

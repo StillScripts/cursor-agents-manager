@@ -5,7 +5,6 @@ CREATE TABLE `time_logs` (
 	`activity_type` text NOT NULL,
 	`start_time` integer NOT NULL,
 	`end_time` integer,
-	`duration` integer,
 	`created_at` integer NOT NULL,
 	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
 );

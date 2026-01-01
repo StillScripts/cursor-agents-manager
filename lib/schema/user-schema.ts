@@ -39,6 +39,5 @@ export const timeLogs = sqliteTable("time_logs", {
   activityType: text("activity_type").notNull(), // "task_creation" or "conversation_review"
   startTime: integer("start_time", { mode: "timestamp" }).notNull(),
   endTime: integer("end_time", { mode: "timestamp" }),
-  duration: integer("duration"), // Duration in milliseconds
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 })

@@ -14,10 +14,9 @@ export interface TimeLogEntry {
   userId: string
   taskId: string
   activityType: "task_creation" | "conversation_review"
-  startTime: Date
-  endTime: Date | null
-  duration: number | null
-  createdAt: Date
+  startTime: string
+  endTime: string | null
+  createdAt: string
 }
 
 export interface TimeLogsResponse {
