@@ -79,6 +79,7 @@ app.get("/", zValidator("query", paginationSchema), async (c) => {
   try {
     const url = new URL(CURSOR_API_URL)
     url.searchParams.set("limit", String(limit))
+    url.searchParams.set("page", String(page))
 
     const response = await fetch(url.toString(), {
       headers: {
@@ -91,7 +92,21 @@ app.get("/", zValidator("query", paginationSchema), async (c) => {
     }
 
     const data = await response.json()
-    return c.json({ ...data, simulation: false })
+    
+    // Transform Cursor API response to match PaginatedAgentsResponse format
+    // The Cursor API may return cursor-based pagination, so we need to handle both cases
+    const agents = data.agents || []
+    const total = data.total ?? agents.length
+    const totalPages = data.totalPages ?? Math.ceil(total / limit)
+    
+    return c.json({
+      agents,
+      page,
+      limit,
+      total,
+      totalPages,
+      simulation: false,
+    })
   } catch (error) {
     console.error("Error fetching agents:", error)
     return c.json({ error: "Failed to fetch agents" }, 500)
