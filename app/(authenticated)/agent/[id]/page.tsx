@@ -1,5 +1,9 @@
 import type { Metadata } from "next"
 import { AgentDetail } from "@/components/agent-detail"
+import {
+  getAgentConversationData,
+  getAgentData,
+} from "@/lib/server/agents"
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -10,8 +14,23 @@ export const metadata: Metadata = {
   description: "View agent conversation and status",
 }
 
+// ISR: Revalidate every 60 seconds
+export const revalidate = 60
+
 export default async function AgentPage({ params }: PageProps) {
   const { id } = await params
 
-  return <AgentDetail agentId={id} />
+  // Fetch initial data on the server
+  const [agent, conversation] = await Promise.all([
+    getAgentData(id),
+    getAgentConversationData(id),
+  ])
+
+  return (
+    <AgentDetail
+      agentId={id}
+      initialAgent={agent}
+      initialConversation={conversation}
+    />
+  )
 }

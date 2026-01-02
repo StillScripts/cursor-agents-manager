@@ -52,7 +52,10 @@ export function useRefreshAgents() {
   }
 }
 
-export function useAgent(id: string) {
+export function useAgent(
+  id: string,
+  initialData?: (Agent & { simulation: boolean }) | null
+) {
   return useQuery<Agent & { simulation: boolean }>({
     queryKey: ["agent", id],
     queryFn: async () => {
@@ -61,10 +64,17 @@ export function useAgent(id: string) {
       return response.json()
     },
     enabled: !!id,
+    initialData: initialData ?? undefined,
+    // Refetch in the background to keep data fresh
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
 }
 
-export function useAgentConversation(id: string) {
+export function useAgentConversation(
+  id: string,
+  initialData?: (AgentConversation & { simulation: boolean }) | null
+) {
   return useQuery<AgentConversation & { simulation: boolean }>({
     queryKey: ["conversation", id],
     queryFn: async () => {
@@ -73,7 +83,11 @@ export function useAgentConversation(id: string) {
       return response.json()
     },
     enabled: !!id,
+    initialData: initialData ?? undefined,
     refetchInterval: 5000,
+    // Refetch in the background to keep data fresh
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   })
 }
 

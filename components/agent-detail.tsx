@@ -2,6 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query"
 import { formatDistanceToNow } from "date-fns"
+import type { Agent, AgentConversation } from "@/lib/types"
 import {
   Bot,
   Clock,
@@ -59,18 +60,27 @@ import { StatusBadge } from "./status-badge"
 
 interface AgentDetailProps {
   agentId: string
+  initialAgent?: (Agent & { simulation: boolean }) | null
+  initialConversation?: (AgentConversation & { simulation: boolean }) | null
 }
 
-export function AgentDetail({ agentId }: AgentDetailProps) {
+export function AgentDetail({
+  agentId,
+  initialAgent,
+  initialConversation,
+}: AgentDetailProps) {
   const router = useRouter()
   const [followUpMessage, setFollowUpMessage] = useState("")
   const [openItems, setOpenItems] = useState<string[]>(["summary"])
   const [aiSummary, setAiSummary] = useState<string | null>(null)
   const [showThinkingProcess, setShowThinkingProcess] = useState(false)
 
-  const { data: agent, isLoading: agentLoading } = useAgent(agentId)
+  const { data: agent, isLoading: agentLoading } = useAgent(
+    agentId,
+    initialAgent
+  )
   const { data: conversation, isLoading: conversationLoading } =
-    useAgentConversation(agentId)
+    useAgentConversation(agentId, initialConversation)
   const { data: timeLogsData } = useAgentTimeLogs(agentId)
   const stopAgent = useStopAgent()
   const deleteAgent = useDeleteAgent()
@@ -166,7 +176,8 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
     }
   }
 
-  if (agentLoading) {
+  // Only show loading if we don't have initial data and query is loading
+  if (!initialAgent && agentLoading) {
     return (
       <>
         <PageHeader title="Agent" showBack />
@@ -375,7 +386,7 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
             </AccordionTrigger>
             <AccordionContent className="bg-card">
               <div className="px-4 pb-4">
-                {conversationLoading ? (
+                {!initialConversation && conversationLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <Spinner className="h-6 w-6 text-primary" />
                   </div>
