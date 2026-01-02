@@ -1,6 +1,6 @@
 {
-  "name": "Cursor Agent Manager",
-  "short_name": "Agent Manager",
+  "name": "Cursor Agents",
+  "short_name": "Agents",
   "description": "Manage your Cursor background agents on the go",
   "start_url": "/",
   "display": "standalone",
