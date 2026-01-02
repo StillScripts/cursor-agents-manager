@@ -1,11 +1,9 @@
 "use client"
 
-import { useForm } from "@tanstack/react-form"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Card,
   CardContent,
@@ -13,33 +11,31 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { FieldGroup } from "@/components/ui/field"
 import { signUp } from "@/lib/auth-client"
+import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
+import {
+  signUpFormSchema,
+  type SignUpFormData,
+} from "@/lib/schemas/auth"
 
 export function SignupForm() {
   const [error, setError] = useState("")
   const router = useRouter()
 
-  const form = useForm({
+  // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
+  const form = useAppForm<SignUpFormData>({
     defaultValues: {
       name: "",
       email: "",
       password: "",
       confirmPassword: "",
     },
+    validators: {
+      onSubmit: signUpFormSchema,
+    },
     onSubmit: async ({ value }) => {
       setError("")
-
-      if (value.password !== value.confirmPassword) {
-        setError("Passwords do not match")
-        return
-      }
-
-      if (value.password.length < 8) {
-        setError("Password must be at least 8 characters")
-        return
-      }
 
       try {
         const result = await signUp.email({
@@ -71,155 +67,76 @@ export function SignupForm() {
           <CardDescription>Sign up for Cursor Agent Manager</CardDescription>
         </CardHeader>
         <CardContent>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              form.handleSubmit()
-            }}
-            className="space-y-4"
-          >
-            <form.Field
-              name="name"
-              validators={{
-                onChange: ({ value }) =>
-                  !value ? "Name is required" : undefined,
+          <FormProvider value={form}>
+            <form
+              id={form.formId}
+              onSubmit={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                form.handleSubmit()
               }}
+              className="space-y-4"
             >
-              {(field) => (
-                <div className="space-y-2">
-                  <Label htmlFor={field.name}>Name</Label>
-                  <Input
-                    id={field.name}
-                    type="text"
-                    placeholder="Your name"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    disabled={form.state.isSubmitting}
-                  />
-                  {field.state.meta.errors.length > 0 && (
-                    <p className="text-sm text-destructive">
-                      {field.state.meta.errors[0]}
-                    </p>
+              <FieldGroup>
+                <form.AppField name="name">
+                  {(field) => (
+                    <field.ControlledInput
+                      field={field}
+                      label="Name"
+                      placeholder="Your name"
+                    />
                   )}
-                </div>
-              )}
-            </form.Field>
+                </form.AppField>
 
-            <form.Field
-              name="email"
-              validators={{
-                onChange: ({ value }) =>
-                  !value
-                    ? "Email is required"
-                    : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-                      ? "Invalid email format"
-                      : undefined,
-              }}
-            >
-              {(field) => (
-                <div className="space-y-2">
-                  <Label htmlFor={field.name}>Email</Label>
-                  <Input
-                    id={field.name}
-                    type="email"
-                    placeholder="you@example.com"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    disabled={form.state.isSubmitting}
-                  />
-                  {field.state.meta.errors.length > 0 && (
-                    <p className="text-sm text-destructive">
-                      {field.state.meta.errors[0]}
-                    </p>
+                <form.AppField name="email">
+                  {(field) => (
+                    <field.ControlledInput
+                      field={field}
+                      label="Email"
+                      type="email"
+                      placeholder="you@example.com"
+                    />
                   )}
-                </div>
-              )}
-            </form.Field>
+                </form.AppField>
 
-            <form.Field
-              name="password"
-              validators={{
-                onChange: ({ value }) =>
-                  !value
-                    ? "Password is required"
-                    : value.length < 8
-                      ? "Password must be at least 8 characters"
-                      : undefined,
-              }}
-            >
-              {(field) => (
-                <div className="space-y-2">
-                  <Label htmlFor={field.name}>Password</Label>
-                  <Input
-                    id={field.name}
-                    type="password"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    disabled={form.state.isSubmitting}
-                  />
-                  {field.state.meta.errors.length > 0 && (
-                    <p className="text-sm text-destructive">
-                      {field.state.meta.errors[0]}
-                    </p>
+                <form.AppField name="password">
+                  {(field) => (
+                    <field.ControlledInput
+                      field={field}
+                      label="Password"
+                      type="password"
+                      description="Must be at least 8 characters"
+                    />
                   )}
-                </div>
-              )}
-            </form.Field>
+                </form.AppField>
 
-            <form.Field
-              name="confirmPassword"
-              validators={{
-                onChangeListenTo: ["password"],
-                onChange: ({ value, fieldApi }) => {
-                  const password = fieldApi.form.getFieldValue("password")
-                  return !value
-                    ? "Please confirm your password"
-                    : value !== password
-                      ? "Passwords do not match"
-                      : undefined
-                },
-              }}
-            >
-              {(field) => (
-                <div className="space-y-2">
-                  <Label htmlFor={field.name}>Confirm Password</Label>
-                  <Input
-                    id={field.name}
-                    type="password"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    disabled={form.state.isSubmitting}
-                  />
-                  {field.state.meta.errors.length > 0 && (
-                    <p className="text-sm text-destructive">
-                      {field.state.meta.errors[0]}
-                    </p>
+                <form.AppField name="confirmPassword">
+                  {(field) => (
+                    <field.ControlledInput
+                      field={field}
+                      label="Confirm Password"
+                      type="password"
+                    />
                   )}
-                </div>
+                </form.AppField>
+              </FieldGroup>
+
+              {error && (
+                <Alert variant="destructive">
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               )}
-            </form.Field>
 
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={form.state.isSubmitting}
-            >
-              {form.state.isSubmitting
-                ? "Creating account..."
-                : "Create Account"}
-            </Button>
-          </form>
+              <div className="mt-6">
+                <form.SubscribeButton
+                  formId={form.formId}
+                  label="Create Account"
+                  className="w-full"
+                />
+              </div>
+            </form>
+          </FormProvider>
           <p className="mt-4 text-center text-sm text-muted-foreground">
             Already have an account?{" "}
             <Link href="/login" className="text-primary hover:underline">
