@@ -126,19 +126,29 @@ export function AgentsTable() {
                 </div>
                 <div className="flex items-center gap-1">
                   <Button
+                    type="button"
                     variant="outline"
                     size="icon"
                     className="h-8 w-8 bg-transparent"
-                    onClick={() => setPage((p) => p - 1)}
+                    onClick={() => {
+                      if (canPreviousPage && !isFetching) {
+                        setPage((p) => Math.max(0, p - 1))
+                      }
+                    }}
                     disabled={!canPreviousPage || isFetching}
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                   <Button
+                    type="button"
                     variant="outline"
                     size="icon"
                     className="h-8 w-8 bg-transparent"
-                    onClick={() => setPage((p) => p + 1)}
+                    onClick={() => {
+                      if (canNextPage && !isFetching && data) {
+                        setPage((p) => Math.min(data.totalPages - 1, p + 1))
+                      }
+                    }}
                     disabled={!canNextPage || isFetching}
                   >
                     <ChevronRight className="h-4 w-4" />
