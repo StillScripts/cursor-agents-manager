@@ -6,8 +6,11 @@ This document explains how the linting and pre-commit hook system works, and how
 
 The project uses:
 - **Biome** for linting and formatting
-- **Husky** for Git hooks
-- **Pre-commit hook** that automatically runs `bun run lint:fix` before every commit
+- **Husky** for Git hooks (pre-commit hook)
+- **GitHub Actions** (PRIMARY ENFORCEMENT) that runs `bun run lint:fix` and fails on errors
+- **Pre-commit hook** (local safeguard) that automatically runs `bun run lint:fix` before every commit
+
+**⚠️ IMPORTANT**: The GitHub Action is the **primary enforcement mechanism**. Even if you bypass the pre-commit hook locally, the GitHub Action will catch and fail on linting errors.
 
 ## How It Works
 
@@ -170,9 +173,35 @@ bun run format
 3. **Team Collaboration**: Everyone follows the same code style
 4. **Automation**: Catches issues before they're committed
 
+## GitHub Action (Primary Enforcement)
+
+The GitHub Action (`.github/workflows/biome-lint.yml`) is the **primary enforcement mechanism**:
+
+1. **Runs on every push and PR** to main and cursor/* branches
+2. **Auto-fixes** linting issues using `bun run lint:fix`
+3. **Checks for remaining errors** using `bun run lint`
+4. **Fails the workflow** if any unfixable errors remain
+
+This means:
+- ✅ Even if you bypass the pre-commit hook locally, CI will catch it
+- ✅ PRs with linting errors **cannot be merged** (if branch protection is enabled)
+- ✅ The workflow auto-fixes what it can, so you only need to fix unfixable errors
+
+### How to Use
+
+1. Make your changes and commit (even if linting fails locally)
+2. Push to GitHub
+3. The GitHub Action will run automatically
+4. If it fails, check the workflow logs for the specific errors
+5. Run `bun run lint:fix` locally and fix any remaining errors
+6. Commit and push the fixes
+
 ## Additional Safeguards
 
+Already implemented:
+- ✅ **GitHub Action** that runs `bun run lint:fix` and fails on errors
+- ✅ **Pre-commit hook** for local development
+
 Consider adding:
-- **CI/CD checks** that run `bun run lint` and fail if errors exist
-- **GitHub branch protection** that requires CI to pass
+- **GitHub branch protection** that requires the lint workflow to pass before merging
 - **Pre-push hook** (optional) that runs linting before pushing

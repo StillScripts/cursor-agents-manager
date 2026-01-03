@@ -43,7 +43,17 @@ bun test --watch
 
 ## Code Formatting (CRITICAL)
 
-**CRITICAL FOR AI AGENTS**: Code formatting and linting is enforced via a **pre-commit hook** that automatically runs before every commit. The hook will:
+**CRITICAL FOR AI AGENTS**: Code formatting and linting is enforced via **multiple layers**:
+
+1. **GitHub Action (PRIMARY)**: Runs on every push/PR, auto-fixes issues, and **fails the workflow** if errors remain
+2. **Pre-commit hook (LOCAL)**: Runs before commits, auto-fixes issues, and **blocks the commit** if errors remain
+
+The GitHub Action will:
+- Auto-fix linting issues using `bun run lint:fix`
+- Check for remaining errors using `bun run lint`
+- **Fail the workflow** if any unfixable errors exist (prevents merging)
+
+The pre-commit hook will:
 - Auto-fix linting issues using `bun run lint:fix`
 - Stage any auto-fixed files
 - **Block the commit** if there are unfixable linting errors
