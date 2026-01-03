@@ -45,7 +45,10 @@ export async function fetchAgentData(
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
-      next: { revalidate: REVALIDATE_SECONDS },
+      next: {
+        tags: [`agent-${id}`],
+        revalidate: REVALIDATE_SECONDS,
+      },
     })
 
     if (!response.ok) {
@@ -96,7 +99,10 @@ export async function fetchAgentConversationData(
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
-      next: { revalidate: REVALIDATE_SECONDS },
+      next: {
+        tags: [`conversation-${id}`],
+        revalidate: REVALIDATE_SECONDS,
+      },
     })
 
     if (!response.ok) {

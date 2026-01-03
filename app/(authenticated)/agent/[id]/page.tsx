@@ -11,13 +11,11 @@ export const metadata: Metadata = {
   description: "View agent conversation and status",
 }
 
-// ISR: Revalidate once per day (86400 seconds)
 export const revalidate = 86400
 
 export default async function AgentPage({ params }: PageProps) {
   const { id } = await params
 
-  // Fetch initial data on the server
   const [agent, conversation] = await Promise.all([
     getAgentData(id),
     getAgentConversationData(id),

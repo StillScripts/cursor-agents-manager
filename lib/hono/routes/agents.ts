@@ -3,6 +3,7 @@ import { zValidator } from "@hono/zod-validator"
 import { generateText } from "ai"
 import { eq } from "drizzle-orm"
 import { Hono } from "hono"
+import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { extractUserMessagesAndLastAssistant } from "@/lib/conversation-utils"
 import { db } from "@/lib/db"
@@ -400,6 +401,9 @@ app.post("/:id/followup", async (c) => {
       })
     }, 1000)
 
+    // Revalidate cache for this agent page (revalidates all data fetches on the page)
+    revalidatePath(`/agent/${id}`)
+
     return c.json({ success: true, simulation: true })
   }
 
@@ -418,6 +422,10 @@ app.post("/:id/followup", async (c) => {
     }
 
     const data = await response.json()
+
+    // Revalidate cache for this agent page (revalidates all data fetches on the page)
+    revalidatePath(`/agent/${id}`)
+
     return c.json({ ...data, simulation: false })
   } catch (error) {
     console.error("Error sending follow-up:", error)

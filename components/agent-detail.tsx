@@ -38,6 +38,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
@@ -238,7 +239,6 @@ export function AgentDetail({
 
       <div className="p-4 space-y-4">
         <Accordion value={openItems} onValueChange={setOpenItems}>
-          {/* Summary Accordion */}
           <AccordionItem
             value="summary"
             className="border border-border rounded-xl mb-3 overflow-hidden"
@@ -260,15 +260,19 @@ export function AgentDetail({
                   </span>
                 </div>
 
-                {typeof totalTimeSpent === "number" && totalTimeSpent > 0 && (
-                  <div className="flex items-center gap-2 text-sm py-2 px-3 bg-primary/10 rounded-lg border border-primary/20">
-                    <Clock className="h-4 w-4 text-primary" />
-                    <span className="text-muted-foreground">Time spent:</span>
-                    <span className="text-foreground font-medium">
-                      {formatDuration(totalTimeSpent)}
-                    </span>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 text-sm py-2 px-3 bg-primary/10 rounded-lg border border-primary/20">
+                  <Clock className="h-4 w-4 text-primary" />
+                  {typeof totalTimeSpent === "number" && totalTimeSpent > 0 ? (
+                    <>
+                      <span className="text-muted-foreground">Time spent:</span>
+                      <span className="text-foreground font-medium">
+                        {formatDuration(totalTimeSpent)}
+                      </span>
+                    </>
+                  ) : (
+                    <Skeleton className="h-4 w-28" />
+                  )}
+                </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
