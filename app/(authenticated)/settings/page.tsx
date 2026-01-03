@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
-import { SettingsForm } from "@/components/settings-form"
+import { SettingsForm } from "@/components/forms/settings-form"
 
 export const metadata: Metadata = {
   title: "Settings",

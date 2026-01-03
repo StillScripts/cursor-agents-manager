@@ -1,8 +1,0 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
-# Run linting with auto-fix
-bun run lint:fix
-
-# Stage any files that were auto-fixed
-git add -u
