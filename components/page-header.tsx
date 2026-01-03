@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronLeft, MoreHorizontal } from "lucide-react"
+import { ChevronLeft } from "lucide-react"
 import { useRouter } from "next/navigation"
 import type React from "react"
 import { useState } from "react"
@@ -47,23 +47,19 @@ export function PageHeader({
           <div className="flex items-center gap-1 flex-1 min-w-0">
             <h1
               className={cn(
-                "text-lg font-semibold leading-tight",
+                "text-lg font-semibold leading-tight flex-1 min-w-0",
                 expandable && !isExpanded && "truncate",
+                expandable && !isExpanded && "cursor-pointer",
                 expandable && isExpanded && "wrap-break-word"
               )}
+              onClick={
+                expandable && !isExpanded
+                  ? () => setIsExpanded(true)
+                  : undefined
+              }
             >
               {title}
             </h1>
-            {expandable && !isExpanded && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
-                onClick={() => setIsExpanded(true)}
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            )}
           </div>
         </div>
         {action && <div className="shrink-0">{action}</div>}
