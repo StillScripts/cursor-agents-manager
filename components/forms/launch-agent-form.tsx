@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import { AlertCircle, ExternalLink, Rocket, Settings } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -168,26 +169,29 @@ export function LaunchAgentForm() {
   // Time tracking for task creation
   const timeTracking = useTimeTracking()
 
+  // Default values for form reset
+  const defaultFormValues: LaunchAgentFormData = {
+    prompt: {
+      text: "",
+      images: [],
+    },
+    source: {
+      repository: "",
+      ref: "",
+    },
+    model: undefined,
+    target: {
+      autoCreatePr: true,
+      openAsCursorGithubApp: false,
+      skipReviewerRequest: false,
+      branchName: "",
+    },
+    webhook: undefined,
+  }
+
   // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
   const form = useAppForm<LaunchAgentFormData>({
-    defaultValues: {
-      prompt: {
-        text: "",
-        images: [],
-      },
-      source: {
-        repository: "",
-        ref: "",
-      },
-      model: undefined,
-      target: {
-        autoCreatePr: true,
-        openAsCursorGithubApp: false,
-        skipReviewerRequest: false,
-        branchName: "",
-      },
-      webhook: undefined,
-    },
+    defaultValues: defaultFormValues,
     validators: {
       onSubmit: launchAgentFormSchema,
     },
@@ -219,9 +223,31 @@ export function LaunchAgentForm() {
         }
       }
 
+      // Reset form to default values before navigation
+      // This ensures that when the user navigates back (especially in PWA),
+      // the form is clean and doesn't show previous submission data
+      form.reset(defaultFormValues)
+
+      // Stop time tracking if it's still running
+      if (timeTracking.isTracking) {
+        timeTracking.stop()
+      }
+
       router.push("/")
     },
   })
+
+  // Reset form on mount to handle PWA navigation back to form
+  // In PWAs, component state can persist across navigation, so we need to
+  // explicitly reset the form when the component mounts to ensure a clean state
+  useEffect(() => {
+    form.reset(defaultFormValues)
+    // Stop any ongoing time tracking when component mounts
+    if (timeTracking.isTracking) {
+      timeTracking.stop()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const errorMessage =
     launchAgent.error instanceof Error ? launchAgent.error.message : null
