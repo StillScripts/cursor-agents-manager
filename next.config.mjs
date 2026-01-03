@@ -7,7 +7,7 @@ const nextConfig = {
     unoptimized: true,
   },
   experimental: {
-    dynamicIO: true,
+    cacheComponents: true,
   },
   // PWA configuration
   async headers() {
