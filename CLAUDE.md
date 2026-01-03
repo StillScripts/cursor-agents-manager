@@ -43,7 +43,12 @@ bun test lib/hono
 bun run lint:fix
 ```
 
-**Rule**: **ALWAYS** run `bun run lint:fix` before committing code. This is mandatory.
+**⚠️ MANDATORY RULES**:
+1. **ALWAYS** run `bun run lint:fix` after making code changes and BEFORE attempting to commit
+2. **NEVER** use `git commit --no-verify` or bypass the pre-commit hook
+3. **NEVER** commit code that has linting errors - the pre-commit hook will block it
+
+**Rule**: **ALWAYS** run `bun run lint:fix` before committing code. This is mandatory. The pre-commit hook will automatically block commits with linting errors, so you must fix all issues first.
 
 ## Testing & Validation
 

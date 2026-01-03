@@ -48,10 +48,16 @@ bun test --watch
 - Stage any auto-fixed files
 - **Block the commit** if there are unfixable linting errors
 
-**For AI Agents**: While the pre-commit hook will catch issues automatically, you should still run `bun run lint:fix` manually after making code changes to:
+**⚠️ MANDATORY FOR AI AGENTS**: 
+1. **ALWAYS** run `bun run lint:fix` after making code changes and BEFORE attempting to commit
+2. **NEVER** use `git commit --no-verify` or bypass the pre-commit hook
+3. **NEVER** commit code that has linting errors - the hook will block it anyway
+
+**For AI Agents**: You MUST run `bun run lint:fix` manually after making code changes to:
 - Catch issues early in your workflow
 - Avoid commit failures
 - Ensure code is properly formatted before pushing
+- **Prevent the pre-commit hook from blocking your commit**
 
 ```bash
 bun run lint:fix
@@ -61,8 +67,9 @@ This command will:
 - Auto-fix linting issues
 - Format code according to project standards
 - Ensure consistent code style across the codebase
+- Exit with error code if unfixable issues remain (which will block commits)
 
-**Rule**: Run `bun run lint:fix` after making code changes. The pre-commit hook will enforce this automatically, but catching issues early improves workflow efficiency.
+**Rule**: **ALWAYS** run `bun run lint:fix` after making code changes and before committing. The pre-commit hook will enforce this automatically, but you must fix issues before attempting to commit.
 
 ## Testing & Validation
 
