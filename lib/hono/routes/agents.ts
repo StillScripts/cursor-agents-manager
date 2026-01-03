@@ -92,13 +92,13 @@ app.get("/", zValidator("query", paginationSchema), async (c) => {
     }
 
     const data = await response.json()
-    
+
     // Transform Cursor API response to match PaginatedAgentsResponse format
     // The Cursor API may return cursor-based pagination, so we need to handle both cases
     const agents = data.agents || []
     const total = data.total ?? agents.length
     const totalPages = data.totalPages ?? Math.ceil(total / limit)
-    
+
     return c.json({
       agents,
       page,
