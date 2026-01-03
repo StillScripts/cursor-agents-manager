@@ -1,73 +1,49 @@
 "use client"
 
-import {
-  type ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table"
-import { Bot, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react"
+import { Bot, RefreshCw } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Spinner } from "@/components/ui/spinner"
 import { useAgents, useRefreshAgents } from "@/lib/hooks/use-agents"
-import type { Agent } from "@/lib/types"
 import { AgentCard } from "./agent-card"
-import { AgentListSkeleton } from "./agent-list-skeleton"
+import { AgentCardSkeleton, AgentListSkeleton } from "./agent-list-skeleton"
 import { PageHeader } from "./page-header"
 import { SimulationBanner } from "./simulation-banner"
 
-const columns: ColumnDef<Agent>[] = [
-  {
-    accessorKey: "agent",
-    cell: ({ row }) => <AgentCard agent={row.original} />,
-  },
-]
-
 export function AgentsTable() {
-  const [page, setPage] = useState(0)
-  const limit = 20
-
-  const { data, isLoading, error, isFetching } = useAgents(page, limit)
+  const [limit, setLimit] = useState(10)
+  const { data, isLoading, error, isFetching } = useAgents(limit)
   const { refresh } = useRefreshAgents()
 
-  const table = useReactTable({
-    data: data?.agents ?? [],
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    manualPagination: true,
-    pageCount: data?.totalPages ?? 0,
-    state: {
-      pagination: {
-        pageIndex: page,
-        pageSize: limit,
-      },
-    },
-  })
+  const hasMore = isLoading
+    ? false
+    : data
+      ? (data.hasMore ?? (data.simulation ? limit < data.total : false))
+      : false
 
-  const canPreviousPage = page > 0
-  const canNextPage = data ? page < data.totalPages - 1 : false
-
-  if (isLoading) {
+  // Only initial skeleton if we have no data at all (initial load)
+  if (isLoading && !data) {
     return <AgentListSkeleton />
   }
 
-  const refreshButton = (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="h-8 w-8"
-      onClick={() => refresh()}
-      disabled={isFetching}
-      aria-label="Refresh agents"
-    >
-      <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-    </Button>
-  )
-
   return (
     <>
-      <PageHeader title="Your Agents" action={refreshButton} />
+      <PageHeader
+        title="Your Agents"
+        action={
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => refresh()}
+            disabled={isFetching}
+            aria-label="Refresh agents"
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
+            />
+          </Button>
+        }
+      />
       {data?.simulation && <SimulationBanner />}
 
       <div className="flex-1 overflow-auto">
@@ -96,65 +72,31 @@ export function AgentsTable() {
           {data?.agents && data.agents.length > 0 && (
             <>
               <div className="space-y-2">
-                {table.getRowModel().rows.map((row) => (
-                  <div key={row.id}>
-                    {flexRender(
-                      row.getVisibleCells()[0].column.columnDef.cell,
-                      row.getVisibleCells()[0].getContext()
-                    )}
-                  </div>
+                {data.agents.map((agent) => (
+                  <AgentCard key={agent.id} agent={agent} />
                 ))}
               </div>
 
-              {/* Pagination controls */}
-              <div className="flex items-center justify-between py-4 border-t border-border mt-4">
-                <div className="text-xs text-muted-foreground">
-                  {isFetching && !isLoading ? (
-                    <span className="flex items-center gap-1.5">
-                      <Spinner className="h-3 w-3" />
-                      Refreshing...
-                    </span>
-                  ) : (
-                    <span>
-                      Page {page + 1}
-                      {data.totalPages != null &&
-                        typeof data.totalPages === "number" &&
-                        data.totalPages > 0 && <> of {data.totalPages}</>}{" "}
-                      ({data.total} agents)
-                    </span>
-                  )}
+              {isFetching ? (
+                <div className="space-y-2">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <AgentCardSkeleton key={i} />
+                  ))}
                 </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 bg-transparent"
-                    onClick={() => {
-                      if (canPreviousPage && !isFetching) {
-                        setPage((p) => Math.max(0, p - 1))
-                      }
-                    }}
-                    disabled={!canPreviousPage || isFetching}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 bg-transparent"
-                    onClick={() => {
-                      if (canNextPage && !isFetching && data) {
-                        setPage((p) => Math.min(data.totalPages - 1, p + 1))
-                      }
-                    }}
-                    disabled={!canNextPage || isFetching}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+              ) : (
+                hasMore && (
+                  <div className="flex justify-center py-4 border-t border-border mt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setLimit((prev) => prev + 10)}
+                      disabled={isFetching}
+                    >
+                      Show More
+                    </Button>
+                  </div>
+                )
+              )}
             </>
           )}
         </div>

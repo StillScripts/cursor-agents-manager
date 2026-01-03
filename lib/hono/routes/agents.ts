@@ -16,7 +16,6 @@ import {
   addMessageToConversation,
   addSimulatedAgent,
   getSimulatedAgents,
-  getSimulatedAgentsPaginated,
   getSimulatedConversation,
   removeSimulatedAgent,
   updateSimulatedAgentStatus,
@@ -39,64 +38,46 @@ const app = new Hono<{ Variables: Variables }>()
 app.use("*", requireAuth)
 app.use("*", withSimulationMode)
 
-// Query params schema for pagination
-const paginationSchema = z.object({
-  page: z
-    .string()
-    .optional()
-    .transform((v) => Number.parseInt(v || "0", 10)),
+// Query params schema for limit
+const limitSchema = z.object({
   limit: z
     .string()
     .optional()
-    .transform((v) => Number.parseInt(v || "20", 10)),
+    .transform((v) => Number.parseInt(v || "10", 10)),
 })
 
 // ============================================================================
 // Agent List & Launch
 // ============================================================================
 
-// GET /api/agents - List agents with pagination
-app.get("/", zValidator("query", paginationSchema), async (c) => {
-  const { page, limit } = c.req.valid("query")
+// GET /api/agents - List agents with limit
+app.get("/", zValidator("query", limitSchema), async (c) => {
+  const { limit } = c.req.valid("query")
   const simulationMode = c.get("simulationMode")
   const apiKey = c.get("apiKey")
 
   if (simulationMode) {
-    const { agents, total, totalPages } = getSimulatedAgentsPaginated(
-      page,
-      limit
-    )
+    const allAgents = getSimulatedAgents()
+    const agents = allAgents.slice(0, limit)
     return c.json({
       agents,
-      page,
       limit,
-      total,
-      totalPages,
+      total: allAgents.length,
+      hasMore: limit < allAgents.length,
       simulation: true,
     })
   }
 
   try {
+    // Cursor API accepts 'limit' parameter (default: 20, max: 100) and uses cursor-based pagination
     const url = new URL(CURSOR_API_URL)
-    // Cursor API doesn't accept 'page' parameter - only 'limit' if supported
-    // For now, we'll fetch all agents and handle pagination client-side
-    if (limit) {
-      url.searchParams.set("limit", String(limit))
-    }
-
-    console.log("[API /agents GET] Fetching from Cursor API:", url.toString())
+    url.searchParams.set("limit", String(Math.min(limit, 100))) // API max is 100
 
     const response = await fetch(url.toString(), {
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
     })
-
-    console.log(
-      "[API /agents GET] Cursor API response status:",
-      response.status,
-      response.statusText
-    )
 
     if (!response.ok) {
       const errorText = await response.text()
@@ -110,23 +91,15 @@ app.get("/", zValidator("query", paginationSchema), async (c) => {
     }
 
     const data = await response.json()
-    console.log(
-      "[API /agents GET] Cursor API success, agents count:",
-      data.agents?.length ?? 0
-    )
-
-    // Transform Cursor API response to match PaginatedAgentsResponse format
-    // The Cursor API may return cursor-based pagination, so we need to handle both cases
     const agents = data.agents || []
-    const total = data.total ?? agents.length
-    const totalPages = data.totalPages ?? Math.ceil(total / limit)
+    // API uses cursor-based pagination - if nextCursor exists, there are more agents
+    const hasMore = !!data.nextCursor
 
     return c.json({
       agents,
-      page,
       limit,
-      total,
-      totalPages,
+      total: agents.length,
+      hasMore,
       simulation: false,
     })
   } catch (error) {
