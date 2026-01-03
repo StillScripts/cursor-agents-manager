@@ -455,6 +455,38 @@ globalThis.fetch = (async (url: RequestInfo | URL, init?: RequestInit) => {
 }) as typeof fetch
 
 // ============================================================================
+// Mock: @/lib/cache/user-data (Next.js caching for user data)
+// ============================================================================
+
+mock.module("@/lib/cache/user-data", () => {
+  // Cache key generators (same as the real implementation)
+  const cacheKeys = {
+    userRepositories: (userId: string) => `user-repositories-${userId}`,
+    userBranches: (userId: string) => `user-branches-${userId}`,
+  }
+
+  // These functions simulate cached data fetching
+  // In tests, they just return the mock DB results directly
+  const getCachedUserRepositories = async (userId: string) => {
+    const state = (globalThis as Record<string, unknown>)
+      .__testMockState as typeof mockState
+    return state.dbResults.repositories.filter((r) => r.userId === userId)
+  }
+
+  const getCachedUserBranches = async (userId: string) => {
+    const state = (globalThis as Record<string, unknown>)
+      .__testMockState as typeof mockState
+    return state.dbResults.branches.filter((b) => b.userId === userId)
+  }
+
+  return {
+    cacheKeys,
+    getCachedUserRepositories,
+    getCachedUserBranches,
+  }
+})
+
+// ============================================================================
 // Environment Variables
 // ============================================================================
 

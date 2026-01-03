@@ -2,7 +2,13 @@ import crypto from "node:crypto"
 import { zValidator } from "@hono/zod-validator"
 import { and, eq } from "drizzle-orm"
 import { Hono } from "hono"
+import { revalidateTag } from "next/cache"
 import { z } from "zod"
+import {
+  cacheKeys,
+  getCachedUserBranches,
+  getCachedUserRepositories,
+} from "@/lib/cache/user-data"
 import { db } from "@/lib/db"
 import { decryptData, encryptData } from "@/lib/encryption"
 import { type AuthVariables, requireAuth } from "@/lib/hono/middleware/auth"
@@ -205,17 +211,13 @@ app.delete("/openai-api-key", async (c) => {
 // Repository Routes
 // ============================================================================
 
-// GET /api/user/repositories - Get all repositories
+// GET /api/user/repositories - Get all repositories (cached for 1 day)
 app.get("/repositories", async (c) => {
   const user = c.get("user")
 
   try {
-    const userRepos = await db
-      .select()
-      .from(repositories)
-      .where(eq(repositories.userId, user.id))
-      .orderBy(repositories.createdAt)
-
+    // Use cached function - cache lasts 1 day, invalidated on POST
+    const userRepos = await getCachedUserRepositories(user.id)
     return c.json({ repositories: userRepos })
   } catch (error) {
     console.error("Error fetching repositories:", error)
@@ -250,6 +252,13 @@ app.post(
         }
       }
 
+      // Invalidate the cache for this user's repositories
+      try {
+        revalidateTag(cacheKeys.userRepositories(user.id), "max")
+      } catch {
+        // Ignore errors in test environment where Next.js cache is not available
+      }
+
       const updatedRepos = await db
         .select()
         .from(repositories)
@@ -268,17 +277,13 @@ app.post(
 // Branch Routes
 // ============================================================================
 
-// GET /api/user/branches - Get all branches
+// GET /api/user/branches - Get all branches (cached for 1 day)
 app.get("/branches", async (c) => {
   const user = c.get("user")
 
   try {
-    const userBranches = await db
-      .select()
-      .from(branches)
-      .where(eq(branches.userId, user.id))
-      .orderBy(branches.createdAt)
-
+    // Use cached function - cache lasts 1 day, invalidated on POST
+    const userBranches = await getCachedUserBranches(user.id)
     return c.json({ branches: userBranches })
   } catch (error) {
     console.error("Error fetching branches:", error)
@@ -307,6 +312,13 @@ app.post("/branches", zValidator("json", branchesRequestSchema), async (c) => {
       if (validBranches.length > 0) {
         await db.insert(branches).values(validBranches)
       }
+    }
+
+    // Invalidate the cache for this user's branches
+    try {
+      revalidateTag(cacheKeys.userBranches(user.id), "max")
+    } catch {
+      // Ignore errors in test environment where Next.js cache is not available
     }
 
     const updatedBranches = await db

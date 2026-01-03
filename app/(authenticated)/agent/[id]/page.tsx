@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 import { AgentDetail } from "@/components/agent-detail"
 import { getAgentConversationData, getAgentData } from "@/lib/server/agents"
 
@@ -11,8 +12,6 @@ export const metadata: Metadata = {
   description: "View agent conversation and status",
 }
 
-export const revalidate = 86400
-
 export default async function AgentPage({ params }: PageProps) {
   const { id } = await params
 
@@ -22,10 +21,12 @@ export default async function AgentPage({ params }: PageProps) {
   ])
 
   return (
-    <AgentDetail
-      agentId={id}
-      initialAgent={agent}
-      initialConversation={conversation}
-    />
+    <Suspense fallback={null}>
+      <AgentDetail
+        agentId={id}
+        initialAgent={agent}
+        initialConversation={conversation}
+      />
+    </Suspense>
   )
 }
