@@ -290,7 +290,7 @@ export function AgentDetail({
             <AccordionContent className="bg-card">
               <div className="px-4 pb-4 space-y-4">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>
+                  <span suppressHydrationWarning>
                     Created{" "}
                     {formatDistanceToNow(new Date(agent.createdAt), {
                       addSuffix: true,
