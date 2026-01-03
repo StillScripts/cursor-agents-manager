@@ -14,10 +14,7 @@ import {
 import { FieldGroup } from "@/components/ui/field"
 import { signIn } from "@/lib/auth-client"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
-import {
-  signInFormSchema,
-  type SignInFormData,
-} from "@/lib/schemas/auth"
+import { type SignInFormData, signInFormSchema } from "@/lib/schemas/auth"
 
 function LoginFormContent() {
   const [error, setError] = useState("")

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test"
 import {
-  signInFormSchema,
-  signUpFormSchema,
   type SignInFormData,
   type SignUpFormData,
+  signInFormSchema,
+  signUpFormSchema,
 } from "@/lib/schemas/auth"
 
 // Test fixtures
