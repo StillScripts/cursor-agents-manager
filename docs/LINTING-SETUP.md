@@ -1,106 +1,50 @@
-# Linting Setup & Pre-Commit Hook Guide
+# Linting Setup Guide
 
-This document explains how the linting and pre-commit hook system works, and how to ensure it's properly configured.
+This document explains how the linting system works and how to ensure it's properly configured.
 
 ## Overview
 
 The project uses:
 - **Biome** for linting and formatting
-- **Husky** for Git hooks (pre-commit hook)
-- **GitHub Actions** (PRIMARY ENFORCEMENT) that runs `bun run lint:fix` and fails on errors
-- **Pre-commit hook** (local safeguard) that automatically runs `bun run lint:fix` before every commit
-
-**⚠️ IMPORTANT**: The GitHub Action is the **primary enforcement mechanism**. Even if you bypass the pre-commit hook locally, the GitHub Action will catch and fail on linting errors.
+- **GitHub Actions** that enforce linting on pushes and pull requests
 
 ## How It Works
 
-### Pre-Commit Hook (`.husky/pre-commit`)
+### GitHub Actions
 
-The pre-commit hook:
-1. Runs `bun run lint:fix` which auto-fixes linting issues
-2. **Fails the commit** if there are unfixable linting errors
-3. Stages any files that were auto-fixed
+There are **two separate workflows**:
 
-### What Happens When You Commit
+1. **Lint Check** (`.github/workflows/biome-lint-check.yml`)
+   - Runs on every push to `main` branch
+   - Checks for linting errors using `bun run lint`
+   - **Fails the workflow** if any errors exist
 
-1. **If all issues are fixable**: Hook auto-fixes them, stages the changes, commit proceeds
-2. **If unfixable errors exist**: Hook blocks the commit with an error message
-3. **If you bypass the hook** (`--no-verify`): You can commit, but this is **STRICTLY FORBIDDEN** for AI agents
+2. **Lint Check & Fix** (`.github/workflows/biome-lint-fix.yml`)
+   - Runs on every pull request to `main` branch
+   - Auto-fixes linting issues using `bun run lint:fix`
+   - Checks for remaining errors using `bun run lint`
+   - **Fails the workflow** if any unfixable errors remain
 
-## Setup Verification
+### What Happens When You Push
 
-### 1. Check Husky is Configured
+**To main branch**:
+1. GitHub Action runs `bun run lint`
+2. **If errors exist**: Workflow fails ❌
+3. **If no errors**: Workflow passes ✅
 
-```bash
-# Should output: .husky
-git config --get core.hooksPath
-```
-
-If it doesn't output `.husky`, run:
-```bash
-git config core.hooksPath .husky
-```
-
-### 2. Check Hook is Executable
-
-```bash
-ls -la .husky/pre-commit
-# Should show: -rwxr-xr-x (executable)
-```
-
-If not executable, run:
-```bash
-chmod +x .husky/pre-commit
-```
-
-### 3. Verify Hook Content
-
-The hook should:
-- Run `bun run lint:fix`
-- Check the exit code
-- Fail if linting errors remain
-- Stage auto-fixed files
-
-Current hook (`.husky/pre-commit`):
-```bash
-#!/usr/bin/env sh
-
-# Run linting with auto-fix
-# This will auto-fix what it can and exit with non-zero if errors remain
-if ! bun run lint:fix; then
-  echo ""
-  echo "❌ Linting failed! Please fix the errors above before committing."
-  echo "   Run 'bun run lint' to see the errors."
-  exit 1
-fi
-
-# Stage any files that were auto-fixed
-git add -u
-```
-
-### 4. Test the Hook
-
-Create a test file with linting errors:
-```bash
-echo "const x=1" > test-lint.ts
-git add test-lint.ts
-git commit -m "test"
-```
-
-The hook should:
-- Auto-fix the formatting (add spaces)
-- Stage the fixed file
-- Allow the commit to proceed
-
-Then test with an unfixable error (you'd need to create a real error for this).
+**Pull request to main**:
+1. GitHub Action runs `bun run lint:fix` (auto-fixes what it can)
+2. GitHub Action runs `bun run lint` (checks for remaining errors)
+3. **If errors remain**: Workflow fails ❌
+4. **If all fixed**: Workflow passes ✅
 
 ## For AI Agents (Cursor, Claude, etc.)
 
 ### ⚠️ CRITICAL RULES
 
 1. **ALWAYS run `bun run lint:fix` after making code changes**
-2. **NEVER use `git commit --no-verify`** - this bypasses the hook
-3. **NEVER commit code with linting errors** - the hook will block it anyway
+2. **NEVER push code that has linting errors** - the GitHub Action will fail
+3. **ALWAYS verify with `bun run lint` that no errors remain before pushing**
 
 ### Workflow
 
@@ -114,38 +58,22 @@ bun run lint:fix
 # 3. Verify no errors remain
 bun run lint
 
-# 4. Commit (hook will run automatically)
+# 4. Commit and push
 git add .
 git commit -m "your message"
+git push
 ```
 
-### If Commit is Blocked
+### If GitHub Action Fails
 
-If the pre-commit hook blocks your commit:
+If the GitHub Action fails:
 
-1. Read the error message
-2. Run `bun run lint` to see all errors
-3. Fix the errors manually
-4. Run `bun run lint:fix` again
-5. Try committing again
-
-## Troubleshooting
-
-### Hook Not Running
-
-1. Check `git config --get core.hooksPath` outputs `.husky`
-2. Check `.husky/pre-commit` is executable (`chmod +x .husky/pre-commit`)
-3. Verify Husky is installed: `bun install` (runs `prepare` script)
-
-### Hook Runs But Doesn't Fail
-
-The hook should fail if `bun run lint:fix` exits with non-zero. Verify:
-- Biome is configured correctly (`biome.json`)
-- `bun run lint:fix` actually fails on errors (test it)
-
-### Bypassing the Hook
-
-**DO NOT BYPASS THE HOOK**. If you use `--no-verify`, you're committing code that may have linting errors, which defeats the purpose of the entire system.
+1. Check the workflow logs in GitHub Actions tab
+2. Look for the specific linting errors
+3. Run `bun run lint` locally to see the same errors
+4. Run `bun run lint:fix` to auto-fix what you can
+5. Fix any remaining errors manually
+6. Commit and push the fixes
 
 ## Manual Linting Commands
 
@@ -163,7 +91,9 @@ bun run format
 ## Configuration Files
 
 - **Biome config**: `biome.json` - defines linting rules and formatting
-- **Pre-commit hook**: `.husky/pre-commit` - runs before commits
+- **GitHub Actions**: 
+  - `.github/workflows/biome-lint-check.yml` - lint check on main
+  - `.github/workflows/biome-lint-fix.yml` - lint check & fix on PRs
 - **Package scripts**: `package.json` - defines `lint` and `lint:fix` commands
 
 ## Why This Matters
@@ -171,37 +101,33 @@ bun run format
 1. **Code Quality**: Ensures consistent formatting and catches errors
 2. **CI/CD**: Prevents broken code from entering the repository
 3. **Team Collaboration**: Everyone follows the same code style
-4. **Automation**: Catches issues before they're committed
+4. **Automation**: Catches issues before they're merged
 
-## GitHub Action (Primary Enforcement)
+## Setting Up Branch Protection (Recommended)
 
-The GitHub Action (`.github/workflows/biome-lint.yml`) is the **primary enforcement mechanism**:
+To make the GitHub Actions **truly unbypassable**, enable branch protection:
 
-1. **Runs on every push and PR** to main and cursor/* branches
-2. **Auto-fixes** linting issues using `bun run lint:fix`
-3. **Checks for remaining errors** using `bun run lint`
-4. **Fails the workflow** if any unfixable errors remain
+1. Go to GitHub repository → Settings → Branches
+2. Add a branch protection rule for `main`
+3. Enable "Require status checks to pass before merging"
+4. Select both "Biome Lint Check" and "Biome Lint Check & Fix" workflows
+5. Save
 
-This means:
-- ✅ Even if you bypass the pre-commit hook locally, CI will catch it
-- ✅ PRs with linting errors **cannot be merged** (if branch protection is enabled)
-- ✅ The workflow auto-fixes what it can, so you only need to fix unfixable errors
+**Result**: PRs with linting errors **cannot be merged**, even by repository admins.
 
-### How to Use
+## Troubleshooting
 
-1. Make your changes and commit (even if linting fails locally)
-2. Push to GitHub
-3. The GitHub Action will run automatically
-4. If it fails, check the workflow logs for the specific errors
-5. Run `bun run lint:fix` locally and fix any remaining errors
+### GitHub Action is failing
+
+1. Check the workflow logs in GitHub Actions tab
+2. Look for the specific linting errors
+3. Run `bun run lint` locally to see the same errors
+4. Run `bun run lint:fix` to auto-fix what you can
+5. Fix any remaining errors manually
 6. Commit and push the fixes
 
-## Additional Safeguards
+### Workflow not running
 
-Already implemented:
-- ✅ **GitHub Action** that runs `bun run lint:fix` and fails on errors
-- ✅ **Pre-commit hook** for local development
-
-Consider adding:
-- **GitHub branch protection** that requires the lint workflow to pass before merging
-- **Pre-push hook** (optional) that runs linting before pushing
+1. Check that the workflow files exist in `.github/workflows/`
+2. Verify the workflow triggers match your branch/push pattern
+3. Check GitHub Actions tab for any workflow errors

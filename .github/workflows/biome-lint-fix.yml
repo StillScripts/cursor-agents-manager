@@ -1,15 +1,13 @@
-name: Biome Lint & Fix
+name: Biome Lint Check & Fix
 
 on:
-  push:
-    branches: [main, 'cursor/**']
   pull_request:
     branches: [main]
 
 jobs:
-  lint-and-fix:
+  lint-check-and-fix:
     runs-on: ubuntu-latest
-    name: Lint & Auto-Fix
+    name: Lint Check & Fix
 
     steps:
       - name: Checkout code

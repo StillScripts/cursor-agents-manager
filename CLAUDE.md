@@ -37,18 +37,18 @@ bun test lib/hono
 
 ## Code Formatting (CRITICAL)
 
-**CRITICAL**: Before committing any code changes, you **MUST** run:
+**CRITICAL**: Before pushing any code changes, you **MUST** run:
 
 ```bash
 bun run lint:fix
 ```
 
 **⚠️ MANDATORY RULES**:
-1. **ALWAYS** run `bun run lint:fix` after making code changes and BEFORE attempting to commit
-2. **NEVER** use `git commit --no-verify` or bypass the pre-commit hook
-3. **NEVER** commit code that has linting errors - the pre-commit hook will block it
+1. **ALWAYS** run `bun run lint:fix` after making code changes and BEFORE pushing
+2. **NEVER** push code that has linting errors - the GitHub Action will fail and block merging
+3. **ALWAYS** verify with `bun run lint` that no errors remain before pushing
 
-**Rule**: **ALWAYS** run `bun run lint:fix` before committing code. This is mandatory. The pre-commit hook will automatically block commits with linting errors, so you must fix all issues first.
+**Rule**: **ALWAYS** run `bun run lint:fix` before pushing code. This is mandatory. The GitHub Actions will automatically fail workflows with linting errors, so you must fix all issues first.
 
 ## Testing & Validation
 
