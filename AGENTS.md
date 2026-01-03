@@ -43,15 +43,25 @@ bun test --watch
 
 ## Code Formatting (CRITICAL)
 
-**CRITICAL FOR AI AGENTS**: Code formatting and linting is enforced via a **pre-commit hook** that automatically runs before every commit. The hook will:
-- Auto-fix linting issues using `bun run lint:fix`
-- Stage any auto-fixed files
-- **Block the commit** if there are unfixable linting errors
+**CRITICAL FOR AI AGENTS**: Code formatting and linting is enforced via **GitHub Actions**:
 
-**For AI Agents**: While the pre-commit hook will catch issues automatically, you should still run `bun run lint:fix` manually after making code changes to:
+1. **Lint Check (main branch)**: Runs on every push to `main`, checks for linting errors and **fails the workflow** if errors exist
+2. **Lint Check & Fix (PRs)**: Runs on every PR to `main`, auto-fixes issues, and **fails the workflow** if unfixable errors remain
+
+The GitHub Actions will:
+- **On main branch**: Check for linting errors using `bun run lint` and fail if any exist
+- **On PRs**: Auto-fix linting issues using `bun run lint:fix`, then check for remaining errors using `bun run lint`, and **fail the workflow** if any unfixable errors exist (prevents merging)
+
+**⚠️ MANDATORY FOR AI AGENTS**: 
+1. **ALWAYS** run `bun run lint:fix` after making code changes and BEFORE pushing
+2. **NEVER** push code that has linting errors - the GitHub Action will fail and block merging
+3. **ALWAYS** verify with `bun run lint` that no errors remain before pushing
+
+**For AI Agents**: You MUST run `bun run lint:fix` manually after making code changes to:
 - Catch issues early in your workflow
-- Avoid commit failures
+- Avoid GitHub Action failures
 - Ensure code is properly formatted before pushing
+- **Prevent PRs from being blocked by linting errors**
 
 ```bash
 bun run lint:fix
@@ -61,8 +71,9 @@ This command will:
 - Auto-fix linting issues
 - Format code according to project standards
 - Ensure consistent code style across the codebase
+- Exit with error code if unfixable issues remain
 
-**Rule**: Run `bun run lint:fix` after making code changes. The pre-commit hook will enforce this automatically, but catching issues early improves workflow efficiency.
+**Rule**: **ALWAYS** run `bun run lint:fix` after making code changes and before pushing. The GitHub Actions will enforce this automatically, but you must fix issues before attempting to push.
 
 ## Testing & Validation
 
