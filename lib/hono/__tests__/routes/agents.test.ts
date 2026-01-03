@@ -63,18 +63,8 @@ describe("Agents Routes", () => {
       expect(data.simulation).toBe(true)
       expect(data.agents).toBeArray()
       expect(data.total).toBeDefined()
-      expect(data.totalPages).toBeDefined()
-    })
-
-    it("respects page query parameter", async () => {
-      withoutApiKey()
-
-      const res = await agentsApp.request("/?page=0&limit=1")
-
-      expect(res.status).toBe(200)
-      const data = await res.json()
-      expect(data.page).toBe(0)
-      expect(data.limit).toBe(1)
+      expect(data.limit).toBeDefined()
+      expect(data.hasMore).toBeDefined()
     })
 
     it("respects limit query parameter", async () => {
@@ -85,17 +75,18 @@ describe("Agents Routes", () => {
       expect(res.status).toBe(200)
       const data = await res.json()
       expect(data.limit).toBe(5)
+      expect(data.agents.length).toBeLessThanOrEqual(5)
     })
 
-    it("uses default pagination when no params provided", async () => {
+    it("uses default limit when no params provided", async () => {
       withoutApiKey()
 
       const res = await agentsApp.request("/")
 
       expect(res.status).toBe(200)
       const data = await res.json()
-      expect(data.page).toBe(0)
-      expect(data.limit).toBe(20)
+      expect(data.limit).toBe(10) // Default limit is 10
+      expect(data.agents.length).toBeLessThanOrEqual(10)
     })
   })
 
