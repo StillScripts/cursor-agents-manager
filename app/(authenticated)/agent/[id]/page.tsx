@@ -11,8 +11,6 @@ export const metadata: Metadata = {
   description: "View agent conversation and status",
 }
 
-export const revalidate = 86400
-
 export default async function AgentPage({ params }: PageProps) {
   const { id } = await params
 
