@@ -1,11 +1,9 @@
 "use client"
 
-import { useForm } from "@tanstack/react-form"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useState } from "react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Card,
   CardContent,
@@ -13,9 +11,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { FieldGroup } from "@/components/ui/field"
 import { signIn } from "@/lib/auth-client"
+import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
+import { type SignInFormData, signInFormSchema } from "@/lib/schemas/auth"
 
 function LoginFormContent() {
   const [error, setError] = useState("")
@@ -23,10 +22,14 @@ function LoginFormContent() {
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get("callbackUrl") || "/"
 
-  const form = useForm({
+  // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
+  const form = useAppForm<SignInFormData>({
     defaultValues: {
       email: "",
       password: "",
+    },
+    validators: {
+      onSubmit: signInFormSchema,
     },
     onSubmit: async ({ value }) => {
       setError("")
@@ -61,87 +64,55 @@ function LoginFormContent() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              form.handleSubmit()
-            }}
-            className="space-y-4"
-          >
-            <form.Field
-              name="email"
-              validators={{
-                onChange: ({ value }) =>
-                  !value
-                    ? "Email is required"
-                    : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-                      ? "Invalid email format"
-                      : undefined,
+          <FormProvider value={form}>
+            <form
+              id={form.formId}
+              onSubmit={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                form.handleSubmit()
               }}
+              className="space-y-4"
             >
-              {(field) => (
-                <div className="space-y-2">
-                  <Label htmlFor={field.name}>Email</Label>
-                  <Input
-                    id={field.name}
-                    type="email"
-                    placeholder="you@example.com"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    disabled={form.state.isSubmitting}
-                  />
-                  {field.state.meta.errors.length > 0 && (
-                    <p className="text-sm text-destructive">
-                      {field.state.meta.errors[0]}
-                    </p>
+              <FieldGroup>
+                <form.AppField name="email">
+                  {(field) => (
+                    <field.ControlledInput
+                      field={field}
+                      label="Email"
+                      type="email"
+                      placeholder="you@example.com"
+                    />
                   )}
-                </div>
-              )}
-            </form.Field>
+                </form.AppField>
 
-            <form.Field
-              name="password"
-              validators={{
-                onChange: ({ value }) =>
-                  !value ? "Password is required" : undefined,
-              }}
-            >
-              {(field) => (
-                <div className="space-y-2">
-                  <Label htmlFor={field.name}>Password</Label>
-                  <Input
-                    id={field.name}
-                    type="password"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    disabled={form.state.isSubmitting}
-                  />
-                  {field.state.meta.errors.length > 0 && (
-                    <p className="text-sm text-destructive">
-                      {field.state.meta.errors[0]}
-                    </p>
+                <form.AppField name="password">
+                  {(field) => (
+                    <field.ControlledInput
+                      field={field}
+                      label="Password"
+                      type="password"
+                    />
                   )}
-                </div>
+                </form.AppField>
+              </FieldGroup>
+
+              {error && (
+                <Alert variant="destructive">
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               )}
-            </form.Field>
 
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={form.state.isSubmitting}
-            >
-              {form.state.isSubmitting ? "Signing in..." : "Sign In"}
-            </Button>
-          </form>
+              <div className="mt-6">
+                <form.SubscribeButton
+                  formId={form.formId}
+                  label="Sign In"
+                  className="w-full"
+                />
+              </div>
+            </form>
+          </FormProvider>
           <p className="mt-4 text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
             <Link href="/signup" className="text-primary hover:underline">

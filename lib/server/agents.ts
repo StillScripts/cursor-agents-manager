@@ -1,9 +1,6 @@
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
-import {
-  getSimulatedAgents,
-  getSimulatedConversation,
-} from "@/lib/mock-data"
+import { getSimulatedAgents, getSimulatedConversation } from "@/lib/mock-data"
 import type { Agent, AgentConversation } from "@/lib/types"
 
 const CURSOR_API_URL = "https://api.cursor.com/v0/agents"

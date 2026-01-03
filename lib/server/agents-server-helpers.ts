@@ -1,13 +1,15 @@
+import { eq } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { decryptData } from "@/lib/encryption"
 import { userApiKeys } from "@/lib/schema/auth-schema"
-import { eq } from "drizzle-orm"
 
 /**
  * Server-side function to get user's API key from database
  * Used by server components that need to fetch API keys
  */
-export async function getUserApiKeyServer(userId: string): Promise<string | null> {
+export async function getUserApiKeyServer(
+  userId: string
+): Promise<string | null> {
   const [apiKey] = await db
     .select()
     .from(userApiKeys)

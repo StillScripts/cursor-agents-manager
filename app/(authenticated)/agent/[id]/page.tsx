@@ -1,9 +1,6 @@
 import type { Metadata } from "next"
 import { AgentDetail } from "@/components/agent-detail"
-import {
-  getAgentConversationData,
-  getAgentData,
-} from "@/lib/server/agents"
+import { getAgentConversationData, getAgentData } from "@/lib/server/agents"
 
 interface PageProps {
   params: Promise<{ id: string }>

@@ -1,6 +1,11 @@
 "use client"
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 import type {
   Agent,
   AgentConversation,
@@ -28,14 +33,16 @@ const FIVE_MINUTES = 5 * 60 * 1000
 
 export const AGENTS_QUERY_KEY = ["agents"] as const
 
-export function useAgents(page = 0, limit = 20) {
+export function useAgents(limit = 10) {
   return useQuery<PaginatedAgentsResponse>({
-    queryKey: [...AGENTS_QUERY_KEY, page, limit],
+    queryKey: [...AGENTS_QUERY_KEY, limit],
     queryFn: async () => {
-      const response = await fetch(`/api/agents?page=${page}&limit=${limit}`)
+      const response = await fetch(`/api/agents?limit=${limit}`)
       if (!response.ok) throw new Error("Failed to fetch agents")
       return response.json()
     },
+    // Preserve previous data while fetching new data
+    placeholderData: keepPreviousData,
     // Refetch every 5 minutes in the background
     refetchInterval: FIVE_MINUTES,
     // Keep refetching even when the window is not focused

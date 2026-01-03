@@ -2,7 +2,6 @@
 
 import { useQueryClient } from "@tanstack/react-query"
 import { formatDistanceToNow } from "date-fns"
-import type { Agent, AgentConversation } from "@/lib/types"
 import {
   Bot,
   Clock,
@@ -53,6 +52,7 @@ import {
   useSummarizeConversation,
 } from "@/lib/hooks/use-agents"
 import { useTimeTracking } from "@/lib/hooks/use-time-tracking"
+import type { Agent, AgentConversation } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { PageHeader } from "./page-header"
 import { SimulationBanner } from "./simulation-banner"

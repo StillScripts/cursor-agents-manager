@@ -16,7 +16,8 @@
     "db:generate": "dotenv -e .env.local -- drizzle-kit generate",
     "db:push": "dotenv -e .env.local -- drizzle-kit push",
     "db:migrate": "dotenv -e .env.local -- drizzle-kit migrate",
-    "db:studio": "dotenv -e .env.local -- drizzle-kit studio"
+    "db:studio": "dotenv -e .env.local -- drizzle-kit studio",
+    "prepare": "husky"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.1",
@@ -58,6 +59,7 @@
     "@types/react-dom": "^19",
     "dotenv-cli": "^11.0.0",
     "drizzle-kit": "^0.31.8",
+    "husky": "^9.1.7",
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
     "tw-animate-css": "1.3.3",
