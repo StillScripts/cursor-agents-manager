@@ -43,7 +43,15 @@ bun test --watch
 
 ## Code Formatting (CRITICAL)
 
-**CRITICAL FOR AI AGENTS**: Before committing any code changes, you **MUST** run Biome's formatting autofix:
+**CRITICAL FOR AI AGENTS**: Code formatting and linting is enforced via a **pre-commit hook** that automatically runs before every commit. The hook will:
+- Auto-fix linting issues using `bun run lint:fix`
+- Stage any auto-fixed files
+- **Block the commit** if there are unfixable linting errors
+
+**For AI Agents**: While the pre-commit hook will catch issues automatically, you should still run `bun run lint:fix` manually after making code changes to:
+- Catch issues early in your workflow
+- Avoid commit failures
+- Ensure code is properly formatted before pushing
 
 ```bash
 bun run lint:fix
@@ -54,7 +62,7 @@ This command will:
 - Format code according to project standards
 - Ensure consistent code style across the codebase
 
-**Rule**: **ALWAYS** run `bun run lint:fix` before committing code. This is mandatory and non-negotiable. The repository does not use pre-commit hooks, so agents must manually ensure code is properly formatted.
+**Rule**: Run `bun run lint:fix` after making code changes. The pre-commit hook will enforce this automatically, but catching issues early improves workflow efficiency.
 
 ## Testing & Validation
 
