@@ -292,6 +292,16 @@ app.post("/:id/summarize", async (c) => {
     return c.json({ error: "No conversation messages to summarize" }, 400)
   }
 
+  // Check if this is a placeholder conversation (simulation mode only)
+  // Placeholder conversations have exactly one message with id "msg_placeholder"
+  if (
+    conversationData.simulation &&
+    conversation.messages.length === 1 &&
+    conversation.messages[0]?.id === "msg_placeholder"
+  ) {
+    return c.json({ error: "Conversation not found" }, 404)
+  }
+
   // Extract only user messages and last assistant message from each turn
   // This saves tokens and focuses on the key information, as the last assistant
   // message in each turn contains a summary of that response
@@ -402,7 +412,11 @@ app.post("/:id/followup", async (c) => {
     }, 1000)
 
     // Revalidate cache for this agent page (revalidates all data fetches on the page)
-    revalidatePath(`/agent/${id}`)
+    try {
+      revalidatePath(`/agent/${id}`)
+    } catch {
+      // Ignore errors in test environment where Next.js cache is not available
+    }
 
     return c.json({ success: true, simulation: true })
   }
@@ -424,7 +438,11 @@ app.post("/:id/followup", async (c) => {
     const data = await response.json()
 
     // Revalidate cache for this agent page (revalidates all data fetches on the page)
-    revalidatePath(`/agent/${id}`)
+    try {
+      revalidatePath(`/agent/${id}`)
+    } catch {
+      // Ignore errors in test environment where Next.js cache is not available
+    }
 
     return c.json({ ...data, simulation: false })
   } catch (error) {
