@@ -64,7 +64,7 @@ export function PWAInstaller() {
   return (
     <button
       onClick={handleInstallClick}
-      className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 px-4 py-2 bg-primary text-primary-foreground rounded-lg shadow-lg hover:bg-primary/90 transition-colors md:bottom-4"
+      className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 px-4 py-2 bg-primary text-primary-foreground rounded-lg shadow-lg hover:bg-primary/90 transition-colors md:hidden md:bottom-4"
       aria-label="Install app"
     >
       Install App

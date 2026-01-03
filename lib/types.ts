@@ -44,10 +44,9 @@ export interface ListAgentsResponse {
 
 export interface PaginatedAgentsResponse {
   agents: Agent[]
-  page: number
   limit: number
   total: number
-  totalPages: number
+  hasMore?: boolean // Indicates if there might be more agents (for live mode)
   simulation: boolean
 }
 

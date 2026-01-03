@@ -16,7 +16,6 @@ import {
   addMessageToConversation,
   addSimulatedAgent,
   getSimulatedAgents,
-  getSimulatedAgentsPaginated,
   getSimulatedConversation,
   removeSimulatedAgent,
   updateSimulatedAgentStatus,
@@ -39,46 +38,40 @@ const app = new Hono<{ Variables: Variables }>()
 app.use("*", requireAuth)
 app.use("*", withSimulationMode)
 
-// Query params schema for pagination
-const paginationSchema = z.object({
-  page: z
-    .string()
-    .optional()
-    .transform((v) => Number.parseInt(v || "0", 10)),
+// Query params schema for limit
+const limitSchema = z.object({
   limit: z
     .string()
     .optional()
-    .transform((v) => Number.parseInt(v || "20", 10)),
+    .transform((v) => Number.parseInt(v || "10", 10)),
 })
 
 // ============================================================================
 // Agent List & Launch
 // ============================================================================
 
-// GET /api/agents - List agents with pagination
-app.get("/", zValidator("query", paginationSchema), async (c) => {
-  const { page, limit } = c.req.valid("query")
+// GET /api/agents - List agents with limit
+app.get("/", zValidator("query", limitSchema), async (c) => {
+  const { limit } = c.req.valid("query")
   const simulationMode = c.get("simulationMode")
   const apiKey = c.get("apiKey")
 
   if (simulationMode) {
-    const { agents, total, totalPages } = getSimulatedAgentsPaginated(
-      page,
-      limit
-    )
+    const allAgents = getSimulatedAgents()
+    const agents = allAgents.slice(0, limit)
     return c.json({
       agents,
-      page,
       limit,
-      total,
-      totalPages,
+      total: allAgents.length,
+      hasMore: limit < allAgents.length,
       simulation: true,
     })
   }
 
   try {
+    // Cursor API accepts 'limit' parameter (default: 20, max: 100) and uses cursor-based pagination
     const url = new URL(CURSOR_API_URL)
-    url.searchParams.set("limit", String(limit))
+    url.searchParams.set("limit", String(Math.min(limit, 100))) // API max is 100
 
     const response = await fetch(url.toString(), {
       headers: {
@@ -87,11 +80,28 @@ app.get("/", zValidator("query", paginationSchema), async (c) => {
     })
 
     if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
+      const errorText = await response.text()
+      console.error("[API /agents GET] Cursor API error:", {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+        url: url.toString(),
+      })
+      throw new Error(`Cursor API error: ${response.status} - ${errorText}`)
     }
 
     const data = await response.json()
-    return c.json({ ...data, simulation: false })
+    const agents = data.agents || []
+    // API uses cursor-based pagination - if nextCursor exists, there are more agents
+    const hasMore = !!data.nextCursor
+
+    return c.json({
+      agents,
+      limit,
+      total: agents.length,
+      hasMore,
+      simulation: false,
+    })
   } catch (error) {
     console.error("Error fetching agents:", error)
     return c.json({ error: "Failed to fetch agents" }, 500)
