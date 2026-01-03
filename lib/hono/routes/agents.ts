@@ -17,10 +17,13 @@ import {
   addSimulatedAgent,
   getSimulatedAgents,
   getSimulatedAgentsPaginated,
-  getSimulatedConversation,
   removeSimulatedAgent,
   updateSimulatedAgentStatus,
 } from "@/lib/mock-data"
+import {
+  fetchAgentConversationData,
+  fetchAgentData,
+} from "@/lib/server/agents"
 import { userApiKeys } from "@/lib/schema/auth-schema"
 import {
   type LaunchAgentRequest,
@@ -197,35 +200,15 @@ app.post("/", zValidator("json", launchAgentRequestSchema), async (c) => {
 // GET /api/agents/:id - Get agent details
 app.get("/:id", async (c) => {
   const id = c.req.param("id")
-  const simulationMode = c.get("simulationMode")
   const apiKey = c.get("apiKey")
 
-  if (simulationMode) {
-    const agents = getSimulatedAgents()
-    const agent = agents.find((a) => a.id === id)
-    if (!agent) {
-      return c.json({ error: "Agent not found" }, 404)
-    }
-    return c.json({ ...agent, simulation: true })
+  const agent = await fetchAgentData(id, apiKey)
+
+  if (!agent) {
+    return c.json({ error: "Agent not found" }, 404)
   }
 
-  try {
-    const response = await fetch(`${CURSOR_API_URL}/${id}`, {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
-    }
-
-    const data = await response.json()
-    return c.json({ ...data, simulation: false })
-  } catch (error) {
-    console.error("Error fetching agent:", error)
-    return c.json({ error: "Failed to fetch agent" }, 500)
-  }
+  return c.json(agent)
 })
 
 // DELETE /api/agents/:id - Delete agent
@@ -265,76 +248,31 @@ app.delete("/:id", async (c) => {
 // GET /api/agents/:id/conversation - Get conversation
 app.get("/:id/conversation", async (c) => {
   const id = c.req.param("id")
-  const simulationMode = c.get("simulationMode")
   const apiKey = c.get("apiKey")
 
-  if (simulationMode) {
-    const conversation = getSimulatedConversation(id)
-    if (!conversation) {
-      return c.json({
-        id,
-        messages: [
-          {
-            id: "msg_placeholder",
-            type: "user_message",
-            text: "No conversation history available for this simulated agent.",
-          },
-        ],
-        simulation: true,
-      })
-    }
-    return c.json({ ...conversation, simulation: true })
+  const conversation = await fetchAgentConversationData(id, apiKey)
+
+  if (!conversation) {
+    return c.json({ error: "Conversation not found" }, 404)
   }
 
-  try {
-    const response = await fetch(`${CURSOR_API_URL}/${id}/conversation`, {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
-    }
-
-    const data = await response.json()
-    return c.json({ ...data, simulation: false })
-  } catch (error) {
-    console.error("Error fetching conversation:", error)
-    return c.json({ error: "Failed to fetch conversation" }, 500)
-  }
+  return c.json(conversation)
 })
 
 // POST /api/agents/:id/summarize - Summarize conversation
 app.post("/:id/summarize", async (c) => {
   const id = c.req.param("id")
-  const simulationMode = c.get("simulationMode")
   const apiKey = c.get("apiKey")
 
-  // Get conversation
-  let conversation: AgentConversation | null = null
-  if (simulationMode) {
-    conversation = getSimulatedConversation(id)
-    if (!conversation) {
-      return c.json({ error: "Conversation not found" }, 404)
-    }
-  } else {
-    try {
-      const response = await fetch(`${CURSOR_API_URL}/${id}/conversation`, {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-        },
-      })
+  // Get conversation using shared function
+  const conversationData = await fetchAgentConversationData(id, apiKey)
+  if (!conversationData) {
+    return c.json({ error: "Conversation not found" }, 404)
+  }
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`)
-      }
-
-      conversation = await response.json()
-    } catch (error) {
-      console.error("Error fetching conversation:", error)
-      return c.json({ error: "Failed to fetch conversation" }, 500)
-    }
+  const conversation: AgentConversation = {
+    id: conversationData.id,
+    messages: conversationData.messages,
   }
 
   // Check if conversation has messages

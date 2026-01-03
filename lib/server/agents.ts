@@ -1,61 +1,38 @@
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
-import { db } from "@/lib/db"
-import { decryptData } from "@/lib/encryption"
 import {
   getSimulatedAgents,
   getSimulatedConversation,
 } from "@/lib/mock-data"
-import { userApiKeys } from "@/lib/schema/auth-schema"
-import { eq } from "drizzle-orm"
 import type { Agent, AgentConversation } from "@/lib/types"
 
 const CURSOR_API_URL = "https://api.cursor.com/v0/agents"
 
-/**
- * Server-side function to get user's API key
- */
-async function getUserApiKeyServer(userId: string): Promise<string | null> {
-  const [apiKey] = await db
-    .select()
-    .from(userApiKeys)
-    .where(eq(userApiKeys.userId, userId))
-    .limit(1)
-
-  if (!apiKey || !apiKey.encryptedApiKey) {
-    return null
-  }
-
-  try {
-    return decryptData(apiKey.encryptedApiKey)
-  } catch (error) {
-    console.error("Error decrypting API key:", error)
-    return null
-  }
-}
+// Revalidate once per day (86400 seconds)
+const REVALIDATE_SECONDS = 86400
 
 /**
- * Server-side function to fetch agent data
- * Used for ISR and initial data loading
+ * Determines if we're in simulation mode based on API key
  */
-export async function getAgentData(
-  id: string
-): Promise<(Agent & { simulation: boolean }) | null> {
-  const headersList = await headers()
-  const session = await auth.api.getSession({ headers: headersList })
-
-  if (!session) {
-    return null
-  }
-
-  const apiKey = await getUserApiKeyServer(session.user.id)
-
-  const simulationMode =
+function isSimulationMode(apiKey: string | null): boolean {
+  return (
     !apiKey ||
     apiKey.trim().length <= 10 ||
     apiKey.includes("undefined") ||
     apiKey.includes("your-api-key") ||
     apiKey.includes("placeholder")
+  )
+}
+
+/**
+ * Core function to fetch agent data
+ * Can be used from both server components and API routes
+ */
+export async function fetchAgentData(
+  id: string,
+  apiKey: string | null
+): Promise<(Agent & { simulation: boolean }) | null> {
+  const simulationMode = isSimulationMode(apiKey)
 
   if (simulationMode) {
     const agents = getSimulatedAgents()
@@ -71,7 +48,7 @@ export async function getAgentData(
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
-      next: { revalidate: 60 }, // Cache for 60 seconds
+      next: { revalidate: REVALIDATE_SECONDS },
     })
 
     if (!response.ok) {
@@ -90,27 +67,14 @@ export async function getAgentData(
 }
 
 /**
- * Server-side function to fetch agent conversation
- * Used for ISR and initial data loading
+ * Core function to fetch agent conversation
+ * Can be used from both server components and API routes
  */
-export async function getAgentConversationData(
-  id: string
+export async function fetchAgentConversationData(
+  id: string,
+  apiKey: string | null
 ): Promise<(AgentConversation & { simulation: boolean }) | null> {
-  const headersList = await headers()
-  const session = await auth.api.getSession({ headers: headersList })
-
-  if (!session) {
-    return null
-  }
-
-  const apiKey = await getUserApiKeyServer(session.user.id)
-
-  const simulationMode =
-    !apiKey ||
-    apiKey.trim().length <= 10 ||
-    apiKey.includes("undefined") ||
-    apiKey.includes("your-api-key") ||
-    apiKey.includes("placeholder")
+  const simulationMode = isSimulationMode(apiKey)
 
   if (simulationMode) {
     const conversation = getSimulatedConversation(id)
@@ -135,7 +99,7 @@ export async function getAgentConversationData(
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
-      next: { revalidate: 5 }, // Cache for 5 seconds (conversations update frequently)
+      next: { revalidate: REVALIDATE_SECONDS },
     })
 
     if (!response.ok) {
@@ -151,4 +115,46 @@ export async function getAgentConversationData(
     console.error("Error fetching conversation:", error)
     return null
   }
+}
+
+/**
+ * Server component wrapper: Fetches agent data using Next.js headers
+ * Used for ISR and initial data loading in page components
+ */
+export async function getAgentData(
+  id: string
+): Promise<(Agent & { simulation: boolean }) | null> {
+  const headersList = await headers()
+  const session = await auth.api.getSession({ headers: headersList })
+
+  if (!session) {
+    return null
+  }
+
+  // Import here to avoid issues with server/client boundaries
+  const { getUserApiKeyServer } = await import("./agents-server-helpers")
+  const apiKey = await getUserApiKeyServer(session.user.id)
+
+  return fetchAgentData(id, apiKey)
+}
+
+/**
+ * Server component wrapper: Fetches agent conversation using Next.js headers
+ * Used for ISR and initial data loading in page components
+ */
+export async function getAgentConversationData(
+  id: string
+): Promise<(AgentConversation & { simulation: boolean }) | null> {
+  const headersList = await headers()
+  const session = await auth.api.getSession({ headers: headersList })
+
+  if (!session) {
+    return null
+  }
+
+  // Import here to avoid issues with server/client boundaries
+  const { getUserApiKeyServer } = await import("./agents-server-helpers")
+  const apiKey = await getUserApiKeyServer(session.user.id)
+
+  return fetchAgentConversationData(id, apiKey)
 }
