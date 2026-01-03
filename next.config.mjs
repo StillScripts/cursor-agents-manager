@@ -6,6 +6,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  experimental: {
+    dynamicIO: true,
+  },
   // PWA configuration
   async headers() {
     return [
