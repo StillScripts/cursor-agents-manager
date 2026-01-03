@@ -17,11 +17,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FieldDescription, FieldGroup, FieldSet } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { PageHeader } from "@/components/page-header"
 import { useAppForm } from "@/lib/hooks/use-app-form"
 import { useBranches } from "@/lib/hooks/use-branches"
 import { useRepositories } from "@/lib/hooks/use-repositories"
 import type { SettingsFormData } from "@/lib/schemas/settings"
-import { PageHeader } from "./page-header"
 
 const themeOptions = [
   { value: "light", label: "Light", icon: Sun },
