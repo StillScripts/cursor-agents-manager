@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 import { AgentDetail } from "@/components/agent-detail"
 import { getAgentConversationData, getAgentData } from "@/lib/server/agents"
 
@@ -20,10 +21,12 @@ export default async function AgentPage({ params }: PageProps) {
   ])
 
   return (
-    <AgentDetail
-      agentId={id}
-      initialAgent={agent}
-      initialConversation={conversation}
-    />
+    <Suspense fallback={null}>
+      <AgentDetail
+        agentId={id}
+        initialAgent={agent}
+        initialConversation={conversation}
+      />
+    </Suspense>
   )
 }

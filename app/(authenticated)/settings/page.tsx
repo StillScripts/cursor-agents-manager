@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 import { SettingsForm } from "@/components/settings-form"
 
 export const metadata: Metadata = {
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 }
 
 export default function SettingsPage() {
-  return <SettingsForm />
+  return (
+    <Suspense fallback={null}>
+      <SettingsForm />
+    </Suspense>
+  )
 }

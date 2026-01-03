@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next"
 import { Inter, JetBrains_Mono } from "next/font/google"
 import type React from "react"
+import { Suspense } from "react"
 import "./globals.css"
 import { Providers } from "@/components/providers"
 import { PWAInstaller } from "@/components/pwa-installer"
@@ -117,11 +118,13 @@ export default function RootLayout({
         className="antialiased font-sans overflow-hidden md:overflow-visible"
         suppressHydrationWarning
       >
-        <Providers>
-          {children}
-          <PWARegister />
-          <PWAInstaller />
-        </Providers>
+        <Suspense fallback={null}>
+          <Providers>
+            {children}
+            <PWARegister />
+            <PWAInstaller />
+          </Providers>
+        </Suspense>
       </body>
     </html>
   )
