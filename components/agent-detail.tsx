@@ -38,6 +38,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
@@ -52,6 +53,7 @@ import {
   useSummarizeConversation,
 } from "@/lib/hooks/use-agents"
 import { useTimeTracking } from "@/lib/hooks/use-time-tracking"
+import type { Agent, AgentConversation } from "@/lib/types"
 import { cn } from "@/lib/utils"
 import { PageHeader } from "./page-header"
 import { SimulationBanner } from "./simulation-banner"
@@ -59,18 +61,27 @@ import { StatusBadge } from "./status-badge"
 
 interface AgentDetailProps {
   agentId: string
+  initialAgent?: (Agent & { simulation: boolean }) | null
+  initialConversation?: (AgentConversation & { simulation: boolean }) | null
 }
 
-export function AgentDetail({ agentId }: AgentDetailProps) {
+export function AgentDetail({
+  agentId,
+  initialAgent,
+  initialConversation,
+}: AgentDetailProps) {
   const router = useRouter()
   const [followUpMessage, setFollowUpMessage] = useState("")
   const [openItems, setOpenItems] = useState<string[]>(["summary"])
   const [aiSummary, setAiSummary] = useState<string | null>(null)
   const [showThinkingProcess, setShowThinkingProcess] = useState(false)
 
-  const { data: agent, isLoading: agentLoading } = useAgent(agentId)
+  const { data: agent, isLoading: agentLoading } = useAgent(
+    agentId,
+    initialAgent
+  )
   const { data: conversation, isLoading: conversationLoading } =
-    useAgentConversation(agentId)
+    useAgentConversation(agentId, initialConversation)
   const { data: timeLogsData } = useAgentTimeLogs(agentId)
   const stopAgent = useStopAgent()
   const deleteAgent = useDeleteAgent()
@@ -166,7 +177,8 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
     }
   }
 
-  if (agentLoading) {
+  // Only show loading if we don't have initial data and query is loading
+  if (!initialAgent && agentLoading) {
     return (
       <>
         <PageHeader title="Agent" showBack />
@@ -227,7 +239,6 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
 
       <div className="p-4 space-y-4">
         <Accordion value={openItems} onValueChange={setOpenItems}>
-          {/* Summary Accordion */}
           <AccordionItem
             value="summary"
             className="border border-border rounded-xl mb-3 overflow-hidden"
@@ -249,15 +260,19 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
                   </span>
                 </div>
 
-                {typeof totalTimeSpent === "number" && totalTimeSpent > 0 && (
-                  <div className="flex items-center gap-2 text-sm py-2 px-3 bg-primary/10 rounded-lg border border-primary/20">
-                    <Clock className="h-4 w-4 text-primary" />
-                    <span className="text-muted-foreground">Time spent:</span>
-                    <span className="text-foreground font-medium">
-                      {formatDuration(totalTimeSpent)}
-                    </span>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 text-sm py-2 px-3 bg-primary/10 rounded-lg border border-primary/20">
+                  <Clock className="h-4 w-4 text-primary" />
+                  {typeof totalTimeSpent === "number" && totalTimeSpent > 0 ? (
+                    <>
+                      <span className="text-muted-foreground">Time spent:</span>
+                      <span className="text-foreground font-medium">
+                        {formatDuration(totalTimeSpent)}
+                      </span>
+                    </>
+                  ) : (
+                    <Skeleton className="h-4 w-28" />
+                  )}
+                </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
@@ -375,7 +390,7 @@ export function AgentDetail({ agentId }: AgentDetailProps) {
             </AccordionTrigger>
             <AccordionContent className="bg-card">
               <div className="px-4 pb-4">
-                {conversationLoading ? (
+                {!initialConversation && conversationLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <Spinner className="h-6 w-6 text-primary" />
                   </div>

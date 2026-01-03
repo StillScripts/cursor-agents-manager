@@ -3,6 +3,7 @@ import { zValidator } from "@hono/zod-validator"
 import { generateText } from "ai"
 import { eq } from "drizzle-orm"
 import { Hono } from "hono"
+import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { extractUserMessagesAndLastAssistant } from "@/lib/conversation-utils"
 import { db } from "@/lib/db"
@@ -16,7 +17,6 @@ import {
   addMessageToConversation,
   addSimulatedAgent,
   getSimulatedAgents,
-  getSimulatedConversation,
   removeSimulatedAgent,
   updateSimulatedAgentStatus,
 } from "@/lib/mock-data"
@@ -25,6 +25,7 @@ import {
   type LaunchAgentRequest,
   launchAgentRequestSchema,
 } from "@/lib/schemas/cursor/launch-agent"
+import { fetchAgentConversationData, fetchAgentData } from "@/lib/server/agents"
 import type { Agent, AgentConversation } from "@/lib/types"
 
 const CURSOR_API_URL = "https://api.cursor.com/v0/agents"
@@ -207,35 +208,15 @@ app.post("/", zValidator("json", launchAgentRequestSchema), async (c) => {
 // GET /api/agents/:id - Get agent details
 app.get("/:id", async (c) => {
   const id = c.req.param("id")
-  const simulationMode = c.get("simulationMode")
   const apiKey = c.get("apiKey")
 
-  if (simulationMode) {
-    const agents = getSimulatedAgents()
-    const agent = agents.find((a) => a.id === id)
-    if (!agent) {
-      return c.json({ error: "Agent not found" }, 404)
-    }
-    return c.json({ ...agent, simulation: true })
+  const agent = await fetchAgentData(id, apiKey)
+
+  if (!agent) {
+    return c.json({ error: "Agent not found" }, 404)
   }
 
-  try {
-    const response = await fetch(`${CURSOR_API_URL}/${id}`, {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
-    }
-
-    const data = await response.json()
-    return c.json({ ...data, simulation: false })
-  } catch (error) {
-    console.error("Error fetching agent:", error)
-    return c.json({ error: "Failed to fetch agent" }, 500)
-  }
+  return c.json(agent)
 })
 
 // DELETE /api/agents/:id - Delete agent
@@ -275,76 +256,31 @@ app.delete("/:id", async (c) => {
 // GET /api/agents/:id/conversation - Get conversation
 app.get("/:id/conversation", async (c) => {
   const id = c.req.param("id")
-  const simulationMode = c.get("simulationMode")
   const apiKey = c.get("apiKey")
 
-  if (simulationMode) {
-    const conversation = getSimulatedConversation(id)
-    if (!conversation) {
-      return c.json({
-        id,
-        messages: [
-          {
-            id: "msg_placeholder",
-            type: "user_message",
-            text: "No conversation history available for this simulated agent.",
-          },
-        ],
-        simulation: true,
-      })
-    }
-    return c.json({ ...conversation, simulation: true })
+  const conversation = await fetchAgentConversationData(id, apiKey)
+
+  if (!conversation) {
+    return c.json({ error: "Conversation not found" }, 404)
   }
 
-  try {
-    const response = await fetch(`${CURSOR_API_URL}/${id}/conversation`, {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
-    }
-
-    const data = await response.json()
-    return c.json({ ...data, simulation: false })
-  } catch (error) {
-    console.error("Error fetching conversation:", error)
-    return c.json({ error: "Failed to fetch conversation" }, 500)
-  }
+  return c.json(conversation)
 })
 
 // POST /api/agents/:id/summarize - Summarize conversation
 app.post("/:id/summarize", async (c) => {
   const id = c.req.param("id")
-  const simulationMode = c.get("simulationMode")
   const apiKey = c.get("apiKey")
 
-  // Get conversation
-  let conversation: AgentConversation | null = null
-  if (simulationMode) {
-    conversation = getSimulatedConversation(id)
-    if (!conversation) {
-      return c.json({ error: "Conversation not found" }, 404)
-    }
-  } else {
-    try {
-      const response = await fetch(`${CURSOR_API_URL}/${id}/conversation`, {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-        },
-      })
+  // Get conversation using shared function
+  const conversationData = await fetchAgentConversationData(id, apiKey)
+  if (!conversationData) {
+    return c.json({ error: "Conversation not found" }, 404)
+  }
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`)
-      }
-
-      conversation = await response.json()
-    } catch (error) {
-      console.error("Error fetching conversation:", error)
-      return c.json({ error: "Failed to fetch conversation" }, 500)
-    }
+  const conversation: AgentConversation = {
+    id: conversationData.id,
+    messages: conversationData.messages,
   }
 
   // Check if conversation has messages
@@ -354,6 +290,16 @@ app.post("/:id/summarize", async (c) => {
     conversation.messages.length === 0
   ) {
     return c.json({ error: "No conversation messages to summarize" }, 400)
+  }
+
+  // Check if this is a placeholder conversation (simulation mode only)
+  // Placeholder conversations have exactly one message with id "msg_placeholder"
+  if (
+    conversationData.simulation &&
+    conversation.messages.length === 1 &&
+    conversation.messages[0]?.id === "msg_placeholder"
+  ) {
+    return c.json({ error: "Conversation not found" }, 404)
   }
 
   // Extract only user messages and last assistant message from each turn
@@ -465,6 +411,13 @@ app.post("/:id/followup", async (c) => {
       })
     }, 1000)
 
+    // Revalidate cache for this agent page (revalidates all data fetches on the page)
+    try {
+      revalidatePath(`/agent/${id}`)
+    } catch {
+      // Ignore errors in test environment where Next.js cache is not available
+    }
+
     return c.json({ success: true, simulation: true })
   }
 
@@ -483,6 +436,14 @@ app.post("/:id/followup", async (c) => {
     }
 
     const data = await response.json()
+
+    // Revalidate cache for this agent page (revalidates all data fetches on the page)
+    try {
+      revalidatePath(`/agent/${id}`)
+    } catch {
+      // Ignore errors in test environment where Next.js cache is not available
+    }
+
     return c.json({ ...data, simulation: false })
   } catch (error) {
     console.error("Error sending follow-up:", error)
