@@ -153,3 +153,14 @@
 .safe-area-top {
   padding-top: env(safe-area-inset-top, 0px);
 }
+
+/* Bottom padding for main content area to account for bottom nav + safe area */
+.main-content-bottom-padding {
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  .main-content-bottom-padding {
+    padding-bottom: 0;
+  }
+}
