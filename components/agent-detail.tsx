@@ -13,10 +13,11 @@ import {
   StopCircle,
   Trash2,
   User,
+  Volume2,
   Wrench,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import {
@@ -50,8 +51,8 @@ import {
   useDeleteAgent,
   useSendFollowUp,
   useStopAgent,
-  useSummarizeConversation,
 } from "@/lib/hooks/use-agents"
+import { useSummarizeConversation, useTextToSpeech } from "@/lib/hooks/use-ai"
 import { useTimeTracking } from "@/lib/hooks/use-time-tracking"
 import type { Agent, AgentConversation } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -74,6 +75,7 @@ export function AgentDetail({
   const [followUpMessage, setFollowUpMessage] = useState("")
   const [openItems, setOpenItems] = useState<string[]>(["summary"])
   const [aiSummary, setAiSummary] = useState<string | null>(null)
+  const [showSummary, setShowSummary] = useState(false)
   const [showThinkingProcess, setShowThinkingProcess] = useState(false)
 
   const { data: agent, isLoading: agentLoading } = useAgent(
@@ -87,8 +89,13 @@ export function AgentDetail({
   const deleteAgent = useDeleteAgent()
   const sendFollowUp = useSendFollowUp()
   const summarizeConversation = useSummarizeConversation()
+  const textToSpeech = useTextToSpeech()
   const queryClient = useQueryClient()
   const { toast } = useToast()
+
+  // Audio player state
+  const [audioUrl, setAudioUrl] = useState<string | null>(null)
+  const audioRef = useRef<HTMLAudioElement>(null)
 
   // Load summary from localStorage on mount
   useEffect(() => {
@@ -97,6 +104,7 @@ export function AgentDetail({
       const stored = localStorage.getItem(key)
       if (stored) {
         setAiSummary(stored)
+        setShowSummary(true)
       }
     }
   }, [agentId])
@@ -105,8 +113,18 @@ export function AgentDetail({
   useEffect(() => {
     if (summarizeConversation.isSuccess && summarizeConversation.data) {
       setAiSummary(summarizeConversation.data.summary)
+      setShowSummary(true)
     }
   }, [summarizeConversation.isSuccess, summarizeConversation.data])
+
+  // Cleanup blob URLs when component unmounts or audioUrl changes
+  useEffect(() => {
+    return () => {
+      if (audioUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(audioUrl)
+      }
+    }
+  }, [audioUrl])
 
   // Time tracking for conversation review (auto-start on mount)
   const timeTracking = useTimeTracking()
@@ -177,6 +195,26 @@ export function AgentDetail({
     }
   }
 
+  const handleListenToSummary = async () => {
+    if (!aiSummary) return
+
+    try {
+      const url = await textToSpeech.mutateAsync({ text: aiSummary })
+      setAudioUrl(url)
+      toast({
+        title: "Audio ready",
+        description: "Use the audio player below to listen to the summary",
+      })
+    } catch (error) {
+      toast({
+        title: "Failed to generate audio",
+        description:
+          error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      })
+    }
+  }
+
   // Only show loading if we don't have initial data and query is loading
   if (!initialAgent && agentLoading) {
     return (
@@ -235,7 +273,7 @@ export function AgentDetail({
             <AccordionContent className="bg-card">
               <div className="px-4 pb-4 space-y-4">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>
+                  <span suppressHydrationWarning>
                     Created{" "}
                     {formatRelativeTime(agent.createdAt, { addSuffix: true })}
                   </span>
@@ -290,7 +328,7 @@ export function AgentDetail({
                 )}
 
                 {/* AI-Generated Summary */}
-                {aiSummary && (
+                {aiSummary && showSummary && (
                   <div className="pt-3 border-t border-border">
                     <div className="flex items-center gap-2 mb-2">
                       <Sparkles className="h-4 w-4 text-primary" />
@@ -301,6 +339,17 @@ export function AgentDetail({
                     <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                       {aiSummary}
                     </p>
+                    {audioUrl && (
+                      <div className="mt-3">
+                        {/* biome-ignore lint/a11y/useMediaCaption: Audio is text-to-speech of summary already displayed above */}
+                        <audio
+                          ref={audioRef}
+                          controls
+                          className="w-full"
+                          src={audioUrl}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -379,7 +428,7 @@ export function AgentDetail({
                   <div className="space-y-3">
                     {/* Action Buttons */}
                     {conversation && conversation.messages.length > 0 && (
-                      <div className="flex justify-between items-center gap-2 mb-3">
+                      <div className="flex flex-wrap items-center gap-2 mb-3">
                         <Button
                           variant="outline"
                           size="sm"
@@ -412,6 +461,40 @@ export function AgentDetail({
                           )}
                           {aiSummary ? "Regenerate Summary" : "Summarize"}
                         </Button>
+                        {aiSummary && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShowSummary(!showSummary)}
+                            >
+                              {showSummary ? (
+                                <>
+                                  <EyeOff className="h-4 w-4 mr-2" />
+                                  Hide Summary
+                                </>
+                              ) : (
+                                <>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Summary
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleListenToSummary}
+                              disabled={textToSpeech.isPending}
+                            >
+                              {textToSpeech.isPending ? (
+                                <Spinner className="h-4 w-4 mr-2" />
+                              ) : (
+                                <Volume2 className="h-4 w-4 mr-2" />
+                              )}
+                              Listen to Summary
+                            </Button>
+                          </>
+                        )}
                       </div>
                     )}
                     {filterMessagesForDisplay(
