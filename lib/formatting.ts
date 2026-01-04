@@ -10,6 +10,12 @@ import {
  */
 export function formatDateTime(date: string | Date): string {
   const dateObj = typeof date === "string" ? new Date(date) : date
+  
+  // Check if date is invalid
+  if (isNaN(dateObj.getTime())) {
+    return "Invalid Date"
+  }
+  
   return format(dateObj, "MMM d, yyyy, h:mm a")
 }
 
@@ -19,6 +25,12 @@ export function formatDateTime(date: string | Date): string {
  */
 export function formatDate(date: string | Date): string {
   const dateObj = typeof date === "string" ? new Date(date) : date
+  
+  // Check if date is invalid
+  if (isNaN(dateObj.getTime())) {
+    return "Invalid Date"
+  }
+  
   return format(dateObj, "MMM d, yyyy")
 }
 
@@ -28,6 +40,12 @@ export function formatDate(date: string | Date): string {
  */
 export function formatTime(date: string | Date): string {
   const dateObj = typeof date === "string" ? new Date(date) : date
+  
+  // Check if date is invalid
+  if (isNaN(dateObj.getTime())) {
+    return "Invalid Date"
+  }
+  
   return format(dateObj, "h:mm a")
 }
 
@@ -79,7 +97,10 @@ export function formatDurationMs(ms: number): string {
     return "0s"
   }
 
-  const duration = intervalToDuration({ start: 0, end: ms })
+  // Convert milliseconds to a date interval for intervalToDuration
+  const start = new Date(0)
+  const end = new Date(ms)
+  const duration = intervalToDuration({ start, end })
   const parts: string[] = []
 
   if (duration.hours !== undefined && duration.hours > 0) {
@@ -112,6 +133,12 @@ export function formatRelativeTime(
   options?: { addSuffix?: boolean },
 ): string {
   const dateObj = typeof date === "string" ? new Date(date) : date
+  
+  // Check if date is invalid
+  if (isNaN(dateObj.getTime())) {
+    return "Invalid Date"
+  }
+  
   return formatDistanceToNow(dateObj, {
     addSuffix: options?.addSuffix ?? false,
   })

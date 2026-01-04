@@ -238,12 +238,14 @@ describe("formatting", () => {
     })
 
     it("formatDateTime handles invalid date strings gracefully", () => {
-      // date-fns format will throw, but we should test the wrapper handles it
-      // In practice, invalid dates should be handled at the call site
       const invalidDate = new Date("invalid")
-      // This will produce a formatted string, but may be "Invalid Date"
       const result = formatDateTime(invalidDate)
-      expect(typeof result).toBe("string")
+      expect(result).toBe("Invalid Date")
+    })
+
+    it("formatDateTime handles invalid date strings", () => {
+      const result = formatDateTime("invalid-date-string")
+      expect(result).toBe("Invalid Date")
     })
   })
 })
