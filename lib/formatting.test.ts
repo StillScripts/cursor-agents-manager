@@ -7,6 +7,7 @@ import {
   formatDurationMs,
   formatRelativeTime,
   formatTime,
+  parseGitHubUrl,
 } from "./formatting"
 
 describe("formatting", () => {
@@ -248,6 +249,23 @@ describe("formatting", () => {
     it("formatDateTime handles invalid date strings", () => {
       const result = formatDateTime("invalid-date-string")
       expect(result).toBe("Invalid Date")
+    })
+  })
+
+  describe("parseGitHubUrl", () => {
+    it("parses a valid GitHub url", () => {
+      const url = "https://github.com/user/repo"
+      const result = parseGitHubUrl(url)
+      expect(result).toEqual({
+        url: "https://github.com/user/repo",
+        name: "repo",
+      })
+    })
+
+    it("returns null for invalid urls", () => {
+      const url = "https://gitlab.com/user/repo"
+      const result = parseGitHubUrl(url)
+      expect(result).toBeNull()
     })
   })
 })
