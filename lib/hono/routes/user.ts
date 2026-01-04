@@ -19,6 +19,11 @@ import {
   branchesRequestSchema,
   repositoriesRequestSchema,
 } from "@/lib/schemas/settings"
+import {
+  createUserDatabase,
+  ensureUserDatabase,
+  getUserDatabase,
+} from "@/lib/user-db"
 
 const app = new Hono<{ Variables: AuthVariables }>()
 
@@ -113,6 +118,41 @@ app.delete("/api-key", async (c) => {
   } catch (error) {
     console.error("Error deleting API key:", error)
     return c.json({ error: "Failed to delete API key" }, 500)
+  }
+})
+
+// ============================================================================
+// User Database Routes
+// ============================================================================
+
+// POST /api/user/create-database - Create user's database (idempotent)
+app.post("/create-database", async (c) => {
+  const user = c.get("user")
+
+  try {
+    // Try to get existing database first
+    try {
+      await getUserDatabase(user.id)
+      // Database already exists
+      return c.json({ success: true, message: "Database already exists" })
+    } catch {
+      // Database doesn't exist, create it
+      const result = await createUserDatabase(user.id)
+      return c.json({
+        success: true,
+        message: "Database created successfully",
+        database: result,
+      })
+    }
+  } catch (error) {
+    console.error("Error creating user database:", error)
+    return c.json(
+      {
+        error: "Failed to create database",
+        message: error instanceof Error ? error.message : "Unknown error",
+      },
+      500
+    )
   }
 })
 
@@ -234,8 +274,11 @@ app.post(
     const { repositories: repos } = c.req.valid("json")
 
     try {
+      // Get user's database
+      const userDb = await ensureUserDatabase(user.id)
+
       // Delete all repositories for the user and then insert new
-      await db.delete(repositories).where(eq(repositories.userId, user.id))
+      await userDb.delete(repositories).where(eq(repositories.userId, user.id))
 
       if (repos.length > 0) {
         const validRepos = repos
@@ -248,7 +291,7 @@ app.post(
           }))
 
         if (validRepos.length > 0) {
-          await db.insert(repositories).values(validRepos)
+          await userDb.insert(repositories).values(validRepos)
         }
       }
 
@@ -259,7 +302,7 @@ app.post(
         // Ignore errors in test environment where Next.js cache is not available
       }
 
-      const updatedRepos = await db
+      const updatedRepos = await userDb
         .select()
         .from(repositories)
         .where(eq(repositories.userId, user.id))
@@ -297,8 +340,11 @@ app.post("/branches", zValidator("json", branchesRequestSchema), async (c) => {
   const { branches: branchList } = c.req.valid("json")
 
   try {
+    // Get user's database
+    const userDb = await ensureUserDatabase(user.id)
+
     // Delete all branches for the user and then insert new
-    await db.delete(branches).where(eq(branches.userId, user.id))
+    await userDb.delete(branches).where(eq(branches.userId, user.id))
 
     if (branchList.length > 0) {
       const validBranches = branchList
@@ -310,7 +356,7 @@ app.post("/branches", zValidator("json", branchesRequestSchema), async (c) => {
         }))
 
       if (validBranches.length > 0) {
-        await db.insert(branches).values(validBranches)
+        await userDb.insert(branches).values(validBranches)
       }
     }
 
@@ -321,7 +367,7 @@ app.post("/branches", zValidator("json", branchesRequestSchema), async (c) => {
       // Ignore errors in test environment where Next.js cache is not available
     }
 
-    const updatedBranches = await db
+    const updatedBranches = await userDb
       .select()
       .from(branches)
       .where(eq(branches.userId, user.id))
@@ -350,7 +396,10 @@ app.post("/time-logs", zValidator("json", timeLogSchema), async (c) => {
   const data = c.req.valid("json")
 
   try {
-    await db.insert(timeLogs).values({
+    // Get user's database
+    const userDb = await ensureUserDatabase(user.id)
+
+    await userDb.insert(timeLogs).values({
       userId: user.id,
       taskId: data.taskId,
       activityType: data.activityType,
@@ -372,11 +421,14 @@ app.get("/time-logs", async (c) => {
   const taskId = c.req.query("taskId")
 
   try {
+    // Get user's database
+    const userDb = await ensureUserDatabase(user.id)
+
     const conditions = taskId
       ? and(eq(timeLogs.userId, user.id), eq(timeLogs.taskId, taskId))
       : eq(timeLogs.userId, user.id)
 
-    const logs = await db
+    const logs = await userDb
       .select()
       .from(timeLogs)
       .where(conditions)

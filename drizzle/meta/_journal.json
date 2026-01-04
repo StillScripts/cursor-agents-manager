@@ -36,6 +36,20 @@
       "when": 1767492257669,
       "tag": "0004_yummy_mercury",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1767516972838,
+      "tag": "0005_spotty_paibok",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1767519422717,
+      "tag": "0006_watery_mojo",
+      "breakpoints": true
     }
   ]
 }

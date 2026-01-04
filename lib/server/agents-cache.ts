@@ -1,8 +1,13 @@
 import { and, desc, eq, isNull } from "drizzle-orm"
-import { db } from "@/lib/db"
 import type { Agent as AgentSchema } from "@/lib/schema/user-schema"
 import { agents } from "@/lib/schema/user-schema"
 import type { Agent } from "@/lib/types"
+import {
+  createAgentMapping,
+  deleteAgentMapping,
+  ensureUserDatabase,
+  getUserIdByAgentId,
+} from "@/lib/user-db"
 
 /**
  * Cache TTL (time-to-live) configuration based on agent status
@@ -99,6 +104,7 @@ export function dbAgentToApiAgent(
 /**
  * Save or update an agent in the cache
  * Uses upsert (insert or update on conflict)
+ * Also creates agent mapping in master database for webhook lookups
  */
 export async function saveAgentToCache(
   apiAgent: Agent & { simulation?: boolean },
@@ -113,9 +119,12 @@ export async function saveAgentToCache(
     dbAgent.model = model
   }
 
+  // Get user's database
+  const userDb = await ensureUserDatabase(userId)
+
   try {
     // Try upsert if supported (Turso/LibSQL)
-    const result = await (db.insert(agents).values(dbAgent) as any)
+    const result = await (userDb.insert(agents).values(dbAgent) as any)
       .onConflictDoUpdate?.({
         target: agents.id,
         set: {
@@ -133,18 +142,26 @@ export async function saveAgentToCache(
       })
       ?.returning?.()
 
+    // Create agent mapping in master database for webhook lookups
+    try {
+      await createAgentMapping(dbAgent.id, userId)
+    } catch {
+      // Ignore if mapping already exists
+      console.debug(`Agent mapping already exists for ${dbAgent.id}`)
+    }
+
     if (result) {
       return result[0]
     }
 
     // Fallback for test environments without upsert support
-    await db.insert(agents).values(dbAgent)
+    await userDb.insert(agents).values(dbAgent)
     return dbAgent as AgentSchema
   } catch {
     // If insert fails (already exists), try update
     try {
       const result = await (
-        db
+        userDb
           .update(agents)
           .set({
             name: dbAgent.name,
@@ -176,7 +193,10 @@ export async function getAgentFromCache(
   agentId: string,
   userId: string
 ): Promise<AgentSchema | null> {
-  const [agent] = await db
+  // Get user's database
+  const userDb = await ensureUserDatabase(userId)
+
+  const [agent] = await userDb
     .select()
     .from(agents)
     .where(
@@ -205,6 +225,9 @@ export async function getAgentsFromCache(
 ): Promise<AgentSchema[]> {
   const { limit = 10, status, includeDeleted = false } = options
 
+  // Get user's database
+  const userDb = await ensureUserDatabase(userId)
+
   const conditions = [eq(agents.userId, userId)]
 
   if (!includeDeleted) {
@@ -217,7 +240,7 @@ export async function getAgentsFromCache(
 
   try {
     // Try with full query builder support (Turso/LibSQL)
-    const query = db
+    const query = userDb
       .select()
       .from(agents)
       .where(and(...conditions))
@@ -248,8 +271,11 @@ export async function updateAgentCache(
   updates: Partial<AgentSchema>
 ): Promise<AgentSchema | null> {
   try {
+    // Get user's database
+    const userDb = await ensureUserDatabase(userId)
+
     const result = await (
-      db
+      userDb
         .update(agents)
         .set({
           ...updates,
@@ -263,7 +289,7 @@ export async function updateAgentCache(
     }
 
     // Fallback for test environments - fetch after update
-    await db
+    await userDb
       .update(agents)
       .set({
         ...updates,
@@ -286,7 +312,10 @@ export async function markAgentStale(
   userId: string,
   error?: string
 ): Promise<void> {
-  await db
+  // Get user's database
+  const userDb = await ensureUserDatabase(userId)
+
+  await userDb
     .update(agents)
     .set({
       syncStatus: error ? "error" : "stale",
@@ -299,31 +328,55 @@ export async function markAgentStale(
 /**
  * Invalidate (soft delete) an agent from cache
  * Sets deletedAt timestamp instead of actually deleting
+ * Also removes agent mapping from master database
  */
 export async function invalidateAgentCache(
   agentId: string,
   userId: string
 ): Promise<void> {
-  await db
+  // Get user's database
+  const userDb = await ensureUserDatabase(userId)
+
+  await userDb
     .update(agents)
     .set({
       deletedAt: new Date(),
       updatedAt: new Date(),
     })
     .where(and(eq(agents.id, agentId), eq(agents.userId, userId)))
+
+  // Remove agent mapping from master database
+  try {
+    await deleteAgentMapping(agentId)
+  } catch (error) {
+    console.error(`Failed to delete agent mapping for ${agentId}:`, error)
+    // Continue even if mapping deletion fails
+  }
 }
 
 /**
  * Hard delete an agent from cache
  * Permanently removes the record (use sparingly)
+ * Also removes agent mapping from master database
  */
 export async function deleteAgentFromCache(
   agentId: string,
   userId: string
 ): Promise<void> {
-  await db
+  // Get user's database
+  const userDb = await ensureUserDatabase(userId)
+
+  await userDb
     .delete(agents)
     .where(and(eq(agents.id, agentId), eq(agents.userId, userId)))
+
+  // Remove agent mapping from master database
+  try {
+    await deleteAgentMapping(agentId)
+  } catch (error) {
+    console.error(`Failed to delete agent mapping for ${agentId}:`, error)
+    // Continue even if mapping deletion fails
+  }
 }
 
 /**
@@ -391,7 +444,7 @@ export async function getStaleAgents(
 
 /**
  * Update an agent by ID only (for webhook handlers)
- * First queries the agent to get userId, then updates
+ * Uses user_agents mapping to find userId, then updates in user's database
  * Returns null if agent not found (may have been deleted or not yet cached)
  */
 export async function updateAgentByIdOnly(
@@ -399,20 +452,16 @@ export async function updateAgentByIdOnly(
   updates: Partial<AgentSchema>
 ): Promise<AgentSchema | null> {
   try {
-    // First, find the agent to get the userId
-    const [existingAgent] = await db
-      .select()
-      .from(agents)
-      .where(and(eq(agents.id, agentId), isNull(agents.deletedAt)))
-      .limit(1)
+    // Look up userId from user_agents mapping table
+    const userId = await getUserIdByAgentId(agentId)
 
-    if (!existingAgent) {
-      // Agent not found - might be deleted or not yet cached
+    if (!userId) {
+      // Agent mapping not found - might be deleted or not yet cached
       return null
     }
 
     // Update using the existing updateAgentCache function
-    return await updateAgentCache(agentId, existingAgent.userId, updates)
+    return await updateAgentCache(agentId, userId, updates)
   } catch (error) {
     console.error(`Failed to update agent ${agentId}:`, error)
     return null
