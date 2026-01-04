@@ -139,10 +139,10 @@ const mockSession = {
 }
 
 // ============================================================================
-// Mock: @/lib/auth
+// Mock: @/lib/better-auth/auth
 // ============================================================================
 
-mock.module("@/lib/auth", () => ({
+mock.module("@/lib/better-auth/auth", () => ({
   auth: {
     api: {
       getSession: async () => {

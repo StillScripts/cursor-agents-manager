@@ -1,5 +1,5 @@
 import { headers } from "next/headers"
-import { auth } from "@/lib/auth"
+import { auth } from "@/lib/better-auth/auth"
 import { getSimulatedAgents, getSimulatedConversation } from "@/lib/mock-data"
 import type { Agent, AgentConversation } from "@/lib/types"
 

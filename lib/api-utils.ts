@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm"
 import type { NextRequest } from "next/server"
-import { auth } from "./auth"
+import { auth } from "./better-auth/auth"
 import { db } from "./db"
 import { decryptData } from "./encryption"
 import { userApiKeys } from "./schema/auth-schema"

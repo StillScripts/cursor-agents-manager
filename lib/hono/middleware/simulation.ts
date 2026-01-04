@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm"
 import { createMiddleware } from "hono/factory"
-import { auth } from "@/lib/auth"
+import { auth } from "@/lib/better-auth/auth"
 import { db } from "@/lib/db"
 import { decryptData } from "@/lib/encryption"
 import { userApiKeys } from "@/lib/schema/auth-schema"
