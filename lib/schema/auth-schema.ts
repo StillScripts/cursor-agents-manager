@@ -79,3 +79,15 @@ export const userApiKeys = sqliteTable("user_api_keys", {
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
 })
+
+// Map agent IDs to user IDs (for webhook lookups)
+// When a webhook arrives with an agent ID, we need to know which user's database to query
+export const userAgents = sqliteTable("user_agents", {
+  // Agent ID from Cursor API (e.g., "bc_abc123", UUIDs, or any string format)
+  // SQLite TEXT type supports strings of any length, including UUIDs and long identifiers
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+})

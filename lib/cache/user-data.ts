@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm"
 import { cacheLife, cacheTag } from "next/cache"
-import { db } from "@/lib/db"
 import { branches, repositories } from "@/lib/schema/user-schema"
+import { ensureUserDatabase } from "@/lib/user-db"
 
 /**
  * Cache tag generators for user-specific data
@@ -28,7 +28,8 @@ export async function getCachedUserRepositories(userId: string) {
   cacheLife("days")
   cacheTag(cacheKeys.userRepositories(userId))
 
-  return db
+  const userDb = await ensureUserDatabase(userId)
+  return userDb
     .select()
     .from(repositories)
     .where(eq(repositories.userId, userId))
@@ -51,7 +52,8 @@ export async function getCachedUserBranches(userId: string) {
   cacheLife("days")
   cacheTag(cacheKeys.userBranches(userId))
 
-  return db
+  const userDb = await ensureUserDatabase(userId)
+  return userDb
     .select()
     .from(branches)
     .where(eq(branches.userId, userId))

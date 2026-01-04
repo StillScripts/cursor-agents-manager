@@ -23,7 +23,7 @@ export function formatDate(date: string | Date): string {
   const dateObj = typeof date === "string" ? new Date(date) : date
 
   // Check if date is invalid
-  if (isNaN(dateObj.getTime())) {
+  if (Number.isNaN(dateObj.getTime())) {
     return "Invalid Date"
   }
 
@@ -38,7 +38,7 @@ export function formatTime(date: string | Date): string {
   const dateObj = typeof date === "string" ? new Date(date) : date
 
   // Check if date is invalid
-  if (isNaN(dateObj.getTime())) {
+  if (Number.isNaN(dateObj.getTime())) {
     return "Invalid Date"
   }
 
@@ -135,7 +135,7 @@ export function formatRelativeTime(
   const dateObj = typeof date === "string" ? new Date(date) : date
 
   // Check if date is invalid
-  if (isNaN(dateObj.getTime())) {
+  if (Number.isNaN(dateObj.getTime())) {
     return "Invalid Date"
   }
 

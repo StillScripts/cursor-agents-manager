@@ -132,7 +132,7 @@ export function TextareaWithVoice({
   }
 
   return (
-    <InputGroup className="flex items-end">
+    <InputGroup className="flex flex-col-reverse items-start">
       <InputGroupTextarea
         value={value}
         onChange={onChange}
