@@ -1,6 +1,7 @@
 import type { AnyFieldApi } from "@tanstack/react-form"
 import { Plus, Trash2 } from "lucide-react"
 import type { ComponentProps, ReactNode } from "react"
+import { TextareaWithVoice } from "@/components/textarea-with-voice"
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -113,6 +114,41 @@ export const ControlledTextarea = ({
         aria-invalid={fieldProps.isInvalid}
       />
     </ControlledField>
+  )
+}
+
+export const ControlledTextareaWithVoice = ({
+  field,
+  label,
+  description,
+  className,
+  ...props
+}: FieldProps & ComponentProps<typeof TextareaWithVoice>) => {
+  const fieldProps = getFieldProps(field, description, label)
+  return (
+    <Field data-invalid={fieldProps.isInvalid}>
+      {label && <FieldLabel htmlFor={field.name}>{label}</FieldLabel>}
+      <TextareaWithVoice
+        {...props}
+        className={className}
+        id={field.name}
+        name={field.name}
+        value={field.state.value || ""}
+        onBlur={field.handleBlur}
+        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+          field.handleChange(e.currentTarget.value || undefined)
+        }}
+        aria-invalid={fieldProps.isInvalid}
+      />
+      {description && <FieldDescription>{description}</FieldDescription>}
+      {fieldProps.isInvalid && (
+        <FieldError
+          errors={field.state.meta.errors.map((e) => ({
+            message: e?.toString(),
+          }))}
+        />
+      )}
+    </Field>
   )
 }
 

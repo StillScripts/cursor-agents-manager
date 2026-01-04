@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import { TextareaWithVoice } from "@/components/textarea-with-voice"
 import {
   Accordion,
   AccordionContent,
@@ -40,7 +41,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
-import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { filterMessagesForDisplay } from "@/lib/conversation-utils"
 import { formatDurationMs, formatRelativeTime } from "@/lib/formatting"
@@ -336,9 +336,22 @@ export function AgentDetail({
                         AI Summary
                       </span>
                     </div>
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        a: ({ children, href }) => (
+                          <a
+                            href={href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {children}
+                          </a>
+                        ),
+                      }}
+                    >
                       {aiSummary}
-                    </p>
+                    </ReactMarkdown>
                     {audioUrl && (
                       <div className="mt-3">
                         {/* biome-ignore lint/a11y/useMediaCaption: Audio is text-to-speech of summary already displayed above */}
@@ -349,6 +362,78 @@ export function AgentDetail({
                           src={audioUrl}
                         />
                       </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Summary Action Buttons */}
+                {conversation && conversation.messages.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-border">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setShowThinkingProcess(!showThinkingProcess)
+                      }
+                    >
+                      {showThinkingProcess ? (
+                        <>
+                          <EyeOff className="h-4 w-4 mr-2" />
+                          Hide Thinking Process
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="h-4 w-4 mr-2" />
+                          Show Thinking Process
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSummarize}
+                      disabled={summarizeConversation.isPending}
+                    >
+                      {summarizeConversation.isPending ? (
+                        <Spinner className="h-4 w-4 mr-2" />
+                      ) : (
+                        <Sparkles className="h-4 w-4 mr-2" />
+                      )}
+                      {aiSummary ? "Regenerate Summary" : "Summarize"}
+                    </Button>
+                    {aiSummary && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowSummary(!showSummary)}
+                        >
+                          {showSummary ? (
+                            <>
+                              <EyeOff className="h-4 w-4 mr-2" />
+                              Hide Summary
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Summary
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleListenToSummary}
+                          disabled={textToSpeech.isPending}
+                        >
+                          {textToSpeech.isPending ? (
+                            <Spinner className="h-4 w-4 mr-2" />
+                          ) : (
+                            <Volume2 className="h-4 w-4 mr-2" />
+                          )}
+                          Listen to Summary
+                        </Button>
+                      </>
                     )}
                   </div>
                 )}
@@ -426,77 +511,6 @@ export function AgentDetail({
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {/* Action Buttons */}
-                    {conversation && conversation.messages.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-2 mb-3">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            setShowThinkingProcess(!showThinkingProcess)
-                          }
-                        >
-                          {showThinkingProcess ? (
-                            <>
-                              <EyeOff className="h-4 w-4 mr-2" />
-                              Hide Thinking Process
-                            </>
-                          ) : (
-                            <>
-                              <Eye className="h-4 w-4 mr-2" />
-                              Show Thinking Process
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleSummarize}
-                          disabled={summarizeConversation.isPending}
-                        >
-                          {summarizeConversation.isPending ? (
-                            <Spinner className="h-4 w-4 mr-2" />
-                          ) : (
-                            <Sparkles className="h-4 w-4 mr-2" />
-                          )}
-                          {aiSummary ? "Regenerate Summary" : "Summarize"}
-                        </Button>
-                        {aiSummary && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setShowSummary(!showSummary)}
-                            >
-                              {showSummary ? (
-                                <>
-                                  <EyeOff className="h-4 w-4 mr-2" />
-                                  Hide Summary
-                                </>
-                              ) : (
-                                <>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Summary
-                                </>
-                              )}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={handleListenToSummary}
-                              disabled={textToSpeech.isPending}
-                            >
-                              {textToSpeech.isPending ? (
-                                <Spinner className="h-4 w-4 mr-2" />
-                              ) : (
-                                <Volume2 className="h-4 w-4 mr-2" />
-                              )}
-                              Listen to Summary
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    )}
                     {filterMessagesForDisplay(
                       conversation?.messages || [],
                       showThinkingProcess
@@ -569,7 +583,7 @@ export function AgentDetail({
         {canSendFollowUp && (
           <div className="border border-border rounded-xl p-4 bg-card">
             <div className="flex flex-col gap-3">
-              <Textarea
+              <TextareaWithVoice
                 placeholder="Send a follow-up message to continue the task..."
                 value={followUpMessage}
                 onChange={(e) => setFollowUpMessage(e.target.value)}
