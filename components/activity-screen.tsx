@@ -2,44 +2,15 @@
 
 import { Clock, FileText } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
+import {
+  formatActivityType,
+  formatDateTime,
+  formatDurationBetween,
+  formatDurationMs,
+} from "@/lib/formatting"
 import { useAllTimeLogs, type TimeLogEntry } from "@/lib/hooks/use-agents"
 import { PageHeader } from "@/components/page-header"
 import { SkeletonCard } from "@/components/skeleton-card"
-
-function formatDuration(startTime: string, endTime: string | null): string {
-  const start = new Date(startTime)
-  const end = endTime ? new Date(endTime) : new Date()
-  const durationMs = end.getTime() - start.getTime()
-  const seconds = Math.floor(durationMs / 1000)
-  const minutes = Math.floor(seconds / 60)
-  const hours = Math.floor(minutes / 60)
-
-  if (hours > 0) {
-    return `${hours}h ${minutes % 60}m`
-  }
-  if (minutes > 0) {
-    return `${minutes}m ${seconds % 60}s`
-  }
-  return `${seconds}s`
-}
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString)
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-}
-
-function formatActivityType(type: string): string {
-  return type
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ")
-}
 
 function ActivityItem({ log }: { log: TimeLogEntry }) {
   return (
@@ -57,12 +28,12 @@ function ActivityItem({ log }: { log: TimeLogEntry }) {
               Task: {log.taskId}
             </p>
             <p className="text-xs text-muted-foreground">
-              {formatDate(log.createdAt)}
+              {formatDateTime(log.createdAt)}
             </p>
           </div>
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <Clock className="h-4 w-4" />
-            <span>{formatDuration(log.startTime, log.endTime)}</span>
+            <span>{formatDurationBetween(log.startTime, log.endTime)}</span>
           </div>
         </div>
       </CardContent>
@@ -87,14 +58,11 @@ export function ActivityScreen() {
   }
 
   const timeLogs = data?.timeLogs || []
-  const totalDuration = timeLogs.reduce((total, log) => {
+  const totalDurationMs = timeLogs.reduce((total, log) => {
     const start = new Date(log.startTime)
     const end = log.endTime ? new Date(log.endTime) : new Date()
     return total + (end.getTime() - start.getTime())
   }, 0)
-
-  const totalHours = Math.floor(totalDuration / (1000 * 60 * 60))
-  const totalMinutes = Math.floor((totalDuration % (1000 * 60 * 60)) / (1000 * 60))
 
   return (
     <>
@@ -109,7 +77,7 @@ export function ActivityScreen() {
                   <div>
                     <p className="text-sm text-muted-foreground">Total Time</p>
                     <p className="text-2xl font-bold text-foreground">
-                      {totalHours > 0 ? `${totalHours}h ${totalMinutes}m` : `${totalMinutes}m`}
+                      {formatDurationMs(totalDurationMs)}
                     </p>
                   </div>
                   <div className="text-right">

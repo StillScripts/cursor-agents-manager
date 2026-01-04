@@ -1,6 +1,6 @@
 "use client"
 
-import { formatDistanceToNow } from "date-fns"
+import { formatRelativeTime } from "@/lib/formatting"
 import { ChevronRight, GitBranch } from "lucide-react"
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
@@ -38,9 +38,7 @@ export function AgentCard({ agent }: AgentCardProps) {
                 </p>
               )}
               <p className="text-xs text-muted-foreground/70 mt-1">
-                {formatDistanceToNow(new Date(agent.createdAt), {
-                  addSuffix: true,
-                })}
+                {formatRelativeTime(agent.createdAt, { addSuffix: true })}
               </p>
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
