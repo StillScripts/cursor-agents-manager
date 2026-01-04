@@ -18,7 +18,9 @@
       "WebFetch(domain:cursor.com)",
       "WebFetch(domain:docs.convex.dev)",
       "WebFetch(domain:tanstack.com)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:www.better-auth.com)",
+      "WebFetch(domain:labs.convex.dev)"
     ]
   }
 }

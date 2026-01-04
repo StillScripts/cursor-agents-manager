@@ -1,8 +1,7 @@
 /**
- * Authentication is fully powered by Better Auth
+ * Authentication powered by Better Auth with Convex backend
  */
 
-import { toNextJsHandler } from "better-auth/next-js"
-import { auth } from "@/lib/better-auth/auth"
+import { handler } from "@/lib/better-auth/auth-server"
 
-export const { GET, POST } = toNextJsHandler(auth)
+export const { GET, POST } = handler

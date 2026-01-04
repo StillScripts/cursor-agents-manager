@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
-import { auth } from "@/lib/better-auth/auth"
+import { isAuthenticated } from "@/lib/better-auth/auth-server"
 
 const publicRoutes = ["/login", "/signup"]
 const authRoutes = ["/login", "/signup"]
@@ -19,20 +19,18 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Check for session
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  })
+  // Check for session using Convex auth
+  const authenticated = await isAuthenticated()
 
   // Redirect to login if no session
-  if (!session) {
+  if (!authenticated) {
     const loginUrl = new URL("/login", request.url)
     loginUrl.searchParams.set("callbackUrl", pathname)
     return NextResponse.redirect(loginUrl)
   }
 
   // Redirect authenticated users away from auth pages
-  if (session && authRoutes.includes(pathname)) {
+  if (authenticated && authRoutes.includes(pathname)) {
     return NextResponse.redirect(new URL("/", request.url))
   }
 

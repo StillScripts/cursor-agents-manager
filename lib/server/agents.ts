@@ -1,5 +1,4 @@
-import { headers } from "next/headers"
-import { auth } from "@/lib/better-auth/auth"
+import { getCurrentSession } from "@/lib/better-auth/session"
 import { getSimulatedAgents, getSimulatedConversation } from "@/lib/mock-data"
 import type { Agent, AgentConversation } from "@/lib/types"
 
@@ -121,14 +120,13 @@ export async function fetchAgentConversationData(
 }
 
 /**
- * Server component wrapper: Fetches agent data using Next.js headers
+ * Server component wrapper: Fetches agent data using Convex auth session
  * Used for ISR and initial data loading in page components
  */
 export async function getAgentData(
   id: string
 ): Promise<(Agent & { simulation: boolean }) | null> {
-  const headersList = await headers()
-  const session = await auth.api.getSession({ headers: headersList })
+  const session = await getCurrentSession()
 
   if (!session) {
     return null
@@ -136,20 +134,23 @@ export async function getAgentData(
 
   // Import here to avoid issues with server/client boundaries
   const { getUserApiKeyServer } = await import("./agents-server-helpers")
+
+  if (!session.user.id) {
+    return null
+  }
   const apiKey = await getUserApiKeyServer(session.user.id)
 
   return fetchAgentData(id, apiKey)
 }
 
 /**
- * Server component wrapper: Fetches agent conversation using Next.js headers
+ * Server component wrapper: Fetches agent conversation using Convex auth session
  * Used for ISR and initial data loading in page components
  */
 export async function getAgentConversationData(
   id: string
 ): Promise<(AgentConversation & { simulation: boolean }) | null> {
-  const headersList = await headers()
-  const session = await auth.api.getSession({ headers: headersList })
+  const session = await getCurrentSession()
 
   if (!session) {
     return null
@@ -157,6 +158,10 @@ export async function getAgentConversationData(
 
   // Import here to avoid issues with server/client boundaries
   const { getUserApiKeyServer } = await import("./agents-server-helpers")
+
+  if (!session.user.id) {
+    return null
+  }
   const apiKey = await getUserApiKeyServer(session.user.id)
 
   return fetchAgentConversationData(id, apiKey)
