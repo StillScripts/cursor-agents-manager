@@ -168,26 +168,29 @@ export function LaunchAgentForm() {
   // Time tracking for task creation
   const timeTracking = useTimeTracking()
 
+  // Default values for form reset
+  const defaultFormValues: LaunchAgentFormData = {
+    prompt: {
+      text: "",
+      images: [],
+    },
+    source: {
+      repository: "",
+      ref: "",
+    },
+    model: undefined,
+    target: {
+      autoCreatePr: true,
+      openAsCursorGithubApp: false,
+      skipReviewerRequest: false,
+      branchName: "",
+    },
+    webhook: undefined,
+  }
+
   // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
   const form = useAppForm<LaunchAgentFormData>({
-    defaultValues: {
-      prompt: {
-        text: "",
-        images: [],
-      },
-      source: {
-        repository: "",
-        ref: "",
-      },
-      model: undefined,
-      target: {
-        autoCreatePr: true,
-        openAsCursorGithubApp: false,
-        skipReviewerRequest: false,
-        branchName: "",
-      },
-      webhook: undefined,
-    },
+    defaultValues: defaultFormValues,
     validators: {
       onSubmit: launchAgentFormSchema,
     },
@@ -217,6 +220,16 @@ export function LaunchAgentForm() {
           console.error("Failed to save time log:", error)
           // Don't block navigation if time log save fails
         }
+      }
+
+      // Reset form to default values before navigation
+      // This ensures that when the user navigates back (especially in PWA),
+      // the form is clean and doesn't show previous submission data
+      form.reset(defaultFormValues)
+
+      // Stop time tracking if it's still running
+      if (timeTracking.isTracking) {
+        timeTracking.stop()
       }
 
       router.push("/")
