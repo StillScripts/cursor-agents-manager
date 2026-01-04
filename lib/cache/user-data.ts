@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm"
 import { cacheLife, cacheTag } from "next/cache"
-import { branches, repositories } from "@/lib/schema/user-schema"
-import { ensureUserDatabase } from "@/lib/user-db"
+import { branches, repositories } from "@/lib/db/schema/user-schema"
+import { ensureUserDatabase } from "@/lib/db/user-db"
 
 /**
  * Cache tag generators for user-specific data

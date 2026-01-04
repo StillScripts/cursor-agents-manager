@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm"
 import { db } from "@/lib/db"
-import { decryptData } from "@/lib/encryption"
-import { userApiKeys } from "@/lib/schema/auth-schema"
+import { decryptData } from "@/lib/db/encryption"
+import { userApiKeys } from "@/lib/db/schema/auth-schema"
 
 /**
  * Server-side function to get user's API key from database

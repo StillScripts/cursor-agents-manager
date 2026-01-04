@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
-import { AgentDetail } from "@/components/agent-detail"
+import { AgentDetail } from "@/app/(authenticated)/agent/_components/agent-detail"
 import { getAgentConversationData, getAgentData } from "@/lib/server/agents"
 
 interface PageProps {

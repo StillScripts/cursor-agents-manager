@@ -139,10 +139,10 @@ const mockSession = {
 }
 
 // ============================================================================
-// Mock: @/lib/auth
+// Mock: @/lib/better-auth/auth
 // ============================================================================
 
-mock.module("@/lib/auth", () => ({
+mock.module("@/lib/better-auth/auth", () => ({
   auth: {
     api: {
       getSession: async () => {
@@ -327,10 +327,10 @@ mock.module("@/lib/db", () => ({
 }))
 
 // ============================================================================
-// Mock: @/lib/encryption
+// Mock: @/lib/db/encryption
 // ============================================================================
 
-mock.module("@/lib/encryption", () => ({
+mock.module("@/lib/db/encryption", () => ({
   encryptData: (data: string) => `encrypted:${data}`,
   decryptData: (data: string) => {
     if (data.startsWith("encrypted:")) {

@@ -1,6 +1,6 @@
 import { headers } from "next/headers"
 import { cache } from "react"
-import { auth } from "./auth"
+import { auth } from "@/lib/better-auth/auth"
 
 export const getCurrentSession = cache(async () => {
   return await auth.api.getSession({

@@ -1,7 +1,7 @@
 import type { AnyFieldApi } from "@tanstack/react-form"
 import { Plus, Trash2 } from "lucide-react"
 import type { ComponentProps, ReactNode } from "react"
-import { TextareaWithVoice } from "@/components/textarea-with-voice"
+import { TextareaWithVoice } from "@/components/ai/textarea-with-voice"
 import { Button } from "@/components/ui/button"
 import {
   Field,

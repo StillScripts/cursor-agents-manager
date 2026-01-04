@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { FieldGroup } from "@/components/ui/field"
-import { signIn } from "@/lib/auth-client"
+import { signIn } from "@/lib/better-auth/auth-client"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 import { type SignInFormData, signInFormSchema } from "@/lib/schemas/auth"
 

@@ -12,12 +12,13 @@ import {
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
-import { PageHeader } from "@/components/page-header"
+import { PageHeader } from "@/app/(authenticated)/_components/page-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FieldDescription, FieldGroup, FieldSet } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { parseGitHubUrl } from "@/lib/formatting"
 import { useAppForm } from "@/lib/hooks/use-app-form"
 import { useBranches } from "@/lib/hooks/use-branches"
 import { useRepositories } from "@/lib/hooks/use-repositories"
@@ -37,26 +38,6 @@ export function SettingsForm() {
   const [saved, setSaved] = useState(false)
   const [newRepoUrl, setNewRepoUrl] = useState("")
   const [parseError, setParseError] = useState<string | null>(null)
-
-  // Helper function to parse GitHub URLs
-  const parseGitHubUrl = (
-    url: string
-  ): { url: string; name: string } | null => {
-    try {
-      const parsed = new URL(url.trim())
-      if (parsed.hostname !== "github.com") return null
-
-      const parts = parsed.pathname.split("/").filter(Boolean)
-      if (parts.length < 2) return null
-
-      return {
-        url: url.trim(),
-        name: parts[1].replace(/\.git$/, ""), // Remove .git suffix if present
-      }
-    } catch {
-      return null
-    }
-  }
 
   // Helper function to extract owner from GitHub URL
   const getOwnerFromUrl = (url: string): string => {
@@ -102,14 +83,8 @@ export function SettingsForm() {
     if (repositoriesQuery.isSuccess && branchesQuery.isSuccess) {
       const repos = repositoriesQuery.data || []
       const branchList = branchesQuery.data || []
-      form.setFieldValue(
-        "repositories",
-        repos.length > 0 ? repos : [{ url: "", name: "" }]
-      )
-      form.setFieldValue(
-        "branches",
-        branchList.length > 0 ? branchList : [{ name: "master" }]
-      )
+      form.setFieldValue("repositories", repos.length > 0 ? repos : [])
+      form.setFieldValue("branches", branchList.length > 0 ? branchList : [])
     }
   }, [
     repositoriesQuery.isSuccess,

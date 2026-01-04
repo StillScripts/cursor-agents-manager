@@ -3,15 +3,15 @@
 import { ChevronRight, LogOut, Settings } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ApiKeyManager } from "@/components/api-key-manager"
-import { OpenAIApiKeyManager } from "@/components/openai-api-key-manager"
+import { PageHeader } from "@/app/(authenticated)/_components/page-header"
+import { ApiKeyManager } from "@/app/(authenticated)/account/_components/api-key-manager"
+import { OpenAIApiKeyManager } from "@/app/(authenticated)/account/_components/openai-api-key-manager"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { signOut } from "@/lib/auth-client"
+import { SkeletonCard } from "@/components/ui/skeleton-card"
+import { signOut } from "@/lib/better-auth/auth-client"
 import { useSession } from "@/lib/hooks/use-session"
-import { PageHeader } from "./page-header"
-import { SkeletonCard } from "./skeleton-card"
 
 const menuItems = [
   {
