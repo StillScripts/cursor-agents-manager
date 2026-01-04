@@ -11,7 +11,11 @@ import {
   formatDurationBetween,
   formatDurationMs,
 } from "@/lib/formatting"
-import { type TimeLogEntry, useAllTimeLogs } from "@/lib/hooks/use-agents"
+import {
+  type TimeLogEntry,
+  useAgent,
+  useAllTimeLogs,
+} from "@/lib/hooks/use-agents"
 
 function ActivityItem({ log }: { log: TimeLogEntry }) {
   return (
@@ -46,6 +50,13 @@ interface GroupedLogs {
 }
 
 function AgentActivityGroup({ group }: { group: GroupedLogs }) {
+  const { data: agent, isLoading } = useAgent(group.taskId)
+
+  // Show loading state or agent name
+  const displayName = isLoading
+    ? "Loading..."
+    : agent?.name || `Agent ${group.taskId}`
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -53,7 +64,7 @@ function AgentActivityGroup({ group }: { group: GroupedLogs }) {
           href={`/agent/${group.taskId}`}
           className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
         >
-          Agent: {group.taskId}
+          {displayName}
         </Link>
         <div className="flex items-center gap-1 text-sm text-muted-foreground">
           <Clock className="h-3 w-3" />
