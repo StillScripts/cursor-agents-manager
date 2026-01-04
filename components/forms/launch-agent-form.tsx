@@ -28,9 +28,9 @@ import {
 } from "@/lib/schemas/cursor/launch-agent"
 
 const RepositorySelectField = ({ field }: { field: any }) => {
-  const { repositoriesQuery, hasRepositories } = useRepositories()
+  const { repositories, isLoading, hasRepositories } = useRepositories()
 
-  if (repositoriesQuery.isLoading) {
+  if (isLoading) {
     return <FieldSkeleton label="Repository" variant="select" />
   }
 
@@ -57,7 +57,7 @@ const RepositorySelectField = ({ field }: { field: any }) => {
   }
 
   const options =
-    repositoriesQuery.data
+    repositories
       ?.filter((r) => r.url.trim())
       .map((r) => ({
         value: r.url,
@@ -75,9 +75,9 @@ const RepositorySelectField = ({ field }: { field: any }) => {
 }
 
 const BranchSelectField = ({ field }: { field: any }) => {
-  const { branchesQuery, hasBranches } = useBranches()
+  const { branches, isLoading, hasBranches } = useBranches()
 
-  if (branchesQuery.isLoading) {
+  if (isLoading) {
     return <FieldSkeleton label="Base Branch" variant="select" />
   }
 
@@ -104,7 +104,7 @@ const BranchSelectField = ({ field }: { field: any }) => {
   }
 
   const options =
-    branchesQuery.data
+    branches
       ?.filter((b) => b.name.trim())
       .map((b) => ({
         value: b.name,

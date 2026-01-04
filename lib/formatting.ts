@@ -168,9 +168,9 @@ export function formatActivityType(type: string): string {
  * Safely pass a GitHub url and extract the name
  * @param url - The GitHub url
  */
-export const parseGitHubUrl = (
+export function parseGitHubUrl(
   url: string
-): { url: string; name: string } | null => {
+): { url: string; name: string } | null {
   try {
     const parsed = new URL(url.trim())
     if (parsed.hostname !== "github.com") return null

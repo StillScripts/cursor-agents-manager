@@ -9,7 +9,9 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as branches from "../branches.js";
 import type * as http from "../http.js";
+import type * as repositories from "../repositories.js";
 
 import type {
   ApiFromModules,
@@ -19,7 +21,9 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  branches: typeof branches;
   http: typeof http;
+  repositories: typeof repositories;
 }>;
 
 /**

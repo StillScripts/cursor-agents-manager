@@ -20,8 +20,8 @@ import { Input } from "@/components/ui/input"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { parseGitHubUrl } from "@/lib/formatting"
 import { useAppForm } from "@/lib/hooks/use-app-form"
-import { useBranches } from "@/lib/hooks/use-branches"
-import { useRepositories } from "@/lib/hooks/use-repositories"
+import { type Branch, useBranches } from "@/lib/hooks/use-branches"
+import { type Repository, useRepositories } from "@/lib/hooks/use-repositories"
 import type { SettingsFormData } from "@/lib/schemas/settings"
 
 const themeOptions = [
@@ -30,16 +30,25 @@ const themeOptions = [
   { value: "system", label: "System", icon: Monitor },
 ] as const
 
-export function SettingsForm() {
+interface SettingsFormContentProps {
+  initialRepositories: Repository[]
+  initialBranches: Branch[]
+  onSaveRepositories: (repos: Repository[]) => Promise<unknown>
+  onSaveBranches: (branches: Branch[]) => Promise<unknown>
+}
+
+function SettingsFormContent({
+  initialRepositories,
+  initialBranches,
+  onSaveRepositories,
+  onSaveBranches,
+}: SettingsFormContentProps) {
   const { theme, setTheme } = useTheme()
-  const { repositoriesQuery, repositoriesMutation } = useRepositories()
-  const { branchesQuery, branchesMutation } = useBranches()
   const [mounted, setMounted] = useState(false)
   const [saved, setSaved] = useState(false)
   const [newRepoUrl, setNewRepoUrl] = useState("")
   const [parseError, setParseError] = useState<string | null>(null)
 
-  // Helper function to extract owner from GitHub URL
   const getOwnerFromUrl = (url: string): string => {
     try {
       const parsed = new URL(url)
@@ -57,56 +66,31 @@ export function SettingsForm() {
   // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
   const form = useAppForm<SettingsFormData>({
     defaultValues: {
-      repositories: [],
-      branches: [],
+      repositories: initialRepositories,
+      branches:
+        initialBranches.length > 0 ? initialBranches : [{ name: "master" }],
     },
     onSubmit: async ({ value }) => {
-      // Filter out invalid/empty items before saving
       const validRepos = value.repositories.filter(
         (r) => r.url.trim() && r.name.trim()
       )
       const validBranches = value.branches.filter((b) => b.name.trim())
 
-      // Ensure at least one branch exists
       const branchesToSave =
         validBranches.length > 0 ? validBranches : [{ name: "master" }]
 
-      repositoriesMutation.mutate(validRepos)
-      branchesMutation.mutate(branchesToSave)
+      await Promise.all([
+        onSaveRepositories(validRepos),
+        onSaveBranches(branchesToSave),
+      ])
+
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     },
   })
 
-  // Sync form with data once loaded
-  useEffect(() => {
-    if (repositoriesQuery.isSuccess && branchesQuery.isSuccess) {
-      const repos = repositoriesQuery.data || []
-      const branchList = branchesQuery.data || []
-      form.setFieldValue("repositories", repos.length > 0 ? repos : [])
-      form.setFieldValue("branches", branchList.length > 0 ? branchList : [])
-    }
-  }, [
-    repositoriesQuery.isSuccess,
-    branchesQuery.isSuccess,
-    repositoriesQuery.data,
-    branchesQuery.data,
-    form,
-  ])
-
-  if (!mounted || !repositoriesQuery.isSuccess || !branchesQuery.isSuccess) {
-    return (
-      <>
-        <PageHeader title="Settings" showBack />
-        <div className="p-4">
-          <div className="animate-pulse flex flex-col gap-4 sm:gap-6">
-            <div className="h-32 bg-muted rounded-lg" />
-            <div className="h-48 bg-muted rounded-lg" />
-            <div className="h-48 bg-muted rounded-lg" />
-          </div>
-        </div>
-      </>
-    )
+  if (!mounted) {
+    return null
   }
 
   return (
@@ -114,7 +98,6 @@ export function SettingsForm() {
       <PageHeader title="Settings" showBack />
 
       <div className="p-4 flex flex-col gap-4 sm:gap-6">
-        {/* Theme Selection */}
         <Card className="bg-card border-border">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold">
@@ -153,7 +136,6 @@ export function SettingsForm() {
           </CardContent>
         </Card>
 
-        {/* Repositories */}
         <Card className="bg-card border-border">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -386,5 +368,42 @@ export function SettingsForm() {
         </Card>
       </div>
     </>
+  )
+}
+
+function SettingsFormSkeleton() {
+  return (
+    <>
+      <PageHeader title="Settings" showBack />
+      <div className="p-4">
+        <div className="animate-pulse flex flex-col gap-4 sm:gap-6">
+          <div className="h-32 bg-muted rounded-lg" />
+          <div className="h-48 bg-muted rounded-lg" />
+          <div className="h-48 bg-muted rounded-lg" />
+        </div>
+      </div>
+    </>
+  )
+}
+
+export function SettingsForm() {
+  const {
+    repositories,
+    isLoading: isLoadingRepos,
+    saveRepositories,
+  } = useRepositories()
+  const { branches, isLoading: isLoadingBranches, saveBranches } = useBranches()
+
+  if (isLoadingRepos || isLoadingBranches) {
+    return <SettingsFormSkeleton />
+  }
+
+  return (
+    <SettingsFormContent
+      initialRepositories={repositories ?? []}
+      initialBranches={branches ?? []}
+      onSaveRepositories={saveRepositories}
+      onSaveBranches={saveBranches}
+    />
   )
 }

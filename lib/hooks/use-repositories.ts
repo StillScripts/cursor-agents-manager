@@ -1,64 +1,22 @@
 "use client"
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery } from "convex/react"
+import { api } from "@/convex/_generated/api"
 
 export interface Repository {
   url: string
   name: string
-  id?: number
-}
-
-interface RepositoriesResponse {
-  repositories: Repository[]
-}
-
-async function fetchRepositories(): Promise<Repository[]> {
-  const response = await fetch("/api/user/repositories")
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch repositories")
-  }
-
-  const data: RepositoriesResponse = await response.json()
-  return data.repositories || []
-}
-
-async function saveRepositories(repos: Repository[]): Promise<Repository[]> {
-  const response = await fetch("/api/user/repositories", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ repositories: repos }),
-  })
-
-  if (!response.ok) {
-    throw new Error("Failed to save repositories")
-  }
-
-  const data: RepositoriesResponse = await response.json()
-  return data.repositories || []
 }
 
 export function useRepositories() {
-  const queryClient = useQueryClient()
-
-  const repositoriesQuery = useQuery({
-    queryKey: ["repositories"],
-    queryFn: fetchRepositories,
-    staleTime: 5 * 60 * 1000,
-  })
-
-  const repositoriesMutation = useMutation({
-    mutationFn: saveRepositories,
-    onSuccess: (data) => {
-      queryClient.setQueryData(["repositories"], data)
-    },
-  })
+  const repositories = useQuery(api.repositories.getRepositories)
+  const saveRepositories = useMutation(api.repositories.saveRepositories)
 
   return {
-    repositoriesQuery,
-    hasRepositories:
-      repositoriesQuery.isSuccess &&
-      repositoriesQuery.data?.some((r) => r.url.trim()),
-    repositoriesMutation,
+    repositories,
+    isLoading: repositories === undefined,
+    hasRepositories: repositories?.some((r) => r.url.trim()),
+    saveRepositories: (repos: Repository[]) =>
+      saveRepositories({ repositories: repos }),
   }
 }

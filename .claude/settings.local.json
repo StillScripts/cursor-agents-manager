@@ -20,7 +20,8 @@
       "WebFetch(domain:tanstack.com)",
       "WebSearch",
       "WebFetch(domain:www.better-auth.com)",
-      "WebFetch(domain:labs.convex.dev)"
+      "WebFetch(domain:labs.convex.dev)",
+      "Bash(bun run biome:*)"
     ]
   }
 }
