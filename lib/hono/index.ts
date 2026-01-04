@@ -5,6 +5,7 @@ import { agentsApp } from "./routes/agents"
 import { aiApp } from "./routes/ai"
 import { modelsApp } from "./routes/models"
 import { userApp } from "./routes/user"
+import { webhooksApp } from "./routes/webhooks"
 
 const app = new Hono().basePath("/api")
 
@@ -17,6 +18,7 @@ app.route("/agents", agentsApp)
 app.route("/ai", aiApp)
 app.route("/user", userApp)
 app.route("/models", modelsApp)
+app.route("/webhooks", webhooksApp)
 
 // Health check endpoint
 app.get("/health", (c) =>
