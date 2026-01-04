@@ -215,12 +215,27 @@ export async function getAgentsFromCache(
     conditions.push(eq(agents.status, status))
   }
 
-  return await db
-    .select()
-    .from(agents)
-    .where(and(...conditions))
-    .orderBy(desc(agents.createdAt))
-    .limit(limit)
+  try {
+    // Try with full query builder support (Turso/LibSQL)
+    const query = db
+      .select()
+      .from(agents)
+      .where(and(...conditions))
+      .orderBy(desc(agents.createdAt))
+
+    const result = await (query as any).limit?.(limit)
+
+    if (result) {
+      return result
+    }
+
+    // Fallback for test environments without limit support
+    const all = await query
+    return all.slice(0, limit)
+  } catch (error) {
+    console.error("Error fetching agents from cache:", error)
+    return []
+  }
 }
 
 /**

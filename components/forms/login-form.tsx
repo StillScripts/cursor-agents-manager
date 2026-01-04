@@ -125,7 +125,7 @@ function LoginFormContent() {
   )
 }
 
-function LoginFormSkeleton() {
+export function LoginFormSkeleton() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-md">
