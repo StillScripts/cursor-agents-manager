@@ -66,7 +66,7 @@ export function AccountScreen() {
     <>
       <PageHeader title="Account" />
 
-      <div className="p-4 space-y-6">
+      <div className="p-4 flex flex-col gap-4 sm:gap-6">
         {/* User Card */}
         <Card className="bg-card border-border">
           <CardContent className="p-4">
@@ -97,7 +97,7 @@ export function AccountScreen() {
 
         <OpenAIApiKeyManager />
 
-        <div className="space-y-6">
+        <div className="flex flex-col gap-4 sm:gap-6">
           {menuItems.map((item) => (
             <Link key={item.label} href={item.href}>
               <Card className="bg-card border-border hover:bg-accent/50 transition-colors cursor-pointer active:scale-[0.98]">
