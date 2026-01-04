@@ -19,6 +19,16 @@ import {
   launchAgentRequestSchema,
 } from "@/lib/schemas/cursor/launch-agent"
 import { fetchAgentConversationData, fetchAgentData } from "@/lib/server/agents"
+import {
+  batchSaveAgentsToCache,
+  dbAgentToApiAgent,
+  getAgentFromCache,
+  getAgentsFromCache,
+  invalidateAgentCache,
+  isAgentStale,
+  saveAgentToCache,
+  updateAgentCache,
+} from "@/lib/server/agents-cache"
 import type { Agent } from "@/lib/types"
 
 const CURSOR_API_URL = "https://api.cursor.com/v0/agents"
@@ -32,23 +42,28 @@ const app = new Hono<{ Variables: Variables }>()
 app.use("*", requireAuth)
 app.use("*", withSimulationMode)
 
-// Query params schema for limit
+// Query params schema for limit and refresh
 const limitSchema = z.object({
   limit: z
     .string()
     .optional()
     .transform((v) => Number.parseInt(v || "10", 10)),
+  refresh: z
+    .string()
+    .optional()
+    .transform((v) => v === "true"),
 })
 
 // ============================================================================
 // Agent List & Launch
 // ============================================================================
 
-// GET /api/agents - List agents with limit
+// GET /api/agents - List agents with limit (cache-first)
 app.get("/", zValidator("query", limitSchema), async (c) => {
-  const { limit } = c.req.valid("query")
+  const { limit, refresh } = c.req.valid("query")
   const simulationMode = c.get("simulationMode")
   const apiKey = c.get("apiKey")
+  const user = c.get("user")
 
   if (simulationMode) {
     const allAgents = getSimulatedAgents()
@@ -63,7 +78,30 @@ app.get("/", zValidator("query", limitSchema), async (c) => {
   }
 
   try {
-    // Cursor API accepts 'limit' parameter (default: 20, max: 100) and uses cursor-based pagination
+    // 1. Fetch from database cache
+    const cachedAgents = await getAgentsFromCache(user.id, { limit })
+
+    // 2. Determine which agents need refresh
+    const staleAgents = refresh
+      ? cachedAgents // Refresh all if forced
+      : cachedAgents.filter((agent) => isAgentStale(agent, false))
+
+    // 3. If no stale agents or we have cache and no force refresh, return cached
+    if (cachedAgents.length > 0 && staleAgents.length === 0) {
+      const apiAgents = cachedAgents.map((dbAgent) =>
+        dbAgentToApiAgent(dbAgent, false)
+      )
+      return c.json({
+        agents: apiAgents,
+        limit,
+        total: apiAgents.length,
+        hasMore: false, // We don't know for sure from cache
+        simulation: false,
+        cached: true,
+      })
+    }
+
+    // 4. Fetch fresh data from Cursor API
     const url = new URL(CURSOR_API_URL)
     url.searchParams.set("limit", String(Math.min(limit, 100))) // API max is 100
 
@@ -81,13 +119,32 @@ app.get("/", zValidator("query", limitSchema), async (c) => {
         body: errorText,
         url: url.toString(),
       })
+
+      // On error, return cached data if available
+      if (cachedAgents.length > 0) {
+        const apiAgents = cachedAgents.map((dbAgent) =>
+          dbAgentToApiAgent(dbAgent, false)
+        )
+        return c.json({
+          agents: apiAgents,
+          limit,
+          total: apiAgents.length,
+          hasMore: false,
+          simulation: false,
+          cached: true,
+          stale: true,
+        })
+      }
+
       throw new Error(`Cursor API error: ${response.status} - ${errorText}`)
     }
 
     const data = await response.json()
     const agents = data.agents || []
-    // API uses cursor-based pagination - if nextCursor exists, there are more agents
     const hasMore = !!data.nextCursor
+
+    // 5. Update cache with fresh data
+    await batchSaveAgentsToCache(agents, user.id, "cursor")
 
     return c.json({
       agents,
@@ -95,6 +152,7 @@ app.get("/", zValidator("query", limitSchema), async (c) => {
       total: agents.length,
       hasMore,
       simulation: false,
+      cached: false,
     })
   } catch (error) {
     console.error("Error fetching agents:", error)
@@ -107,6 +165,7 @@ app.post("/", zValidator("json", launchAgentRequestSchema), async (c) => {
   const validatedRequest: LaunchAgentRequest = c.req.valid("json")
   const simulationMode = c.get("simulationMode")
   const apiKey = c.get("apiKey")
+  const user = c.get("user")
 
   console.log(
     "[API /agents POST] Request body:",
@@ -133,6 +192,9 @@ app.post("/", zValidator("json", launchAgentRequestSchema), async (c) => {
 
     addSimulatedAgent(newAgent)
     console.log("[API /agents POST] Created simulated agent:", newAgent.id)
+
+    // Save to database cache
+    await saveAgentToCache(newAgent, user.id, "cursor", validatedRequest.model)
 
     setTimeout(() => {
       updateSimulatedAgentStatus(newAgent.id, "RUNNING")
@@ -178,6 +240,10 @@ app.post("/", zValidator("json", launchAgentRequestSchema), async (c) => {
 
     const data = await response.json()
     console.log("[API /agents POST] Cursor API success:", data)
+
+    // Save to database cache
+    await saveAgentToCache(data, user.id, "cursor", validatedRequest.model)
+
     return c.json({ ...data, simulation: false }, 201)
   } catch (error) {
     console.error("[API /agents POST] Error launching agent:", {
@@ -198,18 +264,43 @@ app.post("/", zValidator("json", launchAgentRequestSchema), async (c) => {
 // Agent Details
 // ============================================================================
 
-// GET /api/agents/:id - Get agent details
+// GET /api/agents/:id - Get agent details (cache-first)
 app.get("/:id", async (c) => {
   const id = c.req.param("id")
   const apiKey = c.get("apiKey")
+  const user = c.get("user")
 
-  const agent = await fetchAgentData(id, apiKey)
+  try {
+    // 1. Check cache first
+    const cachedAgent = await getAgentFromCache(id, user.id)
 
-  if (!agent) {
+    // 2. If cached and fresh, return it
+    if (cachedAgent && !isAgentStale(cachedAgent, false)) {
+      return c.json(dbAgentToApiAgent(cachedAgent, !apiKey))
+    }
+
+    // 3. Fetch fresh data using existing function
+    const agent = await fetchAgentData(id, apiKey)
+
+    if (!agent) {
+      return c.json({ error: "Agent not found" }, 404)
+    }
+
+    // 4. Update cache
+    await saveAgentToCache(agent, user.id, "cursor")
+
+    return c.json(agent)
+  } catch (error) {
+    console.error("Error fetching agent:", error)
+
+    // Fallback to cache if available
+    const cachedAgent = await getAgentFromCache(id, user.id)
+    if (cachedAgent) {
+      return c.json(dbAgentToApiAgent(cachedAgent, !apiKey))
+    }
+
     return c.json({ error: "Agent not found" }, 404)
   }
-
-  return c.json(agent)
 })
 
 // DELETE /api/agents/:id - Delete agent
@@ -217,9 +308,12 @@ app.delete("/:id", async (c) => {
   const id = c.req.param("id")
   const simulationMode = c.get("simulationMode")
   const apiKey = c.get("apiKey")
+  const user = c.get("user")
 
   if (simulationMode) {
     removeSimulatedAgent(id)
+    // Soft delete from cache
+    await invalidateAgentCache(id, user.id)
     return c.json({ success: true, simulation: true })
   }
 
@@ -234,6 +328,9 @@ app.delete("/:id", async (c) => {
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`)
     }
+
+    // Soft delete from cache
+    await invalidateAgentCache(id, user.id)
 
     return c.json({ success: true, simulation: false })
   } catch (error) {
@@ -331,9 +428,12 @@ app.post("/:id/stop", async (c) => {
   const id = c.req.param("id")
   const simulationMode = c.get("simulationMode")
   const apiKey = c.get("apiKey")
+  const user = c.get("user")
 
   if (simulationMode) {
     updateSimulatedAgentStatus(id, "FINISHED")
+    // Update cache status
+    await updateAgentCache(id, user.id, { status: "FINISHED" })
     return c.json({ success: true, simulation: true })
   }
 
@@ -348,6 +448,9 @@ app.post("/:id/stop", async (c) => {
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`)
     }
+
+    // Update cache status
+    await updateAgentCache(id, user.id, { status: "FINISHED" })
 
     return c.json({ success: true, simulation: false })
   } catch (error) {
