@@ -5,6 +5,7 @@ import {
   ControlledSelect,
   ControlledSwitch,
   ControlledTextarea,
+  ControlledTextareaWithVoice,
 } from "@/components/form-fields"
 import { SubscribeButton } from "@/components/subscribe-button"
 
@@ -19,6 +20,7 @@ const { useAppForm } = createFormHook({
   fieldComponents: {
     ControlledInput,
     ControlledTextarea,
+    ControlledTextareaWithVoice,
     ControlledSelect,
     ControlledSwitch,
     ControlledArrayField,
