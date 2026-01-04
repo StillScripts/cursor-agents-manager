@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
+import { TextareaWithVoice } from "@/components/textarea-with-voice"
 import {
   Accordion,
   AccordionContent,
@@ -40,7 +41,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
-import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { filterMessagesForDisplay } from "@/lib/conversation-utils"
 import { formatDurationMs, formatRelativeTime } from "@/lib/formatting"
@@ -583,7 +583,7 @@ export function AgentDetail({
         {canSendFollowUp && (
           <div className="border border-border rounded-xl p-4 bg-card">
             <div className="flex flex-col gap-3">
-              <Textarea
+              <TextareaWithVoice
                 placeholder="Send a follow-up message to continue the task..."
                 value={followUpMessage}
                 onChange={(e) => setFollowUpMessage(e.target.value)}

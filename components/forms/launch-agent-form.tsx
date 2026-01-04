@@ -266,7 +266,7 @@ export function LaunchAgentForm() {
                 <FieldGroup>
                   <form.AppField name="prompt.text">
                     {(field) => (
-                      <field.ControlledTextarea
+                      <field.ControlledTextareaWithVoice
                         field={field}
                         label="Task Description"
                         description="Describe the task you want the agent to perform (10-5000 characters)"
@@ -297,7 +297,8 @@ export function LaunchAgentForm() {
                           field.state.meta.isTouched &&
                           !field.state.meta.isValid
                             ? field.state.meta.errors
-                                .map((e) => e?.toString())
+                                .map((e) => String(e ?? ""))
+                                .filter(Boolean)
                                 .join(", ")
                             : undefined
                         }
