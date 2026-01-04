@@ -6,8 +6,8 @@ import {
   ControlledSwitch,
   ControlledTextarea,
   ControlledTextareaWithVoice,
-} from "@/components/form-fields"
-import { SubscribeButton } from "@/components/subscribe-button"
+} from "@/components/forms/core/form-fields"
+import { SubscribeButton } from "@/components/forms/core/subscribe-button"
 
 export const { fieldContext, formContext, useFieldContext, useFormContext } =
   createFormHookContexts()

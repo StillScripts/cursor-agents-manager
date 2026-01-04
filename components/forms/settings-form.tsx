@@ -12,7 +12,7 @@ import {
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
-import { PageHeader } from "@/components/page-header"
+import { PageHeader } from "@/app/(authenticated)/_components/page-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FieldDescription, FieldGroup, FieldSet } from "@/components/ui/field"

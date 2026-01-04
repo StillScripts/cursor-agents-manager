@@ -2,12 +2,15 @@
 
 import { Bot, RefreshCw } from "lucide-react"
 import { useState } from "react"
+import { AgentCard } from "@/app/(authenticated)/_components/agent-card"
+import {
+  AgentCardSkeleton,
+  AgentListSkeleton,
+} from "@/app/(authenticated)/_components/agent-list-skeleton"
+import { PageHeader } from "@/app/(authenticated)/_components/page-header"
+import { SimulationBanner } from "@/app/(authenticated)/_components/simulation-banner"
 import { Button } from "@/components/ui/button"
 import { useAgents, useRefreshAgents } from "@/lib/hooks/use-agents"
-import { AgentCard } from "./agent-card"
-import { AgentCardSkeleton, AgentListSkeleton } from "./agent-list-skeleton"
-import { PageHeader } from "./page-header"
-import { SimulationBanner } from "./simulation-banner"
 
 export function AgentsTable() {
   const [limit, setLimit] = useState(10)

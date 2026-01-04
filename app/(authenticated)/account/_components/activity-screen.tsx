@@ -2,9 +2,9 @@
 
 import { Clock, FileText } from "lucide-react"
 import Link from "next/link"
-import { PageHeader } from "@/components/page-header"
-import { SkeletonCard } from "@/components/skeleton-card"
+import { PageHeader } from "@/app/(authenticated)/_components/page-header"
 import { Card, CardContent } from "@/components/ui/card"
+import { SkeletonCard } from "@/components/ui/skeleton-card"
 import {
   formatActivityType,
   formatDateTime,

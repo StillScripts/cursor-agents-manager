@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
-import { AccountScreen } from "@/components/account-screen"
+import { AccountScreen } from "@/app/(authenticated)/account/_components/account-screen"
 
 export const metadata: Metadata = {
   title: "Account",

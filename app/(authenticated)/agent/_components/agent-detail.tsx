@@ -20,7 +20,10 @@ import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
-import { TextareaWithVoice } from "@/components/textarea-with-voice"
+import { PageHeader } from "@/app/(authenticated)/_components/page-header"
+import { SimulationBanner } from "@/app/(authenticated)/_components/simulation-banner"
+import { StatusBadge } from "@/app/(authenticated)/_components/status-badge"
+import { TextareaWithVoice } from "@/components/ai/textarea-with-voice"
 import {
   Accordion,
   AccordionContent,
@@ -56,9 +59,6 @@ import { useSummarizeConversation, useTextToSpeech } from "@/lib/hooks/use-ai"
 import { useTimeTracking } from "@/lib/hooks/use-time-tracking"
 import type { Agent, AgentConversation } from "@/lib/types"
 import { cn } from "@/lib/utils"
-import { PageHeader } from "./page-header"
-import { SimulationBanner } from "./simulation-banner"
-import { StatusBadge } from "./status-badge"
 
 interface AgentDetailProps {
   agentId: string

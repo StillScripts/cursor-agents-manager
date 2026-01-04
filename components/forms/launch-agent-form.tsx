@@ -3,9 +3,8 @@
 import { AlertCircle, ExternalLink, Rocket, Settings } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { FieldSkeleton } from "@/components/form-fields"
-import { ImageUpload } from "@/components/image-upload"
-import { PageHeader } from "@/components/page-header"
+import { PageHeader } from "@/app/(authenticated)/_components/page-header"
+import { FieldSkeleton } from "@/components/forms/core/form-fields"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   FieldDescription,
@@ -14,6 +13,7 @@ import {
   FieldSeparator,
   FieldSet,
 } from "@/components/ui/field"
+import { ImageUpload } from "@/components/ui/image-upload"
 import { useLaunchAgent } from "@/lib/hooks/use-agents"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 import { useBranches } from "@/lib/hooks/use-branches"

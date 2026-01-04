@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
-import { AgentsTable } from "@/components/agents-table"
+import { AgentsTable } from "@/app/(authenticated)/_components/agents-table"
 
 export const metadata: Metadata = {
   title: "Your Agents",
