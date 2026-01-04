@@ -6,7 +6,7 @@ import { Hono } from "hono"
 import OpenAI from "openai"
 import { extractUserMessagesAndLastAssistant } from "@/lib/conversation-utils"
 import { db } from "@/lib/db"
-import { decryptData } from "@/lib/encryption"
+import { decryptData } from "@/lib/db/encryption"
 import { type AuthVariables, requireAuth } from "@/lib/hono/middleware/auth"
 import {
   type OpenAIVariables,

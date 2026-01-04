@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm"
 import { createMiddleware } from "hono/factory"
 import { db } from "@/lib/db"
-import { decryptData } from "@/lib/encryption"
+import { decryptData } from "@/lib/db/encryption"
 import { userApiKeys } from "@/lib/schema/auth-schema"
 import type { AuthVariables } from "./auth"
 

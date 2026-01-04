@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm"
 import { db } from "@/lib/db"
-import { decryptData, encryptData } from "@/lib/encryption"
+import { decryptData, encryptData } from "@/lib/db/encryption"
+import { tursoManager } from "@/lib/db/turso-manager"
 import { userAgents, userDatabases } from "@/lib/schema/auth-schema"
-import { tursoManager } from "@/lib/turso-manager"
 
 /**
  * Get the Drizzle client for a user's database

@@ -327,10 +327,10 @@ mock.module("@/lib/db", () => ({
 }))
 
 // ============================================================================
-// Mock: @/lib/encryption
+// Mock: @/lib/db/encryption
 // ============================================================================
 
-mock.module("@/lib/encryption", () => ({
+mock.module("@/lib/db/encryption", () => ({
   encryptData: (data: string) => `encrypted:${data}`,
   decryptData: (data: string) => {
     if (data.startsWith("encrypted:")) {

@@ -10,7 +10,12 @@ import {
   getCachedUserRepositories,
 } from "@/lib/cache/user-data"
 import { db } from "@/lib/db"
-import { decryptData, encryptData } from "@/lib/encryption"
+import { decryptData, encryptData } from "@/lib/db/encryption"
+import {
+  createUserDatabase,
+  ensureUserDatabase,
+  getUserDatabase,
+} from "@/lib/db/user-db"
 import { type AuthVariables, requireAuth } from "@/lib/hono/middleware/auth"
 import { userApiKeys } from "@/lib/schema/auth-schema"
 import { branches, repositories, timeLogs } from "@/lib/schema/user-schema"
@@ -19,11 +24,6 @@ import {
   branchesRequestSchema,
   repositoriesRequestSchema,
 } from "@/lib/schemas/settings"
-import {
-  createUserDatabase,
-  ensureUserDatabase,
-  getUserDatabase,
-} from "@/lib/user-db"
 
 const app = new Hono<{ Variables: AuthVariables }>()
 
