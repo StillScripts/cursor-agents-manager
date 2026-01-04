@@ -124,7 +124,7 @@ export function SettingsForm() {
       <>
         <PageHeader title="Settings" showBack />
         <div className="p-4">
-          <div className="animate-pulse space-y-4">
+          <div className="animate-pulse flex flex-col gap-4 sm:gap-6">
             <div className="h-32 bg-muted rounded-lg" />
             <div className="h-48 bg-muted rounded-lg" />
             <div className="h-48 bg-muted rounded-lg" />
@@ -138,7 +138,7 @@ export function SettingsForm() {
     <>
       <PageHeader title="Settings" showBack />
 
-      <div className="p-4 space-y-4">
+      <div className="p-4 flex flex-col gap-4 sm:gap-6">
         {/* Theme Selection */}
         <Card className="bg-card border-border">
           <CardHeader className="pb-3">
