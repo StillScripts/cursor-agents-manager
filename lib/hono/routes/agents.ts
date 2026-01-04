@@ -213,13 +213,26 @@ app.post("/", zValidator("json", launchAgentRequestSchema), async (c) => {
       CURSOR_API_URL
     )
 
+    // Add webhook from environment variables if configured
+    const requestBody: LaunchAgentRequest = { ...validatedRequest }
+    const webhookUrl = process.env.CURSOR_WEBHOOK_URL
+    const webhookSecret = process.env.CURSOR_WEBHOOK_SECRET
+
+    if (webhookUrl) {
+      requestBody.webhook = {
+        url: webhookUrl,
+        ...(webhookSecret && { secret: webhookSecret }),
+      }
+      console.log("[API /agents POST] Webhook configured from environment")
+    }
+
     const response = await fetch(CURSOR_API_URL, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(validatedRequest),
+      body: JSON.stringify(requestBody),
     })
 
     console.log(

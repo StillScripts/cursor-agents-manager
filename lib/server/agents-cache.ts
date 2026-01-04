@@ -388,3 +388,33 @@ export async function getStaleAgents(
 
   return allAgents.filter((agent) => isAgentStale(agent, forceRefresh))
 }
+
+/**
+ * Update an agent by ID only (for webhook handlers)
+ * First queries the agent to get userId, then updates
+ * Returns null if agent not found (may have been deleted or not yet cached)
+ */
+export async function updateAgentByIdOnly(
+  agentId: string,
+  updates: Partial<AgentSchema>
+): Promise<AgentSchema | null> {
+  try {
+    // First, find the agent to get the userId
+    const [existingAgent] = await db
+      .select()
+      .from(agents)
+      .where(and(eq(agents.id, agentId), isNull(agents.deletedAt)))
+      .limit(1)
+
+    if (!existingAgent) {
+      // Agent not found - might be deleted or not yet cached
+      return null
+    }
+
+    // Update using the existing updateAgentCache function
+    return await updateAgentCache(agentId, existingAgent.userId, updates)
+  } catch (error) {
+    console.error(`Failed to update agent ${agentId}:`, error)
+    return null
+  }
+}

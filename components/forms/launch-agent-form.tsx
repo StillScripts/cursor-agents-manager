@@ -6,12 +6,6 @@ import { useRouter } from "next/navigation"
 import { FieldSkeleton } from "@/components/form-fields"
 import { ImageUpload } from "@/components/image-upload"
 import { PageHeader } from "@/components/page-header"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   FieldDescription,
@@ -186,7 +180,6 @@ export function LaunchAgentForm() {
       skipReviewerRequest: false,
       branchName: "",
     },
-    webhook: undefined,
   }
 
   // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
@@ -371,45 +364,6 @@ export function LaunchAgentForm() {
                   </form.AppField>
                 </FieldGroup>
               </FieldSet>
-              <Accordion>
-                <AccordionItem value="webhook">
-                  <AccordionTrigger iconSharedClassName="pointer-events-none shrink-0 size-6!">
-                    <FieldLegend>Advanced Settings</FieldLegend>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <FieldSet>
-                      <FieldDescription>
-                        Configure a webhook to receive notifications about the
-                        agent's status.
-                      </FieldDescription>
-                      <FieldGroup>
-                        <form.AppField name="webhook.url">
-                          {(field) => (
-                            <field.ControlledInput
-                              field={field}
-                              label="Webhook URL"
-                              description="URL to receive webhook notifications about agent status changes"
-                              placeholder="https://your-app.com/webhooks/cursor"
-                            />
-                          )}
-                        </form.AppField>
-
-                        <form.AppField name="webhook.secret">
-                          {(field) => (
-                            <field.ControlledInput
-                              field={field}
-                              label="Webhook Secret (Optional)"
-                              description="Secret key for webhook payload verification (minimum 32 characters)"
-                              type="password"
-                              placeholder="Your webhook secret (min 32 characters)"
-                            />
-                          )}
-                        </form.AppField>
-                      </FieldGroup>
-                    </FieldSet>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
             </FieldGroup>
             {launchAgent.isError && errorMessage && (
               <Alert variant="destructive" className="mt-6">
