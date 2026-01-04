@@ -1,10 +1,6 @@
-# AGENTS.md
+# Project Overview
 
-This file provides comprehensive guidance to AI agents (Claude Code, Cursor, etc.) when working with code in this repository.
-
-## Project Overview
-
-Cursor Agent Manager is a mobile-first Next.js 16 (App Router) application for managing Cursor background agents on the go. The app uses React 19, TypeScript, Tailwind CSS 4, and operates in either simulation mode (with mock data) or live mode (connected to the Cursor API).
+Cursor Agent Manager is a web app with Progressive Web App (PWA) support. It is powered by Bun, Next.js 16, React 19, Biome, Better Auth, Drizzle, Tursor, TailwindCSS and Base UI. It's purpose is to enable developers to manage their managing Cursor AI background agents on the go, particularly on their mobile phone as a PWA. The app provides a simulation mode (with mock data) for people to trial, or live mode (connected to the Cursor API).
 
 ## Development Commands
 
@@ -32,25 +28,16 @@ bun run lint:fix
 bun run format
 
 # Run tests
-bun test
+bun run test
 
 # Run API tests specifically
-bun test lib/hono
+bun run test lib/hono
 
 # Watch mode for tests
-bun test --watch
+bun run test --watch
 ```
 
 ## Code Formatting (CRITICAL)
-
-**CRITICAL FOR AI AGENTS**: Code formatting and linting is enforced via **GitHub Actions**:
-
-1. **Lint Check (main branch)**: Runs on every push to `main`, checks for linting errors and **fails the workflow** if errors exist
-2. **Lint Check & Fix (PRs)**: Runs on every PR to `main`, auto-fixes issues, and **fails the workflow** if unfixable errors remain
-
-The GitHub Actions will:
-- **On main branch**: Check for linting errors using `bun run lint` and fail if any exist
-- **On PRs**: Auto-fix linting issues using `bun run lint:fix`, then check for remaining errors using `bun run lint`, and **fail the workflow** if any unfixable errors exist (prevents merging)
 
 **⚠️ MANDATORY FOR AI AGENTS**: 
 1. **ALWAYS** run `bun run lint:fix` after making code changes and BEFORE pushing
@@ -79,8 +66,8 @@ This command will:
 
 **IMPORTANT FOR AI AGENTS**: When validating code changes or checking for errors:
 
-**DO**: Use `bun run lint` to check for errors and validate code
-- Fast and safe
+**DO**: Use `bun run test` to run the rapid unit testing suite, powered by `bun`. And use `bun run lint` to lint files, powered by `biome`.
+- Fast and safe,
 - Doesn't interfere with running dev servers
 - Catches TypeScript, linting, and formatting issues
 
@@ -102,15 +89,30 @@ The app uses Next.js route groups to organize pages by authentication state:
 app/
 ├── (authenticated)/              # Pages requiring login
 │   ├── layout.tsx                # Shared layout with nav
-│   ├── _components/              # Private components
+│   ├── _components/              # Route-group-level shared components
+│   │   ├── agent-card.tsx        # Agent card for list view
+│   │   ├── agent-list-skeleton.tsx
+│   │   ├── agents-table.tsx      # Agent list table
 │   │   ├── bottom-nav.tsx        # Mobile bottom navigation
 │   │   ├── desktop-header.tsx    # Desktop header navigation
-│   │   └── nav-items.ts          # Shared navigation items config
+│   │   ├── nav-items.ts          # Shared navigation items config
+│   │   ├── page-header.tsx       # Reusable page header
+│   │   ├── simulation-banner.tsx # Simulation mode indicator
+│   │   └── status-badge.tsx      # Agent status badge
 │   ├── page.tsx                  # Home: agent list view
 │   ├── new/page.tsx              # Launch new agent form
-│   ├── agent/[id]/page.tsx       # Agent detail/conversation view
+│   ├── agent/[id]/
+│   │   ├── page.tsx              # Agent detail/conversation view
+│   │   └── _components/          # Agent-specific components
+│   │       └── agent-detail.tsx  # Agent detail view
 │   ├── settings/page.tsx         # Settings page
-│   └── account/page.tsx          # Account page
+│   └── account/
+│       ├── page.tsx              # Account page
+│       └── _components/          # Account-specific components
+│           ├── account-screen.tsx
+│           ├── activity-screen.tsx
+│           ├── api-key-manager.tsx
+│           └── openai-api-key-manager.tsx
 │
 ├── (unauthenticated)/            # Public pages (no auth required)
 │   ├── login/page.tsx            # Login page
@@ -129,6 +131,31 @@ app/
 - `(unauthenticated)` - Standalone auth pages without app navigation
 - `(server)` - API routes handled by Hono and Better Auth
 - `_components/` - Private folder (underscore prefix) not treated as routes
+
+### The `_components` Pattern
+
+We use underscore-prefixed `_components` folders to colocate components with their route segments. This keeps route-specific logic close to where it's used while preventing Next.js from treating them as routes.
+
+**When to use `_components`**:
+- Components used only within a specific route segment or its children
+- Components tightly coupled to route-specific data or logic
+- Page sections that don't need to be shared across the app
+
+**Hierarchy**:
+```
+app/(authenticated)/
+├── _components/              # Shared across all authenticated pages
+│   └── nav-items.ts          # Used by bottom-nav and desktop-header
+├── agent/[id]/
+│   └── _components/          # Only used by agent detail page
+│       └── agent-detail.tsx
+└── account/
+    └── _components/          # Only used by account pages
+        ├── account-screen.tsx
+        └── api-key-manager.tsx
+```
+
+**Rule**: If a component is only used within one route segment (and its children), place it in that segment's `_components` folder. If it's shared across multiple route groups or the entire app, place it in the root `/components` folder.
 
 ### Hono API Architecture
 
@@ -350,10 +377,10 @@ lib/hono/__tests__/
 **Running Tests**:
 ```bash
 # Run all tests
-bun test
+bun run test
 
 # Run API tests only
-bun test lib/hono
+bun run test lib/hono
 
 # Watch mode
 bun test --watch
@@ -556,6 +583,138 @@ Agent API routes follow REST conventions:
 
 All responses include a `simulation: boolean` field indicating the mode.
 
+### `/components` Folder Structure
+
+The root `/components` folder contains shared, reusable components used across multiple route groups.
+
+```
+components/
+├── ui/                      # Base UI primitives (Radix wrappers)
+│   ├── accordion.tsx
+│   ├── alert-dialog.tsx
+│   ├── alert.tsx
+│   ├── button.tsx
+│   ├── card.tsx
+│   ├── dialog.tsx
+│   ├── dropdown-menu.tsx
+│   ├── field.tsx            # Field wrapper with label/description/error
+│   ├── image-upload.tsx     # Image upload component
+│   ├── input-group.tsx      # Input with prefix/suffix
+│   ├── input.tsx
+│   ├── label.tsx
+│   ├── select.tsx
+│   ├── separator.tsx
+│   ├── sheet.tsx
+│   ├── sidebar.tsx
+│   ├── skeleton.tsx
+│   ├── skeleton-card.tsx
+│   ├── spinner.tsx
+│   ├── switch.tsx
+│   ├── textarea.tsx
+│   ├── toast.tsx
+│   ├── toggle.tsx
+│   ├── toggle-group.tsx
+│   └── tooltip.tsx
+│
+├── forms/                   # Full form components
+│   ├── core/                # Form building blocks
+│   │   ├── form-fields.tsx  # Controlled field components (ControlledInput, etc.)
+│   │   └── subscribe-button.tsx # Form submit button with loading state
+│   ├── launch-agent-form.tsx
+│   ├── login-form.tsx
+│   ├── signup-form.tsx
+│   └── settings-form.tsx
+│
+├── ai/                      # AI-related components
+│   ├── audio-recorder.tsx   # Voice recording component
+│   └── textarea-with-voice.tsx # Textarea with voice input
+│
+├── providers.tsx            # App-wide providers (QueryClient, Theme)
+├── theme-provider.tsx       # next-themes provider
+├── pwa-installer.tsx        # PWA install prompt
+└── pwa-register.tsx         # Service worker registration
+```
+
+**Organization Rules**:
+- `ui/` - Primitive components with no business logic (buttons, inputs, etc.)
+- `forms/` - Complete form components and form building blocks
+- `forms/core/` - Reusable form field components used by TanStack Form
+- `ai/` - AI-specific UI components (voice input, etc.)
+- Root level - App-wide utilities (providers, PWA components)
+
+### `/lib` Folder Structure
+
+The `/lib` folder contains all business logic, utilities, hooks, and server-side code.
+
+```
+lib/
+├── hooks/                   # React hooks
+│   ├── use-app-form.tsx     # TanStack Form hook configuration
+│   ├── use-agents.ts        # Agent CRUD operations (React Query)
+│   ├── use-ai.ts            # AI/voice hooks
+│   ├── use-branches.ts      # User branches
+│   ├── use-models.ts        # Available AI models
+│   ├── use-repositories.ts  # User repositories
+│   ├── use-session.ts       # Auth session hook
+│   └── use-time-tracking.ts # Task time tracking
+│
+├── hono/                    # Hono API layer
+│   ├── index.ts             # Main Hono app
+│   ├── middleware/          # Request middleware
+│   │   ├── auth.ts          # requireAuth middleware
+│   │   ├── simulation.ts    # withSimulationMode middleware
+│   │   └── error-handler.ts # Global error handling
+│   ├── routes/              # API route handlers
+│   │   ├── agents.ts        # /api/agents routes
+│   │   ├── models.ts        # /api/models routes
+│   │   └── user.ts          # /api/user routes
+│   └── __tests__/           # API tests
+│       ├── preload.ts       # Bun test preload (mocks)
+│       ├── setup.ts         # Test helpers
+│       └── routes/          # Route-specific tests
+│
+├── schemas/                 # Zod validation schemas
+│   ├── cursor/              # Cursor API schemas
+│   │   ├── launch-agent.ts  # Launch agent request/form schemas
+│   │   ├── launch-agent.test.ts
+│   │   ├── webhook.ts       # Webhook payload schemas
+│   │   └── webhook.test.ts
+│   ├── settings.ts          # User settings schemas
+│   ├── settings.test.ts
+│   ├── auth.ts              # Auth-related schemas
+│   ├── auth.test.ts
+│   └── ai.ts                # AI-related schemas
+│
+├── db/                      # Database layer
+│   ├── index.ts             # Drizzle client
+│   ├── schema/              # Database schemas
+│   │   ├── auth-schema.ts   # Better Auth tables + user_api_keys
+│   │   └── user-schema.ts   # User data tables
+│   ├── encryption.ts        # AES-256-GCM encryption
+│   ├── user-db.ts           # User data queries
+│   └── turso-manager.ts     # Turso database management
+│
+├── better-auth/             # Better Auth configuration
+├── server/                  # Server-only utilities
+├── cache/                   # Caching utilities
+│
+├── api-utils.ts             # API helper functions
+├── conversation-utils.ts    # Conversation formatting
+├── formatting.ts            # Date/number formatting
+├── formatting.test.ts
+├── mock-data.ts             # Simulation mode mock data
+├── types.ts                 # Core TypeScript types
+├── utils.ts                 # General utilities (cn, etc.)
+└── utils.test.ts
+```
+
+**Organization Rules**:
+- `hooks/` - All React hooks (data fetching, forms, utilities)
+- `hono/` - Complete API layer (routes, middleware, tests)
+- `schemas/` - Zod schemas organized by domain (cursor/, settings, auth)
+- `db/` - Database connection, schemas, and encryption
+- Root level - Standalone utilities and types
+
 ### UI Architecture
 
 - **Mobile-First Design**: Max-width 448px (max-w-md), centered layout
@@ -563,31 +722,6 @@ All responses include a `simulation: boolean` field indicating the mode.
 - **Component Library**: Radix UI primitives + custom Tailwind components
 - **Styling**: Tailwind CSS 4 with CSS variables for theming
 - **Icons**: Lucide React
-
-**Component Organization**:
-```
-components/
-├── ui/                      # Radix UI primitive wrappers
-│   ├── button.tsx
-│   ├── input.tsx
-│   ├── select.tsx
-│   └── ...
-├── forms/                   # Form components
-│   └── launch-agent-form.tsx
-├── form-fields.tsx          # Controlled field components
-├── subscribe-button.tsx     # Form submit button
-├── agent-list.tsx           # Agent list view
-├── agent-card.tsx           # Individual agent card
-├── agent-detail.tsx         # Agent detail view
-├── settings-form.tsx        # Settings form
-├── api-key-manager.tsx      # Cursor API key management
-├── openai-api-key-manager.tsx # OpenAI API key management
-├── account-screen.tsx       # Account page content
-├── login-form.tsx           # Login form
-├── signup-form.tsx          # Signup form
-├── simulation-banner.tsx    # Simulation mode indicator
-└── providers.tsx            # App providers (QueryClient, Theme)
-```
 
 ### Type System
 

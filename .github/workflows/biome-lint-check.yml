@@ -3,6 +3,8 @@ name: Biome Lint Check
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
   lint-check:
