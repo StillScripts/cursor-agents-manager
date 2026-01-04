@@ -366,6 +366,78 @@ export function AgentDetail({
                   </div>
                 )}
 
+                {/* Summary Action Buttons */}
+                {conversation && conversation.messages.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-border">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setShowThinkingProcess(!showThinkingProcess)
+                      }
+                    >
+                      {showThinkingProcess ? (
+                        <>
+                          <EyeOff className="h-4 w-4 mr-2" />
+                          Hide Thinking Process
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="h-4 w-4 mr-2" />
+                          Show Thinking Process
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSummarize}
+                      disabled={summarizeConversation.isPending}
+                    >
+                      {summarizeConversation.isPending ? (
+                        <Spinner className="h-4 w-4 mr-2" />
+                      ) : (
+                        <Sparkles className="h-4 w-4 mr-2" />
+                      )}
+                      {aiSummary ? "Regenerate Summary" : "Summarize"}
+                    </Button>
+                    {aiSummary && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowSummary(!showSummary)}
+                        >
+                          {showSummary ? (
+                            <>
+                              <EyeOff className="h-4 w-4 mr-2" />
+                              Hide Summary
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Summary
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleListenToSummary}
+                          disabled={textToSpeech.isPending}
+                        >
+                          {textToSpeech.isPending ? (
+                            <Spinner className="h-4 w-4 mr-2" />
+                          ) : (
+                            <Volume2 className="h-4 w-4 mr-2" />
+                          )}
+                          Listen to Summary
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 {/* Actions inside Summary */}
                 <div className="flex gap-3 pt-3 border-t border-border">
                   {canStop && (
@@ -439,77 +511,6 @@ export function AgentDetail({
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {/* Action Buttons */}
-                    {conversation && conversation.messages.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-2 mb-3">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            setShowThinkingProcess(!showThinkingProcess)
-                          }
-                        >
-                          {showThinkingProcess ? (
-                            <>
-                              <EyeOff className="h-4 w-4 mr-2" />
-                              Hide Thinking Process
-                            </>
-                          ) : (
-                            <>
-                              <Eye className="h-4 w-4 mr-2" />
-                              Show Thinking Process
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleSummarize}
-                          disabled={summarizeConversation.isPending}
-                        >
-                          {summarizeConversation.isPending ? (
-                            <Spinner className="h-4 w-4 mr-2" />
-                          ) : (
-                            <Sparkles className="h-4 w-4 mr-2" />
-                          )}
-                          {aiSummary ? "Regenerate Summary" : "Summarize"}
-                        </Button>
-                        {aiSummary && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setShowSummary(!showSummary)}
-                            >
-                              {showSummary ? (
-                                <>
-                                  <EyeOff className="h-4 w-4 mr-2" />
-                                  Hide Summary
-                                </>
-                              ) : (
-                                <>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Summary
-                                </>
-                              )}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={handleListenToSummary}
-                              disabled={textToSpeech.isPending}
-                            >
-                              {textToSpeech.isPending ? (
-                                <Spinner className="h-4 w-4 mr-2" />
-                              ) : (
-                                <Volume2 className="h-4 w-4 mr-2" />
-                              )}
-                              Listen to Summary
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    )}
                     {filterMessagesForDisplay(
                       conversation?.messages || [],
                       showThinkingProcess
