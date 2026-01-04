@@ -7,12 +7,12 @@ import OpenAI from "openai"
 import { extractUserMessagesAndLastAssistant } from "@/lib/conversation-utils"
 import { db } from "@/lib/db"
 import { decryptData } from "@/lib/db/encryption"
+import { userApiKeys } from "@/lib/db/schema/auth-schema"
 import { type AuthVariables, requireAuth } from "@/lib/hono/middleware/auth"
 import {
   type OpenAIVariables,
   requireOpenAIKey,
 } from "@/lib/hono/middleware/openai"
-import { userApiKeys } from "@/lib/schema/auth-schema"
 import { speakSchema, summarizeSchema } from "@/lib/schemas/ai"
 import { fetchAgentConversationData } from "@/lib/server/agents"
 import type { AgentConversation } from "@/lib/types"

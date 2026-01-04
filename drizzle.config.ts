@@ -19,7 +19,7 @@ import type { Config } from "drizzle-kit"
  * - Drizzle Studio is for development/admin purposes on the master DB only
  */
 export default {
-  schema: ["./lib/schema/auth-schema.ts"],
+  schema: ["./lib/db/schema/auth-schema.ts"],
   out: "./drizzle",
   dialect: "turso",
   dbCredentials: {

@@ -1,12 +1,12 @@
 import { and, desc, eq, isNull } from "drizzle-orm"
+import type { Agent as AgentSchema } from "@/lib/db/schema/user-schema"
+import { agents } from "@/lib/db/schema/user-schema"
 import {
   createAgentMapping,
   deleteAgentMapping,
   ensureUserDatabase,
   getUserIdByAgentId,
 } from "@/lib/db/user-db"
-import type { Agent as AgentSchema } from "@/lib/schema/user-schema"
-import { agents } from "@/lib/schema/user-schema"
 import type { Agent } from "@/lib/types"
 
 /**

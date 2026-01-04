@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server"
 import { auth } from "./better-auth/auth"
 import { db } from "./db"
 import { decryptData } from "./db/encryption"
-import { userApiKeys } from "./schema/auth-schema"
+import { userApiKeys } from "./db/schema/auth-schema"
 
 export async function getUserApiKey(
   request: NextRequest
