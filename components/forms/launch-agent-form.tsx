@@ -4,6 +4,7 @@ import { AlertCircle, ExternalLink, Rocket, Settings } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { FieldSkeleton } from "@/components/form-fields"
+import { ImageUpload } from "@/components/image-upload"
 import { PageHeader } from "@/components/page-header"
 import {
   Accordion,
@@ -280,6 +281,27 @@ export function LaunchAgentForm() {
                         onChange={(e) => {
                           field.handleChange(e.target.value)
                         }}
+                      />
+                    )}
+                  </form.AppField>
+
+                  <form.AppField name="prompt.images">
+                    {(field) => (
+                      <ImageUpload
+                        value={field.state.value || []}
+                        onChange={(images) => field.handleChange(images)}
+                        onBlur={field.handleBlur}
+                        label="Images (Optional)"
+                        description="Upload up to 5 images to include with your task description"
+                        error={
+                          field.state.meta.isTouched &&
+                          !field.state.meta.isValid
+                            ? field.state.meta.errors
+                                .map((e) => e?.toString())
+                                .join(", ")
+                            : undefined
+                        }
+                        maxImages={5}
                       />
                     )}
                   </form.AppField>
