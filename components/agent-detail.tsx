@@ -1,7 +1,6 @@
 "use client"
 
 import { useQueryClient } from "@tanstack/react-query"
-import { formatDurationMs, formatRelativeTime } from "@/lib/formatting"
 import {
   Bot,
   Clock,
@@ -43,6 +42,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { filterMessagesForDisplay } from "@/lib/conversation-utils"
+import { formatDurationMs, formatRelativeTime } from "@/lib/formatting"
 import {
   useAgent,
   useAgentConversation,
@@ -215,7 +215,6 @@ export function AgentDetail({
     return total + (end - start)
   }, 0)
 
-
   return (
     <>
       <PageHeader title={agent.name} showBack expandable />
@@ -237,7 +236,8 @@ export function AgentDetail({
               <div className="px-4 pb-4 space-y-4">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>
-                    Created {formatRelativeTime(agent.createdAt, { addSuffix: true })}
+                    Created{" "}
+                    {formatRelativeTime(agent.createdAt, { addSuffix: true })}
                   </span>
                 </div>
 

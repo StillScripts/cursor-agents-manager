@@ -1,8 +1,4 @@
-import {
-  format,
-  formatDistanceToNow,
-  intervalToDuration,
-} from "date-fns"
+import { format, formatDistanceToNow, intervalToDuration } from "date-fns"
 
 /**
  * Formats a date string or Date object to a readable date and time string
@@ -10,12 +6,12 @@ import {
  */
 export function formatDateTime(date: string | Date): string {
   const dateObj = typeof date === "string" ? new Date(date) : date
-  
+
   // Check if date is invalid
-  if (isNaN(dateObj.getTime())) {
+  if (Number.isNaN(dateObj.getTime())) {
     return "Invalid Date"
   }
-  
+
   return format(dateObj, "MMM d, yyyy, h:mm a")
 }
 
@@ -25,12 +21,12 @@ export function formatDateTime(date: string | Date): string {
  */
 export function formatDate(date: string | Date): string {
   const dateObj = typeof date === "string" ? new Date(date) : date
-  
+
   // Check if date is invalid
   if (isNaN(dateObj.getTime())) {
     return "Invalid Date"
   }
-  
+
   return format(dateObj, "MMM d, yyyy")
 }
 
@@ -40,12 +36,12 @@ export function formatDate(date: string | Date): string {
  */
 export function formatTime(date: string | Date): string {
   const dateObj = typeof date === "string" ? new Date(date) : date
-  
+
   // Check if date is invalid
   if (isNaN(dateObj.getTime())) {
     return "Invalid Date"
   }
-  
+
   return format(dateObj, "h:mm a")
 }
 
@@ -55,7 +51,7 @@ export function formatTime(date: string | Date): string {
  */
 export function formatDurationBetween(
   startTime: string | Date,
-  endTime: string | Date | null,
+  endTime: string | Date | null
 ): string {
   const start = typeof startTime === "string" ? new Date(startTime) : startTime
   const end = endTime
@@ -130,15 +126,15 @@ export function formatDurationMs(ms: number): string {
  */
 export function formatRelativeTime(
   date: string | Date,
-  options?: { addSuffix?: boolean },
+  options?: { addSuffix?: boolean }
 ): string {
   const dateObj = typeof date === "string" ? new Date(date) : date
-  
+
   // Check if date is invalid
   if (isNaN(dateObj.getTime())) {
     return "Invalid Date"
   }
-  
+
   return formatDistanceToNow(dateObj, {
     addSuffix: options?.addSuffix ?? false,
   })

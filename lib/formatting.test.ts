@@ -193,7 +193,9 @@ describe("formatting", () => {
   describe("formatActivityType", () => {
     it("formats snake_case to Title Case", () => {
       expect(formatActivityType("task_creation")).toBe("Task Creation")
-      expect(formatActivityType("conversation_review")).toBe("Conversation Review")
+      expect(formatActivityType("conversation_review")).toBe(
+        "Conversation Review"
+      )
     })
 
     it("handles single words", () => {
@@ -202,7 +204,7 @@ describe("formatting", () => {
 
     it("handles multiple underscores", () => {
       expect(formatActivityType("very_long_activity_type")).toBe(
-        "Very Long Activity Type",
+        "Very Long Activity Type"
       )
     })
 
