@@ -93,23 +93,27 @@ export function formatDurationMs(ms: number): string {
     return "0s"
   }
 
-  // Convert milliseconds to a date interval for intervalToDuration
-  const start = new Date(0)
-  const end = new Date(ms)
-  const duration = intervalToDuration({ start, end })
+  // Calculate duration components directly from milliseconds
+  const seconds = Math.floor(ms / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+
   const parts: string[] = []
 
-  if (duration.hours !== undefined && duration.hours > 0) {
-    parts.push(`${duration.hours}h`)
-  }
-  if (duration.minutes !== undefined && duration.minutes > 0) {
-    parts.push(`${duration.minutes}m`)
-  }
-  if (duration.seconds !== undefined && duration.seconds > 0) {
-    // Only show seconds if less than an hour
-    if (duration.hours === undefined || duration.hours === 0) {
-      parts.push(`${duration.seconds}s`)
+  if (hours > 0) {
+    parts.push(`${hours}h`)
+    const remainingMinutes = minutes % 60
+    if (remainingMinutes > 0) {
+      parts.push(`${remainingMinutes}m`)
     }
+  } else if (minutes > 0) {
+    parts.push(`${minutes}m`)
+    const remainingSeconds = seconds % 60
+    if (remainingSeconds > 0) {
+      parts.push(`${remainingSeconds}s`)
+    }
+  } else if (seconds > 0) {
+    parts.push(`${seconds}s`)
   }
 
   // If no parts (duration is 0 or very small), return "0s"
