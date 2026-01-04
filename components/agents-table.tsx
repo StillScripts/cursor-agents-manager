@@ -71,14 +71,14 @@ export function AgentsTable() {
 
           {data?.agents && data.agents.length > 0 && (
             <>
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {data.agents.map((agent) => (
                   <AgentCard key={agent.id} agent={agent} />
                 ))}
               </div>
 
               {isFetching ? (
-                <div className="space-y-2">
+                <div className="space-y-4">
                   {Array.from({ length: 6 }).map((_, i) => (
                     <AgentCardSkeleton key={i} />
                   ))}

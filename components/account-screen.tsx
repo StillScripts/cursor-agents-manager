@@ -52,7 +52,7 @@ export function AccountScreen() {
     return (
       <>
         <PageHeader title="Account" />
-        <div className="p-4 space-y-4">
+        <div className="p-4 space-y-6">
           <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
@@ -66,7 +66,7 @@ export function AccountScreen() {
     <>
       <PageHeader title="Account" />
 
-      <div className="p-4 space-y-4">
+      <div className="p-4 space-y-6">
         {/* User Card */}
         <Card className="bg-card border-border">
           <CardContent className="p-4">
