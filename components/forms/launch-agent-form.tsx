@@ -1,6 +1,5 @@
 "use client"
 
-import { useEffect } from "react"
 import { AlertCircle, ExternalLink, Rocket, Settings } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -236,18 +235,6 @@ export function LaunchAgentForm() {
       router.push("/")
     },
   })
-
-  // Reset form on mount to handle PWA navigation back to form
-  // In PWAs, component state can persist across navigation, so we need to
-  // explicitly reset the form when the component mounts to ensure a clean state
-  useEffect(() => {
-    form.reset(defaultFormValues)
-    // Stop any ongoing time tracking when component mounts
-    if (timeTracking.isTracking) {
-      timeTracking.stop()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   const errorMessage =
     launchAgent.error instanceof Error ? launchAgent.error.message : null
