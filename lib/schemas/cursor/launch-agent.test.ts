@@ -236,7 +236,6 @@ describe("formDataToApiRequest", () => {
     const formData: LaunchAgentFormData = {
       ...baseFormData,
       model: "claude-3-5-sonnet-20241022",
-      webhook: { url: "https://example.com/webhook" },
     }
 
     const result = formDataToApiRequest(formData)
@@ -246,7 +245,6 @@ describe("formDataToApiRequest", () => {
       source: formData.source,
       model: formData.model,
       target: formData.target,
-      webhook: formData.webhook,
     })
   })
 
@@ -255,18 +253,8 @@ describe("formDataToApiRequest", () => {
     expect(result.model).toBeUndefined()
   })
 
-  it("omits webhook when undefined", () => {
+  it("does not include webhook (injected from env vars at API level)", () => {
     const result = formDataToApiRequest(baseFormData)
-    expect(result.webhook).toBeUndefined()
-  })
-
-  it("omits webhook when url is empty", () => {
-    const formData: LaunchAgentFormData = {
-      ...baseFormData,
-      webhook: { url: "" },
-    }
-    // The form validation would catch this, but formDataToApiRequest checks for truthy url
-    const result = formDataToApiRequest(formData)
     expect(result.webhook).toBeUndefined()
   })
 
