@@ -36,7 +36,17 @@ export class TursoManager {
     }
 
     const data = await response.json()
-    return data.database
+    const database = data.database || data
+
+    // Ensure we have a valid database object with required properties
+    if (!database || !database.hostname) {
+      throw new Error(`Invalid database response: missing hostname`)
+    }
+
+    return {
+      name: database.name || dbName,
+      hostname: database.hostname,
+    }
   }
 
   // Create new database for user
@@ -77,7 +87,12 @@ export class TursoManager {
         // Fetch the existing database
         const existing = await this.getUserDatabaseByName(dbName)
         if (existing) {
-          return existing
+          // Ensure the database object has the name property
+          // (API response might not include it, but we know it from dbName)
+          return {
+            name: existing.name || dbName,
+            hostname: existing.hostname,
+          }
         }
       }
       throw new Error(`Failed to create database: ${errorText}`)

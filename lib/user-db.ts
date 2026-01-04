@@ -38,22 +38,20 @@ export async function getUserDatabase(userId: string) {
  * @throws Error if database creation fails
  */
 export async function createUserDatabase(userId: string) {
-  // Check if database already exists in local table
-  const [existing] = await db
-    .select()
-    .from(userDatabases)
-    .where(eq(userDatabases.userId, userId))
-    .limit(1)
-
-  if (existing) {
-    throw new Error(`Database already exists for user: ${userId}`)
-  }
+  // Calculate expected database name (used as fallback if API doesn't return it)
+  const expectedDbName = `user-${userId.replace(/[^a-z0-9-]/gi, "-").toLowerCase()}`
 
   // Create database via Turso API (handles case where it already exists in Turso)
   const database = await tursoManager.createUserDatabase(userId)
 
+  // Ensure we have a database name (fallback to expected name if missing)
+  const dbName = database.name || expectedDbName
+  if (!dbName) {
+    throw new Error(`Database name is missing for user: ${userId}`)
+  }
+
   // Create auth token for the database
-  const authToken = await tursoManager.createDatabaseToken(database.name)
+  const authToken = await tursoManager.createDatabaseToken(dbName)
 
   // Initialize schema in user's database (safe to run multiple times)
   const dbUrl = `libsql://${database.hostname}`
@@ -62,17 +60,38 @@ export async function createUserDatabase(userId: string) {
   // Store connection info in master DB (encrypt auth token)
   const encryptedToken = encryptData(authToken)
 
-  await db.insert(userDatabases).values({
-    id: crypto.randomUUID(),
-    userId,
-    databaseName: database.name,
-    databaseUrl: dbUrl,
-    authToken: encryptedToken,
-    createdAt: new Date(),
-  })
+  // Check if record already exists (upsert pattern)
+  const [existing] = await db
+    .select()
+    .from(userDatabases)
+    .where(eq(userDatabases.userId, userId))
+    .limit(1)
+
+  if (existing) {
+    // Update existing record with new connection info
+    await db
+      .update(userDatabases)
+      .set({
+        databaseName: dbName,
+        databaseUrl: dbUrl,
+        authToken: encryptedToken,
+        // Keep existing createdAt and id
+      })
+      .where(eq(userDatabases.userId, userId))
+  } else {
+    // Insert new record
+    await db.insert(userDatabases).values({
+      id: crypto.randomUUID(),
+      userId,
+      databaseName: dbName,
+      databaseUrl: dbUrl,
+      authToken: encryptedToken,
+      createdAt: new Date(),
+    })
+  }
 
   return {
-    databaseName: database.name,
+    databaseName: dbName,
     databaseUrl: dbUrl,
   }
 }
