@@ -1,6 +1,6 @@
 "use client"
 
-import { X, Upload } from "lucide-react"
+import { Upload, X } from "lucide-react"
 import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
@@ -10,8 +10,8 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { cn } from "@/lib/utils"
 import type { PromptImage } from "@/lib/schemas/cursor/launch-agent"
+import { cn } from "@/lib/utils"
 
 interface ImageUploadProps {
   value: PromptImage[]
@@ -56,57 +56,57 @@ export function ImageUpload({
           filesToProcess.map(
             (file): Promise<PromptImage & { mimeType?: string }> =>
               new Promise((resolve, reject) => {
-              // Validate file type
-              if (!file.type.startsWith("image/")) {
-                reject(new Error(`${file.name} is not an image file`))
-                return
-              }
-
-              // Validate file size (max 10MB)
-              if (file.size > 10 * 1024 * 1024) {
-                reject(new Error(`${file.name} is too large (max 10MB)`))
-                return
-              }
-
-              const reader = new FileReader()
-
-              reader.onload = (e) => {
-                const img = new Image()
-                img.onload = () => {
-                  const dataUrl = e.target?.result as string
-                  // Extract mime type from data URL
-                  const mimeTypeMatch = dataUrl.match(/data:([^;]+);/)
-                  const mimeType = mimeTypeMatch
-                    ? mimeTypeMatch[1]
-                    : "image/png"
-                  // Remove data:image/...;base64, prefix if present
-                  const base64Data = dataUrl.includes(",")
-                    ? dataUrl.split(",")[1]
-                    : dataUrl
-
-                  resolve({
-                    data: base64Data,
-                    dimension: {
-                      width: img.width,
-                      height: img.height,
-                    },
-                    mimeType, // Store temporarily for preview
-                  } as PromptImage & { mimeType: string })
+                // Validate file type
+                if (!file.type.startsWith("image/")) {
+                  reject(new Error(`${file.name} is not an image file`))
+                  return
                 }
-                img.onerror = () => {
-                  reject(new Error(`Failed to load image: ${file.name}`))
+
+                // Validate file size (max 10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                  reject(new Error(`${file.name} is too large (max 10MB)`))
+                  return
                 }
-                img.src = dataUrl
-              }
 
-              reader.onerror = () => {
-                reject(new Error(`Failed to read file: ${file.name}`))
-              }
+                const reader = new FileReader()
 
-              reader.readAsDataURL(file)
-            })
+                reader.onload = (e) => {
+                  const img = new Image()
+                  img.onload = () => {
+                    const dataUrl = e.target?.result as string
+                    // Extract mime type from data URL
+                    const mimeTypeMatch = dataUrl.match(/data:([^;]+);/)
+                    const mimeType = mimeTypeMatch
+                      ? mimeTypeMatch[1]
+                      : "image/png"
+                    // Remove data:image/...;base64, prefix if present
+                    const base64Data = dataUrl.includes(",")
+                      ? dataUrl.split(",")[1]
+                      : dataUrl
+
+                    resolve({
+                      data: base64Data,
+                      dimension: {
+                        width: img.width,
+                        height: img.height,
+                      },
+                      mimeType, // Store temporarily for preview
+                    } as PromptImage & { mimeType: string })
+                  }
+                  img.onerror = () => {
+                    reject(new Error(`Failed to load image: ${file.name}`))
+                  }
+                  img.src = e.target?.result as string
+                }
+
+                reader.onerror = () => {
+                  reject(new Error(`Failed to read file: ${file.name}`))
+                }
+
+                reader.readAsDataURL(file)
+              })
+          )
         )
-      )
 
       // Store mime types for preview
       const startIndex = value.length
@@ -228,9 +228,7 @@ export function ImageUpload({
         )}
 
         {description && <FieldDescription>{description}</FieldDescription>}
-        {isInvalid && error && (
-          <FieldError errors={[{ message: error }]} />
-        )}
+        {isInvalid && error && <FieldError errors={[{ message: error }]} />}
       </div>
     </Field>
   )
