@@ -336,9 +336,22 @@ export function AgentDetail({
                         AI Summary
                       </span>
                     </div>
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        a: ({ children, href }) => (
+                          <a
+                            href={href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {children}
+                          </a>
+                        ),
+                      }}
+                    >
                       {aiSummary}
-                    </p>
+                    </ReactMarkdown>
                     {audioUrl && (
                       <div className="mt-3">
                         {/* biome-ignore lint/a11y/useMediaCaption: Audio is text-to-speech of summary already displayed above */}
