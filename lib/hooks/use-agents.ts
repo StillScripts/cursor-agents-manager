@@ -216,3 +216,15 @@ export function useAgentTimeLogs(taskId: string) {
     refetchOnWindowFocus: false,
   })
 }
+
+export function useAllTimeLogs() {
+  return useQuery<TimeLogsResponse>({
+    queryKey: ["timeLogs", "all"],
+    queryFn: async () => {
+      const response = await fetch("/api/user/time-logs")
+      if (!response.ok) throw new Error("Failed to fetch time logs")
+      return response.json()
+    },
+    refetchOnWindowFocus: false,
+  })
+}

@@ -1,7 +1,6 @@
 "use client"
 
 import { useQueryClient } from "@tanstack/react-query"
-import { formatDistanceToNow } from "date-fns"
 import {
   Bot,
   Clock,
@@ -43,6 +42,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { filterMessagesForDisplay } from "@/lib/conversation-utils"
+import { formatDurationMs, formatRelativeTime } from "@/lib/formatting"
 import {
   useAgent,
   useAgentConversation,
@@ -215,23 +215,6 @@ export function AgentDetail({
     return total + (end - start)
   }, 0)
 
-  // Format duration in a human-readable way
-  const formatDuration = (ms: number) => {
-    const seconds = Math.floor(ms / 1000)
-    const minutes = Math.floor(seconds / 60)
-    const hours = Math.floor(minutes / 60)
-
-    if (hours > 0) {
-      const remainingMinutes = minutes % 60
-      return `${hours}h ${remainingMinutes}m`
-    }
-    if (minutes > 0) {
-      const remainingSeconds = seconds % 60
-      return `${minutes}m ${remainingSeconds}s`
-    }
-    return `${seconds}s`
-  }
-
   return (
     <>
       <PageHeader title={agent.name} showBack expandable />
@@ -254,9 +237,7 @@ export function AgentDetail({
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>
                     Created{" "}
-                    {formatDistanceToNow(new Date(agent.createdAt), {
-                      addSuffix: true,
-                    })}
+                    {formatRelativeTime(agent.createdAt, { addSuffix: true })}
                   </span>
                 </div>
 
@@ -266,7 +247,7 @@ export function AgentDetail({
                     <>
                       <span className="text-muted-foreground">Time spent:</span>
                       <span className="text-foreground font-medium">
-                        {formatDuration(totalTimeSpent)}
+                        {formatDurationMs(totalTimeSpent)}
                       </span>
                     </>
                   ) : (
