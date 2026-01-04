@@ -217,9 +217,5 @@ export function formDataToApiRequest(
     }
   }
 
-  if (formData.webhook?.url) {
-    request.webhook = formData.webhook
-  }
-
   return request
 }

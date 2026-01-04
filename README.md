@@ -156,6 +156,10 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 # Optional: Your Cursor API key (can also be set per-user in the app)
 CURSOR_API_KEY=your-cursor-api-key
+
+# Cursor Webhook Configuration (optional, but recommended)
+CURSOR_WEBHOOK_URL=https://your-app.com/api/webhooks/cursor
+CURSOR_WEBHOOK_SECRET=your-webhook-secret-min-32-chars
 ```
 
 ### Getting Turso Credentials
