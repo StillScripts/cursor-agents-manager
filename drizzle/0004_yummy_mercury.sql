@@ -1,0 +1,23 @@
+CREATE TABLE `agents` (
+	`id` text PRIMARY KEY NOT NULL,
+	`user_id` text NOT NULL,
+	`provider` text NOT NULL,
+	`name` text NOT NULL,
+	`status` text NOT NULL,
+	`source_repository` text NOT NULL,
+	`source_ref` text,
+	`target_branch_name` text,
+	`target_url` text,
+	`target_pr_url` text,
+	`target_auto_create_pr` integer DEFAULT false,
+	`model` text,
+	`summary` text,
+	`provider_data` text,
+	`created_at` integer NOT NULL,
+	`updated_at` integer NOT NULL,
+	`cached_at` integer NOT NULL,
+	`sync_status` text DEFAULT 'synced',
+	`sync_error` text,
+	`deleted_at` integer,
+	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
+);
