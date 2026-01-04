@@ -1,17 +1,17 @@
 "use client"
 
-import { Upload, X } from "lucide-react"
-import { useRef, useState } from "react"
-import { Button } from "@/components/ui/button"
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import type { PromptImage } from "@/lib/schemas/cursor/launch-agent"
+import { ImageIcon, Upload, X } from "lucide-react"
+import type React from "react"
+import { useCallback, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
+
+interface PromptImage {
+  data: string
+  dimension: {
+    width: number
+    height: number
+  }
+}
 
 interface ImageUploadProps {
   value: PromptImage[]
@@ -36,110 +36,103 @@ export function ImageUpload({
 }: ImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isProcessing, setIsProcessing] = useState(false)
-  // Store mime types for preview (index -> mime type)
+  const [isDragOver, setIsDragOver] = useState(false)
   const [mimeTypes, setMimeTypes] = useState<Map<number, string>>(new Map())
 
-  const handleFileSelect = async (files: FileList | null) => {
-    if (!files || files.length === 0) return
+  const handleFileSelect = useCallback(
+    async (files: FileList | null) => {
+      if (!files || files.length === 0) return
 
-    const remainingSlots = maxImages - value.length
-    if (remainingSlots <= 0) {
-      return
-    }
+      const remainingSlots = maxImages - value.length
+      if (remainingSlots <= 0) return
 
-    const filesToProcess = Array.from(files).slice(0, remainingSlots)
-    setIsProcessing(true)
+      const filesToProcess = Array.from(files).slice(0, remainingSlots)
+      setIsProcessing(true)
 
-    try {
-      const newImages: (PromptImage & { mimeType?: string })[] =
-        await Promise.all(
-          filesToProcess.map(
-            (file): Promise<PromptImage & { mimeType?: string }> =>
-              new Promise((resolve, reject) => {
-                // Validate file type
-                if (!file.type.startsWith("image/")) {
-                  reject(new Error(`${file.name} is not an image file`))
-                  return
-                }
-
-                // Validate file size (max 10MB)
-                if (file.size > 10 * 1024 * 1024) {
-                  reject(new Error(`${file.name} is too large (max 10MB)`))
-                  return
-                }
-
-                const reader = new FileReader()
-
-                reader.onload = (e) => {
-                  const img = new Image()
-                  img.onload = () => {
-                    const dataUrl = e.target?.result as string
-                    // Extract mime type from data URL
-                    const mimeTypeMatch = dataUrl.match(/data:([^;]+);/)
-                    const mimeType = mimeTypeMatch
-                      ? mimeTypeMatch[1]
-                      : "image/png"
-                    // Remove data:image/...;base64, prefix if present
-                    const base64Data = dataUrl.includes(",")
-                      ? dataUrl.split(",")[1]
-                      : dataUrl
-
-                    resolve({
-                      data: base64Data,
-                      dimension: {
-                        width: img.width,
-                        height: img.height,
-                      },
-                      mimeType, // Store temporarily for preview
-                    } as PromptImage & { mimeType: string })
+      try {
+        const newImages: (PromptImage & { mimeType?: string })[] =
+          await Promise.all(
+            filesToProcess.map(
+              (file): Promise<PromptImage & { mimeType?: string }> =>
+                new Promise((resolve, reject) => {
+                  if (!file.type.startsWith("image/")) {
+                    reject(new Error(`${file.name} is not an image file`))
+                    return
                   }
-                  img.onerror = () => {
-                    reject(new Error(`Failed to load image: ${file.name}`))
+
+                  if (file.size > 10 * 1024 * 1024) {
+                    reject(new Error(`${file.name} is too large (max 10MB)`))
+                    return
                   }
-                  img.src = e.target?.result as string
-                }
 
-                reader.onerror = () => {
-                  reject(new Error(`Failed to read file: ${file.name}`))
-                }
+                  const reader = new FileReader()
 
-                reader.readAsDataURL(file)
-              })
+                  reader.onload = (e) => {
+                    const img = new window.Image()
+                    img.crossOrigin = "anonymous"
+                    img.onload = () => {
+                      const dataUrl = e.target?.result as string
+                      const mimeTypeMatch = dataUrl.match(/data:([^;]+);/)
+                      const mimeType = mimeTypeMatch
+                        ? mimeTypeMatch[1]
+                        : "image/png"
+                      const base64Data = dataUrl.includes(",")
+                        ? dataUrl.split(",")[1]
+                        : dataUrl
+
+                      resolve({
+                        data: base64Data,
+                        dimension: {
+                          width: img.width,
+                          height: img.height,
+                        },
+                        mimeType,
+                      } as PromptImage & { mimeType: string })
+                    }
+                    img.onerror = () => {
+                      reject(new Error(`Failed to load image: ${file.name}`))
+                    }
+                    img.src = e.target?.result as string
+                  }
+
+                  reader.onerror = () => {
+                    reject(new Error(`Failed to read file: ${file.name}`))
+                  }
+
+                  reader.readAsDataURL(file)
+                })
+            )
           )
+
+        const startIndex = value.length
+        const newMimeTypes = new Map(mimeTypes)
+        newImages.forEach((img, idx) => {
+          if (img.mimeType) {
+            newMimeTypes.set(startIndex + idx, img.mimeType)
+          }
+        })
+        setMimeTypes(newMimeTypes)
+
+        const imagesToStore: PromptImage[] = newImages.map(
+          ({ mimeType, ...img }) => img
         )
-
-      // Store mime types for preview
-      const startIndex = value.length
-      const newMimeTypes = new Map(mimeTypes)
-      newImages.forEach((img, idx) => {
-        if (img.mimeType) {
-          newMimeTypes.set(startIndex + idx, img.mimeType)
+        onChange([...value, ...imagesToStore])
+      } catch (err) {
+        console.error("Error processing images:", err)
+      } finally {
+        setIsProcessing(false)
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ""
         }
-      })
-      setMimeTypes(newMimeTypes)
-
-      // Remove mimeType before storing (not part of schema)
-      const imagesToStore: PromptImage[] = newImages.map(
-        ({ mimeType, ...img }) => img
-      )
-      onChange([...value, ...imagesToStore])
-    } catch (err) {
-      console.error("Error processing images:", err)
-      // You could show a toast notification here
-    } finally {
-      setIsProcessing(false)
-      // Reset input so same file can be selected again
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ""
       }
-    }
-  }
+    },
+    [maxImages, value, mimeTypes, onChange]
+  )
 
   const handleRemove = (index: number) => {
     const newImages = value.filter((_, i) => i !== index)
     onChange(newImages)
 
-    // Update mime types map
     const newMimeTypes = new Map<number, string>()
     newImages.forEach((_, i) => {
       const originalIndex = i < index ? i : i + 1
@@ -151,85 +144,190 @@ export function ImageUpload({
     setMimeTypes(newMimeTypes)
   }
 
-  const handleButtonClick = () => {
+  const handleButtonClick = useCallback(() => {
     fileInputRef.current?.click()
-  }
-
-  const getPreviewUrl = (image: PromptImage, index: number) => {
-    // Use stored mime type if available, otherwise default to png
-    const mimeType = mimeTypes.get(index) || "image/png"
-    return `data:${mimeType};base64,${image.data}`
-  }
+  }, [])
 
   const isInvalid = Boolean(error)
   const canAddMore = value.length < maxImages
 
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (
+        (e.key === "Enter" || e.key === " ") &&
+        canAddMore &&
+        !disabled &&
+        !isProcessing
+      ) {
+        e.preventDefault()
+        handleButtonClick()
+      }
+    },
+    [canAddMore, disabled, isProcessing, handleButtonClick]
+  )
+
+  const getPreviewUrl = (image: PromptImage, index: number) => {
+    const mimeType = mimeTypes.get(index) || "image/png"
+    return `data:${mimeType};base64,${image.data}`
+  }
+
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (!disabled && value.length < maxImages) {
+        setIsDragOver(true)
+      }
+    },
+    [disabled, value.length, maxImages]
+  )
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+  }, [])
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setIsDragOver(false)
+
+      if (disabled || value.length >= maxImages) return
+
+      const files = e.dataTransfer.files
+      handleFileSelect(files)
+    },
+    [disabled, value.length, maxImages, handleFileSelect]
+  )
+
   return (
-    <Field data-invalid={isInvalid}>
-      {label && <FieldLabel>{label}</FieldLabel>}
+    <div className="space-y-2">
+      {label && (
+        <label className="text-sm font-medium leading-none flex items-center gap-2">
+          {label}
+          <span className="text-xs font-normal text-muted-foreground">
+            (Optional)
+          </span>
+        </label>
+      )}
       <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={(e) => handleFileSelect(e.target.files)}
-            onBlur={onBlur}
-            disabled={disabled || !canAddMore || isProcessing}
-            className="hidden"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleButtonClick}
-            disabled={disabled || !canAddMore || isProcessing}
-            className="w-full"
-          >
-            <Upload className="h-4 w-4 mr-1.5" />
-            {isProcessing
-              ? "Processing..."
-              : canAddMore
-                ? `Upload Images (${value.length}/${maxImages})`
-                : `Maximum ${maxImages} images reached`}
-          </Button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={(e) => handleFileSelect(e.target.files)}
+          onBlur={onBlur}
+          disabled={disabled || !canAddMore || isProcessing}
+          className="hidden"
+        />
+
+        {/* Drag & Drop Zone */}
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: Drag-and-drop zones require div with drag handlers; keyboard and ARIA support added for accessibility */}
+        <div
+          role={canAddMore && !disabled && !isProcessing ? "button" : undefined}
+          tabIndex={canAddMore && !disabled && !isProcessing ? 0 : undefined}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={
+            canAddMore && !disabled && !isProcessing
+              ? handleButtonClick
+              : undefined
+          }
+          onKeyDown={handleKeyDown}
+          {...(canAddMore &&
+            !disabled &&
+            !isProcessing && {
+              "aria-label":
+                "Upload images by clicking or dragging and dropping",
+            })}
+          className={cn(
+            "relative bg-input/30 border-2 border-dashed rounded-lg p-6 transition-all duration-200 text-center",
+            canAddMore && !disabled && !isProcessing
+              ? "cursor-pointer hover:border-primary/50 hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              : "cursor-not-allowed opacity-60",
+            isDragOver
+              ? "border-primary bg-primary/5 scale-[1.02]"
+              : "border-muted-foreground/25"
+          )}
+        >
+          <div className="flex flex-col items-center gap-2">
+            <div
+              className={cn(
+                "p-3 rounded-full transition-colors",
+                isDragOver ? "bg-primary/10" : "bg-muted"
+              )}
+            >
+              {isDragOver ? (
+                <ImageIcon className="h-6 w-6 text-primary" />
+              ) : (
+                <Upload className="h-6 w-6 text-muted-foreground" />
+              )}
+            </div>
+            <div>
+              <p className="text-sm font-medium">
+                {isProcessing
+                  ? "Processing..."
+                  : isDragOver
+                    ? "Drop images here"
+                    : canAddMore
+                      ? "Drag & drop images here"
+                      : `Maximum ${maxImages} images reached`}
+              </p>
+              {canAddMore && !isProcessing && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  or{" "}
+                  <span className="text-primary underline underline-offset-2">
+                    browse files
+                  </span>{" "}
+                  • {value.length}/{maxImages} images
+                </p>
+              )}
+            </div>
+          </div>
         </div>
 
+        {/* Image Previews */}
         {value.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="flex flex-wrap gap-3">
             {value.map((image, index) => (
-              <div
-                key={index}
-                className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-muted"
-              >
+              <div key={index} className="relative group">
+                {/** biome-ignore lint/performance/noImgElement: We do not care about this rule here */}
                 <img
-                  src={getPreviewUrl(image, index)}
+                  src={getPreviewUrl(image, index) || "/placeholder.svg"}
                   alt={`Preview ${index + 1}`}
-                  className="w-full h-full object-cover"
+                  className="h-28 max-h-28 w-auto rounded-md object-cover border border-border"
                 />
+
                 <button
                   type="button"
                   onClick={() => handleRemove(index)}
                   disabled={disabled}
                   className={cn(
-                    "absolute top-1 right-1 p-1 rounded-full bg-destructive/90 hover:bg-destructive text-white opacity-0 group-hover:opacity-100 transition-opacity",
+                    "absolute -top-1 -right-1 p-1.5 rounded-full text-destructive-foreground shadow-md bg-card",
+                    "opacity-0 group-hover:opacity-100 transition-opacity duration-150",
+                    "hover:bg-destructive/90 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-destructive focus:ring-offset-2",
                     "disabled:opacity-50 disabled:cursor-not-allowed"
                   )}
                   aria-label={`Remove image ${index + 1}`}
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-5 w-5" />
                 </button>
-                <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 text-center">
-                  {image.dimension.width} × {image.dimension.height}
-                </div>
               </div>
             ))}
           </div>
         )}
 
-        {description && <FieldDescription>{description}</FieldDescription>}
-        {isInvalid && error && <FieldError errors={[{ message: error }]} />}
+        {description && (
+          <p className="text-sm text-muted-foreground">{description}</p>
+        )}
+        {isInvalid && error && (
+          <p className="text-sm text-destructive">{error}</p>
+        )}
       </div>
-    </Field>
+    </div>
   )
 }
