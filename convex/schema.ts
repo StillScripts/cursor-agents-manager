@@ -28,4 +28,42 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_agent", ["userId", "agentId"]),
+
+  agents: defineTable({
+    // External ID from Cursor (e.g., bc-109be4f0-c6b3-4112-8a2e-4ef48e65486d)
+    agentId: v.string(),
+    userId: v.string(),
+    provider: v.union(v.literal("cursor"), v.literal("claude-code")),
+
+    // Agent metadata
+    name: v.string(),
+    status: v.union(
+      v.literal("CREATING"),
+      v.literal("RUNNING"),
+      v.literal("FINISHED"),
+      v.literal("ERROR"),
+      v.literal("EXPIRED")
+    ),
+    model: v.optional(v.string()),
+    summary: v.optional(v.string()),
+    sourceRepository: v.string(),
+    sourceRef: v.optional(v.string()),
+    targetBranchName: v.optional(v.string()),
+    targetUrl: v.optional(v.string()),
+    targetPrUrl: v.optional(v.string()),
+    targetAutoCreatePr: v.optional(v.boolean()),
+    providerData: v.optional(v.any()),
+
+    // Data related to syncing and updates
+    syncStatus: v.optional(
+      v.union(v.literal("synced"), v.literal("stale"), v.literal("error"))
+    ),
+    syncError: v.optional(v.string()),
+    updatedAt: v.number(),
+    deletedAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_agent", ["userId", "agentId"])
+    .index("by_user_status", ["userId", "status"])
+    .index("by_updated_at", ["updatedAt"]),
 })
