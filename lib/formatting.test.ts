@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test"
+import { beforeAll, describe, expect, it } from "vitest"
 import {
   formatActivityType,
   formatDate,
@@ -9,6 +9,14 @@ import {
   formatTime,
   parseGitHubUrl,
 } from "./formatting"
+
+// Set timezone to UTC before any tests run
+beforeAll(() => {
+  // Set TZ environment variable to UTC
+  if (typeof process !== "undefined" && process.env) {
+    process.env.TZ = "UTC"
+  }
+})
 
 describe("formatting", () => {
   describe("formatDateTime", () => {
