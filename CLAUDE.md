@@ -109,7 +109,6 @@ app/
 │   └── account/
 │       ├── page.tsx              # Account page
 │       └── _components/          # Account-specific components
-│           ├── account-screen.tsx
 │           ├── activity-screen.tsx
 │           ├── api-key-manager.tsx
 │           └── openai-api-key-manager.tsx
@@ -151,7 +150,6 @@ app/(authenticated)/
 │       └── agent-detail.tsx
 └── account/
     └── _components/          # Only used by account pages
-        ├── account-screen.tsx
         └── api-key-manager.tsx
 ```
 

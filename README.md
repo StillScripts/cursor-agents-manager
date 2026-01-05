@@ -311,7 +311,6 @@ cursor-agents-manager/
 ├── 🎨 components/                # React Components
 │   ├── ui/                       # Radix UI primitives
 │   ├── api-key-manager.tsx       # API key manager UI
-│   ├── account-screen.tsx        # Account page
 │   └── settings-form.tsx         # Settings form
 │
 ├── 📚 lib/                       # Core Logic
