@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Monitor and manage your Cursor background agents on the go",
 }
 
-export default function HomePage() {
+export default async function HomePage() {
   return (
     <Suspense fallback={null}>
       <AgentsTable />

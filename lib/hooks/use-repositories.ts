@@ -1,7 +1,8 @@
 "use client"
 
-import { useMutation, useQuery } from "convex/react"
+import { useMutation } from "convex/react"
 import { api } from "@/convex/_generated/api"
+import { useStableQuery } from "@/lib/hooks/use-stable-query"
 
 export interface Repository {
   url: string
@@ -9,7 +10,7 @@ export interface Repository {
 }
 
 export function useRepositories() {
-  const repositories = useQuery(api.repositories.getRepositories)
+  const repositories = useStableQuery(api.repositories.getRepositories)
   const saveRepositories = useMutation(api.repositories.saveRepositories)
 
   return {

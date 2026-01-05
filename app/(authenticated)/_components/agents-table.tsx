@@ -1,6 +1,6 @@
 "use client"
 
-import { useAction, useQuery } from "convex/react"
+import { useAction } from "convex/react"
 import { Bot, RefreshCw } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { AgentCard } from "@/app/(authenticated)/_components/agent-card"
@@ -9,6 +9,7 @@ import { PageHeader } from "@/app/(authenticated)/_components/page-header"
 import { SimulationBanner } from "@/app/(authenticated)/_components/simulation-banner"
 import { Button } from "@/components/ui/button"
 import { api } from "@/convex/_generated/api"
+import { useStableQuery } from "@/lib/hooks/use-stable-query"
 import type { Agent } from "@/lib/types"
 
 interface AgentsData {
@@ -26,7 +27,7 @@ export function AgentsTable() {
   const [actionData, setActionData] = useState<AgentsData | null>(null)
 
   // Query for reactive database updates
-  const dbResult = useQuery(api.agents.listByUser, { limit })
+  const dbResult = useStableQuery(api.agents.listByUser, { limit })
 
   // Action for syncing from Cursor API
   const getAgents = useAction(api.agentsActions.getAgents)
