@@ -30,6 +30,46 @@ type FieldProps = {
   label?: string
 }
 
+/**
+ * Extracts error message from TanStack Form error.
+ * Handles strings, Error objects, Zod errors, and other error objects.
+ */
+export const extractErrorMessage = (error: unknown): string | undefined => {
+  if (error === null || error === undefined) {
+    return undefined
+  }
+
+  // If it's already a string, return it
+  if (typeof error === "string") {
+    return error
+  }
+
+  // If it's an Error instance, use its message
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  // If it's an object with a message property
+  if (typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message
+    if (typeof message === "string") {
+      return message
+    }
+  }
+
+  // Fallback: try to stringify, but avoid "[object Object]"
+  try {
+    const stringified = String(error)
+    // If it's the generic object string, try JSON.stringify
+    if (stringified === "[object Object]") {
+      return JSON.stringify(error)
+    }
+    return stringified
+  } catch {
+    return "Validation error"
+  }
+}
+
 const getFieldProps = (
   field: AnyFieldApi,
   description?: string,
@@ -60,9 +100,10 @@ export const ControlledField = ({
       {description && <FieldDescription>{description}</FieldDescription>}
       {isInvalid && (
         <FieldError
-          errors={field.state.meta.errors.map((e) => ({
-            message: e?.toString(),
-          }))}
+          errors={field.state.meta.errors.map((e) => {
+            const message = extractErrorMessage(e)
+            return message ? { message } : undefined
+          })}
         />
       )}
     </Field>
@@ -143,9 +184,10 @@ export const ControlledTextareaWithVoice = ({
       {description && <FieldDescription>{description}</FieldDescription>}
       {fieldProps.isInvalid && (
         <FieldError
-          errors={field.state.meta.errors.map((e) => ({
-            message: e?.toString(),
-          }))}
+          errors={field.state.meta.errors.map((e) => {
+            const message = extractErrorMessage(e)
+            return message ? { message } : undefined
+          })}
         />
       )}
     </Field>
@@ -296,9 +338,10 @@ export const ControlledSwitch = ({
         {description && <FieldDescription>{description}</FieldDescription>}
         {fieldProps.isInvalid && (
           <FieldError
-            errors={field.state.meta.errors.map((e) => ({
-              message: e?.toString(),
-            }))}
+            errors={field.state.meta.errors.map((e) => {
+              const message = extractErrorMessage(e)
+              return message ? { message } : undefined
+            })}
           />
         )}
       </FieldContent>

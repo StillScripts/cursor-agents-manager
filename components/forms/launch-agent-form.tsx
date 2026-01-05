@@ -6,7 +6,10 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { PageHeader } from "@/app/(authenticated)/_components/page-header"
-import { FieldSkeleton } from "@/components/forms/core/form-fields"
+import {
+  extractErrorMessage,
+  FieldSkeleton,
+} from "@/components/forms/core/form-fields"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   FieldDescription,
@@ -302,8 +305,8 @@ export function LaunchAgentForm() {
                           field.state.meta.isTouched &&
                           !field.state.meta.isValid
                             ? field.state.meta.errors
-                                .map((e) => String(e ?? ""))
-                                .filter(Boolean)
+                                .map(extractErrorMessage)
+                                .filter((msg): msg is string => Boolean(msg))
                                 .join(", ")
                             : undefined
                         }
