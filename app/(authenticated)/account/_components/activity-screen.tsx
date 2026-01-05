@@ -27,12 +27,17 @@ function ActivityItem({ log }: { log: TimeLog }) {
               </p>
             </div>
             <p className="text-xs text-muted-foreground">
-              {formatDateTime(log.createdAt)}
+              {formatDateTime(new Date(log.createdAt))}
             </p>
           </div>
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <Clock className="h-4 w-4" />
-            <span>{formatDurationBetween(log.startTime, log.endTime)}</span>
+            <span>
+              {formatDurationBetween(
+                new Date(log.startTime),
+                log.endTime ? new Date(log.endTime) : null
+              )}
+            </span>
           </div>
         </div>
       </CardContent>
