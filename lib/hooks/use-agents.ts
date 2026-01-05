@@ -13,21 +13,6 @@ import type {
   PaginatedAgentsResponse,
 } from "@/lib/types"
 
-// Types for time logs
-export interface TimeLogEntry {
-  id: number
-  userId: string
-  taskId: string
-  activityType: "task_creation" | "conversation_review"
-  startTime: string
-  endTime: string | null
-  createdAt: string
-}
-
-export interface TimeLogsResponse {
-  timeLogs: TimeLogEntry[]
-}
-
 // Cache configuration constants
 const FIVE_MINUTES = 5 * 60 * 1000
 
@@ -175,33 +160,5 @@ export function useSendFollowUp() {
         queryKey: ["agents"],
       })
     },
-  })
-}
-
-export function useAgentTimeLogs(taskId: string) {
-  return useQuery<TimeLogsResponse>({
-    queryKey: ["timeLogs", taskId],
-    queryFn: async () => {
-      const response = await fetch(`/api/user/time-logs?taskId=${taskId}`)
-      if (!response.ok) throw new Error("Failed to fetch time logs")
-      return response.json()
-    },
-    enabled: !!taskId,
-    // Don't throw errors, just fail gracefully
-    retry: false,
-    // Don't refetch on window focus since time logs don't change often
-    refetchOnWindowFocus: false,
-  })
-}
-
-export function useAllTimeLogs() {
-  return useQuery<TimeLogsResponse>({
-    queryKey: ["timeLogs", "all"],
-    queryFn: async () => {
-      const response = await fetch("/api/user/time-logs")
-      if (!response.ok) throw new Error("Failed to fetch time logs")
-      return response.json()
-    },
-    refetchOnWindowFocus: false,
   })
 }

@@ -11,13 +11,10 @@ import {
   formatDurationBetween,
   formatDurationMs,
 } from "@/lib/formatting"
-import {
-  type TimeLogEntry,
-  useAgent,
-  useAllTimeLogs,
-} from "@/lib/hooks/use-agents"
+import { useAgent } from "@/lib/hooks/use-agents"
+import { type TimeLog, useAllTimeLogs } from "@/lib/hooks/use-time-logs"
 
-function ActivityItem({ log }: { log: TimeLogEntry }) {
+function ActivityItem({ log }: { log: TimeLog }) {
   return (
     <Card className="bg-card border-border">
       <CardContent className="p-4">
@@ -44,24 +41,24 @@ function ActivityItem({ log }: { log: TimeLogEntry }) {
 }
 
 interface GroupedLogs {
-  taskId: string
-  logs: TimeLogEntry[]
+  agentId: string
+  logs: TimeLog[]
   totalDuration: number
 }
 
 function AgentActivityGroup({ group }: { group: GroupedLogs }) {
-  const { data: agent, isLoading } = useAgent(group.taskId)
+  const { data: agent, isLoading } = useAgent(group.agentId)
 
   // Show loading state or agent name
   const displayName = isLoading
     ? "Loading..."
-    : agent?.name || `Agent ${group.taskId}`
+    : agent?.name || `Agent ${group.agentId}`
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <Link
-          href={`/agent/${group.taskId}`}
+          href={`/agent/${group.agentId}`}
           className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
         >
           {displayName}
@@ -73,7 +70,7 @@ function AgentActivityGroup({ group }: { group: GroupedLogs }) {
       </div>
       <div className="space-y-2 pl-4 border-l-2 border-border">
         {group.logs.map((log) => (
-          <ActivityItem key={log.id} log={log} />
+          <ActivityItem key={log._id} log={log} />
         ))}
       </div>
     </div>
@@ -81,7 +78,7 @@ function AgentActivityGroup({ group }: { group: GroupedLogs }) {
 }
 
 export function ActivityScreen() {
-  const { data, isLoading } = useAllTimeLogs()
+  const { timeLogs, isLoading } = useAllTimeLogs()
 
   if (isLoading) {
     return (
@@ -96,35 +93,32 @@ export function ActivityScreen() {
     )
   }
 
-  const timeLogs = data?.timeLogs || []
+  const logs = timeLogs ?? []
 
-  // Group logs by agent (taskId)
-  const groupedByAgent = timeLogs.reduce(
+  // Group logs by agent
+  const groupedByAgent = logs.reduce(
     (acc, log) => {
-      if (!acc[log.taskId]) {
-        acc[log.taskId] = []
+      if (!acc[log.agentId]) {
+        acc[log.agentId] = []
       }
-      acc[log.taskId].push(log)
+      acc[log.agentId].push(log)
       return acc
     },
-    {} as Record<string, TimeLogEntry[]>
+    {} as Record<string, TimeLog[]>
   )
 
   // Convert to array and calculate totals
   const groups: GroupedLogs[] = Object.entries(groupedByAgent).map(
-    ([taskId, logs]) => {
-      const totalDuration = logs.reduce((total, log) => {
-        const start = new Date(log.startTime)
-        const end = log.endTime ? new Date(log.endTime) : new Date()
-        return total + (end.getTime() - start.getTime())
+    ([agentId, agentLogs]) => {
+      const totalDuration = agentLogs.reduce((total, log) => {
+        const start = log.startTime
+        const end = log.endTime ?? Date.now()
+        return total + (end - start)
       }, 0)
 
       return {
-        taskId,
-        logs: logs.sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        ),
+        agentId,
+        logs: agentLogs.sort((a, b) => b.createdAt - a.createdAt),
         totalDuration,
       }
     }
@@ -132,9 +126,9 @@ export function ActivityScreen() {
 
   // Sort groups by most recent activity
   groups.sort((a, b) => {
-    const aLatest = a.logs[0]?.createdAt || ""
-    const bLatest = b.logs[0]?.createdAt || ""
-    return new Date(bLatest).getTime() - new Date(aLatest).getTime()
+    const aLatest = a.logs[0]?.createdAt ?? 0
+    const bLatest = b.logs[0]?.createdAt ?? 0
+    return bLatest - aLatest
   })
 
   const totalDurationMs = groups.reduce(
@@ -172,7 +166,7 @@ export function ActivityScreen() {
 
             <div className="space-y-6">
               {groups.map((group) => (
-                <AgentActivityGroup key={group.taskId} group={group} />
+                <AgentActivityGroup key={group.agentId} group={group} />
               ))}
             </div>
           </>

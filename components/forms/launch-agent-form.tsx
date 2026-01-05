@@ -19,6 +19,7 @@ import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 import { useBranches } from "@/lib/hooks/use-branches"
 import { useModels } from "@/lib/hooks/use-models"
 import { useRepositories } from "@/lib/hooks/use-repositories"
+import { useSaveTimeLog } from "@/lib/hooks/use-time-logs"
 import { useTimeTracking } from "@/lib/hooks/use-time-tracking"
 import {
   formDataToApiRequest,
@@ -159,6 +160,7 @@ const ModelSelectField = ({ field }: { field: any }) => {
 export function LaunchAgentForm() {
   const router = useRouter()
   const launchAgent = useLaunchAgent()
+  const { saveTimeLog } = useSaveTimeLog()
 
   // Time tracking for task creation
   const timeTracking = useTimeTracking()
@@ -198,17 +200,13 @@ export function LaunchAgentForm() {
       // Launch the agent
       const result = await launchAgent.mutateAsync(apiRequest)
 
-      // Save time log with the task ID from the response
+      // Save time log with the agent ID from the response
       if (result?.id && startTime) {
         try {
-          await fetch("/api/user/time-logs", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              taskId: result.id,
-              activityType: "task_creation",
-              startTime,
-            }),
+          await saveTimeLog({
+            agentId: result.id,
+            activityType: "task_creation",
+            startTime,
           })
         } catch (error) {
           console.error("Failed to save time log:", error)

@@ -12,6 +12,7 @@ import type * as auth from "../auth.js";
 import type * as branches from "../branches.js";
 import type * as http from "../http.js";
 import type * as repositories from "../repositories.js";
+import type * as timeLogs from "../timeLogs.js";
 
 import type {
   ApiFromModules,
@@ -24,6 +25,7 @@ declare const fullApi: ApiFromModules<{
   branches: typeof branches;
   http: typeof http;
   repositories: typeof repositories;
+  timeLogs: typeof timeLogs;
 }>;
 
 /**
