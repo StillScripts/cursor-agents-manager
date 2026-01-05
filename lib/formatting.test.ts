@@ -1,4 +1,12 @@
-import { describe, expect, it } from "bun:test"
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest"
 import {
   formatActivityType,
   formatDate,
@@ -10,7 +18,25 @@ import {
   parseGitHubUrl,
 } from "./formatting"
 
+// Set timezone to UTC before any tests run
+beforeAll(() => {
+  // Set TZ environment variable to UTC
+  if (typeof process !== "undefined" && process.env) {
+    process.env.TZ = "UTC"
+  }
+})
+
 describe("formatting", () => {
+  beforeEach(() => {
+    // Freeze time to a fixed UTC date: 2024-01-15T14:30:00Z
+    // This ensures consistent test results regardless of local timezone
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date("2024-01-15T14:30:00Z"))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
   describe("formatDateTime", () => {
     it("formats a date string to readable date and time", () => {
       const date = "2024-01-15T14:30:00Z"
