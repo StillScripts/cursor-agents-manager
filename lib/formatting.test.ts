@@ -1,12 +1,4 @@
-import {
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest"
+import { beforeAll, describe, expect, it } from "vitest"
 import {
   formatActivityType,
   formatDate,
@@ -27,16 +19,6 @@ beforeAll(() => {
 })
 
 describe("formatting", () => {
-  beforeEach(() => {
-    // Freeze time to a fixed UTC date: 2024-01-15T14:30:00Z
-    // This ensures consistent test results regardless of local timezone
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date("2024-01-15T14:30:00Z"))
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-  })
   describe("formatDateTime", () => {
     it("formats a date string to readable date and time", () => {
       const date = "2024-01-15T14:30:00Z"
