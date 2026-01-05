@@ -47,3 +47,13 @@ export function decryptData(encryptedData: string): string {
 
   return decrypted
 }
+
+/**
+ * Mask an API key for display (show first 4 and last 4 chars)
+ */
+export function maskApiKey(key: string): string {
+  if (key.length <= 8) {
+    return "****"
+  }
+  return `${key.slice(0, 4)}****${key.slice(-4)}`
+}

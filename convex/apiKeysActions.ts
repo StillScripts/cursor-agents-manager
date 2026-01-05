@@ -1,66 +1,9 @@
 "use node"
 
 import { v } from "convex/values"
-import crypto from "crypto"
+import { decryptData, encryptData, maskApiKey } from "../lib/db/encryption"
 import { internal } from "./_generated/api"
 import { action } from "./_generated/server"
-import { getAuthenticatedUser } from "./auth"
-
-const ALGORITHM = "aes-256-gcm"
-const IV_LENGTH = 16
-const TAG_LENGTH = 16
-const KEY_LENGTH = 32
-
-// Derive encryption key from environment secret
-function getEncryptionKey(): Buffer {
-  const secret = process.env.ENCRYPTION_SECRET
-  if (!secret || secret.length < 32) {
-    throw new Error("ENCRYPTION_SECRET must be at least 32 characters")
-  }
-  return crypto.scryptSync(secret, "salt", KEY_LENGTH)
-}
-
-function encryptData(text: string): string {
-  const key = getEncryptionKey()
-  const iv = crypto.randomBytes(IV_LENGTH)
-  const cipher = crypto.createCipheriv(ALGORITHM, key, iv)
-
-  let encrypted = cipher.update(text, "utf8", "hex")
-  encrypted += cipher.final("hex")
-
-  const authTag = cipher.getAuthTag()
-
-  // Combine iv + authTag + encrypted
-  return iv.toString("hex") + authTag.toString("hex") + encrypted
-}
-
-function decryptData(encryptedData: string): string {
-  const key = getEncryptionKey()
-
-  // Extract iv, authTag, and encrypted data
-  const iv = Buffer.from(encryptedData.slice(0, IV_LENGTH * 2), "hex")
-  const authTag = Buffer.from(
-    encryptedData.slice(IV_LENGTH * 2, IV_LENGTH * 2 + TAG_LENGTH * 2),
-    "hex"
-  )
-  const encrypted = encryptedData.slice(IV_LENGTH * 2 + TAG_LENGTH * 2)
-
-  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv)
-  decipher.setAuthTag(authTag)
-
-  let decrypted = decipher.update(encrypted, "hex", "utf8")
-  decrypted += decipher.final("utf8")
-
-  return decrypted
-}
-
-// Mask an API key for display (show first 4 and last 4 chars)
-function maskApiKey(key: string): string {
-  if (key.length <= 8) {
-    return "****"
-  }
-  return `${key.slice(0, 4)}****${key.slice(-4)}`
-}
 
 // ============================================================================
 // Public actions (handle encryption/decryption)
@@ -75,7 +18,9 @@ export const getCursorApiKeyStatus = action({
   handler: async (
     ctx
   ): Promise<{ hasKey: boolean; maskedKey: string | null }> => {
-    const authUser = await getAuthenticatedUser(ctx)
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
 
     const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
       userId: authUser.userId,
@@ -100,7 +45,9 @@ export const getCursorApiKeyStatus = action({
 export const getDecryptedCursorApiKey = action({
   args: {},
   handler: async (ctx): Promise<string | null> => {
-    const authUser = await getAuthenticatedUser(ctx)
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
 
     const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
       userId: authUser.userId,
@@ -124,7 +71,9 @@ export const getDecryptedCursorApiKey = action({
 export const saveCursorApiKey = action({
   args: { apiKey: v.string() },
   handler: async (ctx, args): Promise<{ success: boolean }> => {
-    const authUser = await getAuthenticatedUser(ctx)
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
 
     const encrypted = encryptData(args.apiKey)
 
@@ -143,7 +92,9 @@ export const saveCursorApiKey = action({
 export const deleteCursorApiKey = action({
   args: {},
   handler: async (ctx): Promise<{ success: boolean }> => {
-    const authUser = await getAuthenticatedUser(ctx)
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
 
     await ctx.runMutation(internal.apiKeys.clearCursorApiKey, {
       userId: authUser.userId,
@@ -162,7 +113,9 @@ export const getOpenaiApiKeyStatus = action({
   handler: async (
     ctx
   ): Promise<{ hasKey: boolean; maskedKey: string | null }> => {
-    const authUser = await getAuthenticatedUser(ctx)
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
 
     const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
       userId: authUser.userId,
@@ -187,7 +140,9 @@ export const getOpenaiApiKeyStatus = action({
 export const getDecryptedOpenaiApiKey = action({
   args: {},
   handler: async (ctx): Promise<string | null> => {
-    const authUser = await getAuthenticatedUser(ctx)
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
 
     const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
       userId: authUser.userId,
@@ -211,7 +166,9 @@ export const getDecryptedOpenaiApiKey = action({
 export const saveOpenaiApiKey = action({
   args: { apiKey: v.string() },
   handler: async (ctx, args): Promise<{ success: boolean }> => {
-    const authUser = await getAuthenticatedUser(ctx)
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
 
     const encrypted = encryptData(args.apiKey)
 
@@ -230,7 +187,9 @@ export const saveOpenaiApiKey = action({
 export const deleteOpenaiApiKey = action({
   args: {},
   handler: async (ctx): Promise<{ success: boolean }> => {
-    const authUser = await getAuthenticatedUser(ctx)
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
 
     await ctx.runMutation(internal.apiKeys.clearOpenaiApiKey, {
       userId: authUser.userId,
@@ -246,7 +205,9 @@ export const deleteOpenaiApiKey = action({
 export const deleteAllApiKeys = action({
   args: {},
   handler: async (ctx): Promise<{ success: boolean }> => {
-    const authUser = await getAuthenticatedUser(ctx)
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
 
     await ctx.runMutation(internal.apiKeys.deleteApiKeysRecord, {
       userId: authUser.userId,

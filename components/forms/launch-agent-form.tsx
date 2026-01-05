@@ -1,8 +1,10 @@
 "use client"
 
+import { useAction } from "convex/react"
 import { AlertCircle, ExternalLink, Rocket, Settings } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useState } from "react"
 import { PageHeader } from "@/app/(authenticated)/_components/page-header"
 import { FieldSkeleton } from "@/components/forms/core/form-fields"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -14,7 +16,7 @@ import {
   FieldSet,
 } from "@/components/ui/field"
 import { ImageUpload } from "@/components/ui/image-upload"
-import { useLaunchAgent } from "@/lib/hooks/use-agents"
+import { api } from "@/convex/_generated/api"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 import { useBranches } from "@/lib/hooks/use-branches"
 import { useModels } from "@/lib/hooks/use-models"
@@ -22,7 +24,6 @@ import { useRepositories } from "@/lib/hooks/use-repositories"
 import { useSaveTimeLog } from "@/lib/hooks/use-time-logs"
 import { useTimeTracking } from "@/lib/hooks/use-time-tracking"
 import {
-  formDataToApiRequest,
   type LaunchAgentFormData,
   launchAgentFormSchema,
   type Model,
@@ -159,8 +160,11 @@ const ModelSelectField = ({ field }: { field: any }) => {
 
 export function LaunchAgentForm() {
   const router = useRouter()
-  const launchAgent = useLaunchAgent()
+  const launchAgentAction = useAction(api.agentsActions.launchAgent)
   const { saveTimeLog } = useSaveTimeLog()
+
+  // Error state
+  const [error, setError] = useState<Error | null>(null)
 
   // Time tracking for task creation
   const timeTracking = useTimeTracking()
@@ -191,45 +195,55 @@ export function LaunchAgentForm() {
       onSubmit: launchAgentFormSchema,
     },
     onSubmit: async ({ value }) => {
-      // Convert to API request format (schema already validated by form validators)
-      const apiRequest = formDataToApiRequest(value as LaunchAgentFormData)
+      setError(null)
 
-      // Capture start time before launching
-      const startTime = timeTracking.startsAt
+      try {
+        // Capture start time before launching
+        const startTime = timeTracking.startsAt
 
-      // Launch the agent
-      const result = await launchAgent.mutateAsync(apiRequest)
+        // Launch the agent via Convex action
+        const result = await launchAgentAction({
+          prompt: value.prompt,
+          source: value.source,
+          model: value.model,
+          target: value.target,
+        })
 
-      // Save time log with the agent ID from the response
-      if (result?.id && startTime) {
-        try {
-          await saveTimeLog({
-            agentId: result.id,
-            activityType: "task_creation",
-            startTime,
-          })
-        } catch (error) {
-          console.error("Failed to save time log:", error)
-          // Don't block navigation if time log save fails
+        // Save time log with the agent ID from the response
+        if (result?.id && startTime) {
+          try {
+            await saveTimeLog({
+              agentId: result.id,
+              activityType: "task_creation",
+              startTime,
+            })
+          } catch (saveError) {
+            console.error("Failed to save time log:", saveError)
+            // Don't block navigation if time log save fails
+          }
         }
+
+        // Reset form to default values before navigation
+        // This ensures that when the user navigates back (especially in PWA),
+        // the form is clean and doesn't show previous submission data
+        form.reset(defaultFormValues)
+
+        // Stop time tracking if it's still running
+        if (timeTracking.isTracking) {
+          timeTracking.stop()
+        }
+
+        router.push("/")
+      } catch (err) {
+        setError(
+          err instanceof Error ? err : new Error("Failed to launch agent")
+        )
+        // Error is set, form submission will be re-enabled by TanStack Form
       }
-
-      // Reset form to default values before navigation
-      // This ensures that when the user navigates back (especially in PWA),
-      // the form is clean and doesn't show previous submission data
-      form.reset(defaultFormValues)
-
-      // Stop time tracking if it's still running
-      if (timeTracking.isTracking) {
-        timeTracking.stop()
-      }
-
-      router.push("/")
     },
   })
 
-  const errorMessage =
-    launchAgent.error instanceof Error ? launchAgent.error.message : null
+  const errorMessage = error?.message ?? null
   const isGitHubAccessError = errorMessage?.includes(
     "lack access to repository"
   )
@@ -363,7 +377,7 @@ export function LaunchAgentForm() {
                 </FieldGroup>
               </FieldSet>
             </FieldGroup>
-            {launchAgent.isError && errorMessage && (
+            {error && errorMessage && (
               <Alert variant="destructive" className="mt-6">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Failed to launch agent</AlertTitle>
