@@ -3,10 +3,329 @@
 import { v } from "convex/values"
 import { decryptData } from "../lib/db/encryption"
 import type { LaunchAgentRequest } from "../lib/schemas/cursor/launch-agent"
+import type { Agent, AgentStatus } from "../lib/types"
 import { api, internal } from "./_generated/api"
 import { action } from "./_generated/server"
 
 const CURSOR_API_URL = "https://api.cursor.com/v0/agents"
+
+/**
+ * Convert a Cursor API agent to the format for our database
+ */
+function cursorAgentToDbFormat(agent: Agent) {
+  return {
+    agentId: agent.id,
+    provider: "cursor" as const,
+    name: agent.name,
+    status: agent.status as AgentStatus,
+    sourceRepository: agent.source.repository,
+    sourceRef: agent.source.ref,
+    targetBranchName: agent.target?.branchName,
+    targetUrl: agent.target?.url,
+    targetPrUrl: agent.target?.prUrl,
+    targetAutoCreatePr: agent.target?.autoCreatePr ?? false,
+    model: undefined,
+    summary: agent.summary,
+    providerData: { createdAt: agent.createdAt },
+    createdAt: agent.createdAt,
+  }
+}
+
+/**
+ * Convert a database agent to the API format used by the frontend
+ */
+function dbAgentToApiFormat(dbAgent: {
+  agentId: string
+  name: string
+  status: string
+  sourceRepository: string
+  sourceRef?: string
+  targetBranchName?: string
+  targetUrl?: string
+  targetPrUrl?: string
+  targetAutoCreatePr?: boolean
+  summary?: string
+  providerData?: { createdAt?: string }
+}): Agent {
+  return {
+    id: dbAgent.agentId,
+    name: dbAgent.name,
+    status: dbAgent.status as AgentStatus,
+    source: {
+      repository: dbAgent.sourceRepository,
+      ref: dbAgent.sourceRef,
+    },
+    target: {
+      url: dbAgent.targetUrl ?? "",
+      branchName: dbAgent.targetBranchName,
+      prUrl: dbAgent.targetPrUrl,
+      autoCreatePr: dbAgent.targetAutoCreatePr ?? false,
+    },
+    createdAt: dbAgent.providerData?.createdAt ?? new Date().toISOString(),
+    summary: dbAgent.summary,
+  }
+}
+
+/**
+ * Get agents for the authenticated user
+ * - First checks the database for existing agents
+ * - If no agents exist and user has API key, fetches from Cursor API
+ * - Syncs fetched agents to the database
+ */
+export const getAgents = action({
+  args: {
+    limit: v.optional(v.number()),
+    forceRefresh: v.optional(v.boolean()),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    agents: Agent[]
+    total: number
+    hasMore: boolean
+    simulation: boolean
+  }> => {
+    const limit = args.limit ?? 20
+    const forceRefresh = args.forceRefresh ?? false
+
+    // Get authenticated user
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
+
+    // Get agents from the database
+    const dbAgents = await ctx.runQuery(internal.agents.listByUserInternal, {
+      userId: authUser.userId,
+      limit,
+    })
+
+    // Get encrypted API key record
+    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
+      userId: authUser.userId,
+    })
+
+    // Decrypt API key if it exists
+    let apiKey: string | null = null
+    if (record?.encryptedCursorApiKey) {
+      try {
+        apiKey = decryptData(record.encryptedCursorApiKey)
+      } catch {
+        apiKey = null
+      }
+    }
+
+    const simulationMode = !apiKey
+
+    // If we have agents in DB and not forcing refresh, return them
+    if (dbAgents.length > 0 && !forceRefresh) {
+      const agents = dbAgents.map(dbAgentToApiFormat)
+      return {
+        agents,
+        total: agents.length,
+        hasMore: agents.length >= limit,
+        simulation: simulationMode,
+      }
+    }
+
+    // If no API key (simulation mode), return empty or existing DB agents
+    if (simulationMode) {
+      const agents = dbAgents.map(dbAgentToApiFormat)
+      return {
+        agents,
+        total: agents.length,
+        hasMore: false,
+        simulation: true,
+      }
+    }
+
+    // Fetch from Cursor API
+    try {
+      const url = new URL(CURSOR_API_URL)
+      url.searchParams.set("limit", String(Math.min(limit, 100)))
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error("[Convex getAgents] Cursor API error:", {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+        })
+
+        // On error, return cached data if available
+        if (dbAgents.length > 0) {
+          const agents = dbAgents.map(dbAgentToApiFormat)
+          return {
+            agents,
+            total: agents.length,
+            hasMore: agents.length >= limit,
+            simulation: false,
+          }
+        }
+
+        throw new Error(`Cursor API error: ${response.status} - ${errorText}`)
+      }
+
+      const data = await response.json()
+      const cursorAgents: Agent[] = data.agents || []
+      const hasMore = !!data.nextCursor
+
+      // Sync fetched agents to database
+      if (cursorAgents.length > 0) {
+        await ctx.runMutation(api.agents.batchUpsert, {
+          agents: cursorAgents.map(cursorAgentToDbFormat),
+        })
+      }
+
+      return {
+        agents: cursorAgents,
+        total: cursorAgents.length,
+        hasMore,
+        simulation: false,
+      }
+    } catch (error) {
+      console.error("[Convex getAgents] Error fetching agents:", error)
+
+      // Fallback to DB cache
+      if (dbAgents.length > 0) {
+        const agents = dbAgents.map(dbAgentToApiFormat)
+        return {
+          agents,
+          total: agents.length,
+          hasMore: agents.length >= limit,
+          simulation: false,
+        }
+      }
+
+      throw error instanceof Error ? error : new Error("Failed to fetch agents")
+    }
+  },
+})
+
+/**
+ * Get a single agent by ID
+ * - First checks the database
+ * - If not found and user has API key, fetches from Cursor API
+ * - Syncs fetched agent to the database if it exists
+ */
+export const getAgentById = action({
+  args: {
+    agentId: v.string(),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    agent: Agent | null
+    simulation: boolean
+  }> => {
+    // Get authenticated user
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
+
+    // Get agent from the database
+    const dbAgent = await ctx.runQuery(internal.agents.getByIdInternal, {
+      userId: authUser.userId,
+      agentId: args.agentId,
+    })
+
+    // If found in DB, return it
+    if (dbAgent) {
+      return {
+        agent: dbAgentToApiFormat(dbAgent),
+        simulation: false,
+      }
+    }
+
+    // Get encrypted API key record
+    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
+      userId: authUser.userId,
+    })
+
+    // Decrypt API key if it exists
+    let apiKey: string | null = null
+    if (record?.encryptedCursorApiKey) {
+      try {
+        apiKey = decryptData(record.encryptedCursorApiKey)
+      } catch {
+        apiKey = null
+      }
+    }
+
+    const simulationMode = !apiKey
+
+    // If no API key (simulation mode), return null
+    if (simulationMode) {
+      return {
+        agent: null,
+        simulation: true,
+      }
+    }
+
+    // Fetch from Cursor API
+    try {
+      const response = await fetch(`${CURSOR_API_URL}/${args.agentId}`, {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      })
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return {
+            agent: null,
+            simulation: false,
+          }
+        }
+
+        const errorText = await response.text()
+        console.error("[Convex getAgentById] Cursor API error:", {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+        })
+
+        throw new Error(`Cursor API error: ${response.status} - ${errorText}`)
+      }
+
+      const cursorAgent: Agent = await response.json()
+
+      // Sync fetched agent to database
+      await ctx.runMutation(api.agents.create, {
+        agentId: cursorAgent.id,
+        provider: "cursor" as const,
+        name: cursorAgent.name,
+        status: cursorAgent.status,
+        sourceRepository: cursorAgent.source.repository,
+        sourceRef: cursorAgent.source.ref,
+        targetBranchName: cursorAgent.target?.branchName,
+        targetUrl: cursorAgent.target?.url,
+        targetPrUrl: cursorAgent.target?.prUrl,
+        targetAutoCreatePr: cursorAgent.target?.autoCreatePr ?? false,
+        model: undefined,
+        summary: cursorAgent.summary,
+        providerData: {
+          ...cursorAgent,
+        },
+      })
+
+      return {
+        agent: cursorAgent,
+        simulation: false,
+      }
+    } catch (error) {
+      console.error("[Convex getAgentById] Error fetching agent:", error)
+      throw error instanceof Error ? error : new Error("Failed to fetch agent")
+    }
+  },
+})
 
 /**
  * Launch a new agent via the Cursor API
