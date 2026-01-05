@@ -137,9 +137,8 @@ NEXT_PUBLIC_CONVEX_SITE_URL=https://your-deployment.convex.site
 # Generate with: openssl rand -base64 32
 ENCRYPTION_SECRET=your-encryption-secret-min-32-chars
 
-# Optional: Cursor Webhook (for real-time agent status updates)
-# CURSOR_WEBHOOK_URL=https://your-app.com/api/webhooks/cursor
-# CURSOR_WEBHOOK_SECRET=your-webhook-secret-min-32-chars
+# Note: Cursor Webhook variables are set in Convex Dashboard, not .env.local
+# See "Convex Dashboard Environment Variables" section below
 ```
 
 ### Convex Dashboard Environment Variables
@@ -150,17 +149,25 @@ Set these in your Convex dashboard (Settings → Environment Variables):
 |----------|---------|
 | `SITE_URL` | Your app URL (e.g., `http://localhost:3000` for dev) |
 | `ENCRYPTION_SECRET` | Same as your local encryption secret |
+| `CURSOR_WEBHOOK_URL` | Your Convex webhook endpoint (e.g., `https://your-deployment.convex.site/webhooks/cursor`) |
+| `CURSOR_WEBHOOK_SECRET` | Secret for webhook signature verification (generate with `openssl rand -hex 32`) |
+
+**Note on Webhooks**: Webhooks are automatically included in agent launch requests when `CURSOR_WEBHOOK_URL` is configured. The webhook URL should point to your Convex deployment's `/webhooks/cursor` endpoint. You can find your Convex site URL in your `.env.local` as `NEXT_PUBLIC_CONVEX_SITE_URL`, or in the Convex dashboard. The same secret value should be used for `CURSOR_WEBHOOK_SECRET` - it's used to verify that incoming webhook requests are authentically from Cursor.
 
 ### 🔑 Generating Secrets
 
-Generate secure random secrets for `ENCRYPTION_SECRET`:
+Generate secure random secrets for `ENCRYPTION_SECRET` and `CURSOR_WEBHOOK_SECRET`:
 
 ```bash
+# For ENCRYPTION_SECRET (base64)
 # macOS/Linux
 openssl rand -base64 32
 
 # Or use Node.js
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+
+# For CURSOR_WEBHOOK_SECRET (hex - recommended for webhooks)
+openssl rand -hex 32
 ```
 
 > **⚠️ Important**: Never commit `.env.local` to version control. It's already in `.gitignore`.
