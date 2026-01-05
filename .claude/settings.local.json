@@ -21,7 +21,8 @@
       "WebSearch",
       "WebFetch(domain:www.better-auth.com)",
       "WebFetch(domain:labs.convex.dev)",
-      "Bash(bun run biome:*)"
+      "Bash(bun run biome:*)",
+      "Bash(bun install:*)"
     ]
   }
 }

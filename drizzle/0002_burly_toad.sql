@@ -1,1 +1,0 @@
-ALTER TABLE `user_api_keys` ADD `encrypted_openai_api_key` text;
