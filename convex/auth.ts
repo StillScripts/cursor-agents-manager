@@ -22,10 +22,14 @@ export async function getAuthenticatedUser(
   ctx: QueryCtx | MutationCtx
 ): Promise<{ userId: string }> {
   const authUser = await authComponent.getAuthUser(ctx)
-  if (!authUser || !authUser.userId) {
+
+  // Convex documents use _id, not userId
+  const userId = authUser?._id
+  if (!authUser || !userId) {
     throw new Error("Unauthorized")
   }
-  return { userId: authUser.userId }
+
+  return { userId }
 }
 
 export const createAuth = (ctx: GenericCtx<DataModel>) => {
