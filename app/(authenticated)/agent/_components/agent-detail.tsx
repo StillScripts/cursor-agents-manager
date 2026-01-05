@@ -43,7 +43,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
-import { useToast } from "@/hooks/use-toast"
 import { filterMessagesForDisplay } from "@/lib/conversation-utils"
 import { formatDurationMs, formatRelativeTime } from "@/lib/formatting"
 import {
@@ -90,7 +89,6 @@ export function AgentDetail({
   const sendFollowUp = useSendFollowUp()
   const summarizeConversation = useSummarizeConversation()
   const textToSpeech = useTextToSpeech()
-  const { toast } = useToast()
 
   // Audio player state
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
@@ -171,20 +169,12 @@ export function AgentDetail({
   const handleSummarize = async () => {
     try {
       await summarizeConversation.mutateAsync(agentId)
-      toast({
-        title: "Summary generated",
-        description: "The conversation has been summarized successfully.",
-      })
     } catch (error) {
       const errorMessage =
         error instanceof Error
           ? error.message
           : "Failed to summarize conversation"
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      })
+      console.error(errorMessage)
     }
   }
 
@@ -194,17 +184,8 @@ export function AgentDetail({
     try {
       const url = await textToSpeech.mutateAsync({ text: aiSummary })
       setAudioUrl(url)
-      toast({
-        title: "Audio ready",
-        description: "Use the audio player below to listen to the summary",
-      })
     } catch (error) {
-      toast({
-        title: "Failed to generate audio",
-        description:
-          error instanceof Error ? error.message : "Please try again",
-        variant: "destructive",
-      })
+      console.error("Error generating audio:", error)
     }
   }
 
