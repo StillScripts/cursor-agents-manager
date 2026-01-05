@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 import { Suspense } from "react"
 import { AgentDetail } from "@/app/(authenticated)/agent/_components/agent-detail"
-import { getAgentConversationData, getAgentData } from "@/lib/server/agents"
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -15,17 +14,14 @@ export const metadata: Metadata = {
 export default async function AgentPage({ params }: PageProps) {
   const { id } = await params
 
-  const [agent, conversation] = await Promise.all([
-    getAgentData(id),
-    getAgentConversationData(id),
-  ])
-
+  // Remove server-side data fetching - let the client component handle it via Convex
+  // This avoids hitting the old Hono API routes
   return (
     <Suspense fallback={null}>
       <AgentDetail
         agentId={id}
-        initialAgent={agent}
-        initialConversation={conversation}
+        initialAgent={null}
+        initialConversation={null}
       />
     </Suspense>
   )

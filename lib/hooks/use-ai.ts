@@ -1,23 +1,17 @@
+"use client"
+
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useAction } from "convex/react"
+import { api } from "@/convex/_generated/api"
 
 export function useSummarizeConversation() {
   const queryClient = useQueryClient()
+  const summarizeAction = useAction(api.aiActions.summarizeConversation)
 
   return useMutation({
     mutationFn: async (agentId: string) => {
-      const response = await fetch("/api/ai/summarize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentId }),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to summarize")
-      }
-
-      const data = await response.json()
-      return { id: agentId, summary: data.summary }
+      const result = await summarizeAction({ agentId })
+      return { id: agentId, summary: result.summary }
     },
     onSuccess: (data) => {
       // Store in localStorage (matching existing pattern)
@@ -28,43 +22,44 @@ export function useSummarizeConversation() {
 }
 
 export function useTranscribeAudio() {
+  const transcribeAction = useAction(api.aiActions.transcribeAudio)
+
   return useMutation({
     mutationFn: async (audioFile: File) => {
-      const formData = new FormData()
-      formData.append("audio", audioFile)
+      // Convert File to base64 for Convex transport
+      const arrayBuffer = await audioFile.arrayBuffer()
+      const base64 = btoa(
+        new Uint8Array(arrayBuffer).reduce(
+          (data, byte) => data + String.fromCharCode(byte),
+          ""
+        )
+      )
 
-      const response = await fetch("/api/ai/transcribe", {
-        method: "POST",
-        body: formData, // No Content-Type header - browser sets it with boundary
+      const result = await transcribeAction({
+        audioData: base64,
+        mimeType: audioFile.type,
       })
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to transcribe")
-      }
-
-      const data = await response.json()
-      return data.text
+      return result.text
     },
   })
 }
 
 export function useTextToSpeech() {
+  const ttsAction = useAction(api.aiActions.textToSpeech)
+
   return useMutation({
     mutationFn: async (params: { text: string; voice?: string }) => {
-      const response = await fetch("/api/ai/speak", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params),
-      })
+      const result = await ttsAction(params)
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to generate speech")
+      // Convert base64 back to blob URL for audio playback
+      const binaryString = atob(result.audioData)
+      const bytes = new Uint8Array(binaryString.length)
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i)
       }
+      const blob = new Blob([bytes], { type: result.mimeType })
 
-      // Return blob URL for audio playback
-      const blob = await response.blob()
       return URL.createObjectURL(blob)
     },
   })

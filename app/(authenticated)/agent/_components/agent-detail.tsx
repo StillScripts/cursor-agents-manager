@@ -1,6 +1,5 @@
 "use client"
 
-import { useQueryClient } from "@tanstack/react-query"
 import {
   Bot,
   Clock,
@@ -44,18 +43,17 @@ import {
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
-import { useToast } from "@/hooks/use-toast"
 import { filterMessagesForDisplay } from "@/lib/conversation-utils"
 import { formatDurationMs, formatRelativeTime } from "@/lib/formatting"
 import {
   useAgent,
   useAgentConversation,
-  useAgentTimeLogs,
   useDeleteAgent,
   useSendFollowUp,
   useStopAgent,
 } from "@/lib/hooks/use-agents"
 import { useSummarizeConversation, useTextToSpeech } from "@/lib/hooks/use-ai"
+import { useAgentTimeLogs, useSaveTimeLog } from "@/lib/hooks/use-time-logs"
 import { useTimeTracking } from "@/lib/hooks/use-time-tracking"
 import type { Agent, AgentConversation } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -84,14 +82,13 @@ export function AgentDetail({
   )
   const { data: conversation, isLoading: conversationLoading } =
     useAgentConversation(agentId, initialConversation)
-  const { data: timeLogsData } = useAgentTimeLogs(agentId)
+  const { timeLogs } = useAgentTimeLogs(agentId)
+  const { saveTimeLog } = useSaveTimeLog()
   const stopAgent = useStopAgent()
   const deleteAgent = useDeleteAgent()
   const sendFollowUp = useSendFollowUp()
   const summarizeConversation = useSummarizeConversation()
   const textToSpeech = useTextToSpeech()
-  const queryClient = useQueryClient()
-  const { toast } = useToast()
 
   // Audio player state
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
@@ -155,17 +152,11 @@ export function AgentDetail({
     // Save time log after successful follow-up
     if (startTime) {
       try {
-        await fetch("/api/user/time-logs", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            taskId: agentId,
-            activityType: "conversation_review",
-            startTime,
-          }),
+        await saveTimeLog({
+          agentId,
+          activityType: "conversation_review",
+          startTime,
         })
-        // Invalidate time logs query to update displayed total
-        queryClient.invalidateQueries({ queryKey: ["timeLogs", agentId] })
         // Reset timer after saving
         timeTracking.stop()
         timeTracking.start()
@@ -178,20 +169,12 @@ export function AgentDetail({
   const handleSummarize = async () => {
     try {
       await summarizeConversation.mutateAsync(agentId)
-      toast({
-        title: "Summary generated",
-        description: "The conversation has been summarized successfully.",
-      })
     } catch (error) {
       const errorMessage =
         error instanceof Error
           ? error.message
           : "Failed to summarize conversation"
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      })
+      console.error(errorMessage)
     }
   }
 
@@ -201,17 +184,8 @@ export function AgentDetail({
     try {
       const url = await textToSpeech.mutateAsync({ text: aiSummary })
       setAudioUrl(url)
-      toast({
-        title: "Audio ready",
-        description: "Use the audio player below to listen to the summary",
-      })
     } catch (error) {
-      toast({
-        title: "Failed to generate audio",
-        description:
-          error instanceof Error ? error.message : "Please try again",
-        variant: "destructive",
-      })
+      console.error("Error generating audio:", error)
     }
   }
 
@@ -246,10 +220,10 @@ export function AgentDetail({
     agent.status === "ERROR"
 
   // Calculate total time spent from time logs (duration = endTime - startTime)
-  // Falls back to createdAt if endTime is null (for future "ongoing" task support)
-  const totalTimeSpent = timeLogsData?.timeLogs.reduce((total, log) => {
-    const start = new Date(log.startTime).getTime()
-    const end = new Date(log.endTime ?? log.createdAt).getTime()
+  // Falls back to createdAt if endTime is undefined (for future "ongoing" task support)
+  const totalTimeSpent = timeLogs?.reduce((total, log) => {
+    const start = log.startTime
+    const end = log.endTime ?? log.createdAt
     return total + (end - start)
   }, 0)
 

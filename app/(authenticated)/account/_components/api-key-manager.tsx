@@ -1,8 +1,8 @@
 "use client"
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useAction } from "convex/react"
 import { Check, Eye, EyeOff, Key, Trash2 } from "lucide-react"
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,43 +14,11 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { api } from "@/convex/_generated/api"
 
-interface ApiKeyResponse {
-  hasApiKey: boolean
-  masked?: string
-  createdAt?: string
-  updatedAt?: string
-}
-
-async function fetchApiKeyStatus(): Promise<ApiKeyResponse> {
-  const response = await fetch("/api/user/api-key")
-  if (!response.ok) {
-    throw new Error("Failed to fetch API key status")
-  }
-  return response.json()
-}
-
-async function saveApiKey(apiKey: string): Promise<void> {
-  const response = await fetch("/api/user/api-key", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ apiKey }),
-  })
-
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || "Failed to save API key")
-  }
-}
-
-async function deleteApiKey(): Promise<void> {
-  const response = await fetch("/api/user/api-key", {
-    method: "DELETE",
-  })
-
-  if (!response.ok) {
-    throw new Error("Failed to delete API key")
-  }
+interface ApiKeyStatus {
+  hasKey: boolean
+  maskedKey: string | null
 }
 
 export function ApiKeyManager() {
@@ -58,41 +26,66 @@ export function ApiKeyManager() {
   const [newApiKey, setNewApiKey] = useState("")
   const [showKey, setShowKey] = useState(false)
   const [error, setError] = useState("")
-  const queryClient = useQueryClient()
-
-  const { data: apiKeyData, isLoading } = useQuery({
-    queryKey: ["apiKey"],
-    queryFn: fetchApiKeyStatus,
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [apiKeyStatus, setApiKeyStatus] = useState<ApiKeyStatus>({
+    hasKey: false,
+    maskedKey: null,
   })
 
-  const saveMutation = useMutation({
-    mutationFn: saveApiKey,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["apiKey"] })
-      setIsEditing(false)
-      setNewApiKey("")
-      setShowKey(false)
-      setError("")
-    },
-    onError: (err: Error) => {
-      setError(err.message)
-    },
-  })
+  const getCursorApiKeyStatus = useAction(
+    api.apiKeysActions.getCursorApiKeyStatus
+  )
+  const saveCursorApiKey = useAction(api.apiKeysActions.saveCursorApiKey)
+  const deleteCursorApiKey = useAction(api.apiKeysActions.deleteCursorApiKey)
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteApiKey,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["apiKey"] })
-    },
-  })
+  const fetchStatus = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      const status = await getCursorApiKeyStatus()
+      setApiKeyStatus(status)
+    } catch (err) {
+      console.error("Failed to fetch API key status:", err)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [getCursorApiKeyStatus])
 
-  const handleSave = () => {
+  useEffect(() => {
+    fetchStatus()
+  }, [fetchStatus])
+
+  const handleSave = async () => {
     if (!newApiKey.trim() || newApiKey.trim().length < 10) {
       setError("Please enter a valid API key (at least 10 characters)")
       return
     }
     setError("")
-    saveMutation.mutate(newApiKey.trim())
+    setIsSaving(true)
+    try {
+      await saveCursorApiKey({ apiKey: newApiKey.trim() })
+      await fetchStatus()
+      setIsEditing(false)
+      setNewApiKey("")
+      setShowKey(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save API key")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    try {
+      await deleteCursorApiKey()
+      await fetchStatus()
+    } catch (err) {
+      console.error("Failed to delete API key:", err)
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const handleCancel = () => {
@@ -125,15 +118,15 @@ export function ApiKeyManager() {
           </CardTitle>
         </div>
         <CardDescription>
-          {apiKeyData?.hasApiKey
+          {apiKeyStatus.hasKey
             ? "Your API key is configured. The app will use live data from Cursor."
             : "Add your Cursor API key to connect to live data. Without it, the app runs in simulation mode."}
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-0 space-y-3">
-        {!isEditing && apiKeyData?.hasApiKey && (
+        {!isEditing && apiKeyStatus.hasKey && (
           <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-            <code className="text-sm font-mono">{apiKeyData.masked}</code>
+            <code className="text-sm font-mono">{apiKeyStatus.maskedKey}</code>
             <div className="flex gap-2">
               <Button
                 variant="ghost"
@@ -146,8 +139,8 @@ export function ApiKeyManager() {
                 variant="ghost"
                 size="sm"
                 className="text-destructive hover:text-destructive"
-                onClick={() => deleteMutation.mutate()}
-                disabled={deleteMutation.isPending}
+                onClick={handleDelete}
+                disabled={isDeleting}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -155,7 +148,7 @@ export function ApiKeyManager() {
           </div>
         )}
 
-        {!isEditing && !apiKeyData?.hasApiKey && (
+        {!isEditing && !apiKeyStatus.hasKey && (
           <Button onClick={() => setIsEditing(true)} className="w-full">
             <Key className="h-4 w-4 mr-2" />
             Add API Key
@@ -173,7 +166,7 @@ export function ApiKeyManager() {
                   placeholder="key_..."
                   value={newApiKey}
                   onChange={(e) => setNewApiKey(e.target.value)}
-                  disabled={saveMutation.isPending}
+                  disabled={isSaving}
                   className="pr-10"
                 />
                 <button
@@ -199,10 +192,10 @@ export function ApiKeyManager() {
             <div className="flex gap-2">
               <Button
                 onClick={handleSave}
-                disabled={saveMutation.isPending}
+                disabled={isSaving}
                 className="flex-1"
               >
-                {saveMutation.isPending ? (
+                {isSaving ? (
                   "Saving..."
                 ) : (
                   <>
@@ -214,7 +207,7 @@ export function ApiKeyManager() {
               <Button
                 variant="outline"
                 onClick={handleCancel}
-                disabled={saveMutation.isPending}
+                disabled={isSaving}
               >
                 Cancel
               </Button>

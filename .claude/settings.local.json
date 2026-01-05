@@ -1,23 +1,28 @@
 {
   "permissions": {
     "allow": [
-      "Bash(tree:*)",
-      "Bash(ls:*)",
+      "Bash(bun pm:*)",
+      "Bash(bun remove:*)",
+      "Bash(bun run check:*)",
+      "Bash(bun run lint:*)",
+      "Bash(bun run lint:fix:*)",
+      "Bash(bun run test:*)",
+      "Bash(bun show:*)",
+      "Bash(bun test:*)",
+      "Bash(bun update:*)",
+      "Bash(bunx biome check:*)",
       "Bash(cat:*)",
       "Bash(find:*)",
-      "Bash(bun run lint:*)",
-      "Bash(bunx biome check:*)",
-      "Bash(bun run check:*)",
-      "WebFetch(domain:tanstack.com)",
-      "Bash(bun pm:*)",
-      "Bash(bun update:*)",
-      "Bash(bun remove:*)",
-      "WebSearch",
+      "Bash(ls:*)",
+      "Bash(tree:*)",
       "WebFetch(domain:cursor.com)",
-      "Bash(bun test:*)",
-      "Bash(bun run test:*)",
-      "Bash(bun run lint:fix:*)",
-      "Bash(bun show:*)"
+      "WebFetch(domain:docs.convex.dev)",
+      "WebFetch(domain:tanstack.com)",
+      "WebSearch",
+      "WebFetch(domain:www.better-auth.com)",
+      "WebFetch(domain:labs.convex.dev)",
+      "Bash(bun run biome:*)",
+      "Bash(bun install:*)"
     ]
   }
 }

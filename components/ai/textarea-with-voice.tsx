@@ -9,7 +9,6 @@ import {
   InputGroupButton,
   InputGroupTextarea,
 } from "@/components/ui/input-group"
-import { useToast } from "@/hooks/use-toast"
 import { useTranscribeAudio } from "@/lib/hooks/use-ai"
 
 interface TextareaWithVoiceProps
@@ -32,7 +31,6 @@ export function TextareaWithVoice({
   const chunksRef = useRef<Blob[]>([])
 
   const transcribe = useTranscribeAudio()
-  const { toast } = useToast()
 
   useEffect(() => {
     // Check browser support
@@ -103,12 +101,7 @@ export function TextareaWithVoice({
           const text = await transcribe.mutateAsync(file)
           handleTranscribed(text)
         } catch (error) {
-          toast({
-            title: "Transcription failed",
-            description:
-              error instanceof Error ? error.message : "Please try again",
-            variant: "destructive",
-          })
+          console.error("Error transcribing audio:", error)
         }
       }
 
@@ -116,11 +109,6 @@ export function TextareaWithVoice({
       setIsRecording(true)
     } catch (error) {
       console.error("Error starting recording:", error)
-      toast({
-        title: "Microphone access denied",
-        description: "Please allow microphone access to use voice input",
-        variant: "destructive",
-      })
     }
   }
 

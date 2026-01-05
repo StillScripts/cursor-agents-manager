@@ -1,6 +1,6 @@
 # Project Overview
 
-Cursor Agent Manager is a web app with Progressive Web App (PWA) support. It is powered by Bun, Next.js 16, React 19, Biome, Better Auth, Drizzle, Tursor, TailwindCSS and Base UI. It's purpose is to enable developers to manage their managing Cursor AI background agents on the go, particularly on their mobile phone as a PWA. The app provides a simulation mode (with mock data) for people to trial, or live mode (connected to the Cursor API).
+Cursor Agent Manager is a web app with Progressive Web App (PWA) support. It is powered by Bun, Next.js 16 (with modern features like `cacheComponents` and the `proxy.ts` file which replaces `middleware.ts`), React 19, Biome, Better Auth, Drizzle, Tursor, TailwindCSS and Base UI. It's purpose is to enable developers to manage their managing Cursor AI background agents on the go, particularly on their mobile phone as a PWA. The app provides a simulation mode (with mock data) for people to trial, or live mode (connected to the Cursor API).
 
 ## Development Commands
 
@@ -109,7 +109,6 @@ app/
 │   └── account/
 │       ├── page.tsx              # Account page
 │       └── _components/          # Account-specific components
-│           ├── account-screen.tsx
 │           ├── activity-screen.tsx
 │           ├── api-key-manager.tsx
 │           └── openai-api-key-manager.tsx
@@ -151,7 +150,6 @@ app/(authenticated)/
 │       └── agent-detail.tsx
 └── account/
     └── _components/          # Only used by account pages
-        ├── account-screen.tsx
         └── api-key-manager.tsx
 ```
 

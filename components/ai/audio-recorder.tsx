@@ -3,7 +3,6 @@
 import { Mic, Square } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/hooks/use-toast"
 import { useTranscribeAudio } from "@/lib/hooks/use-ai"
 
 export function AudioRecorder({
@@ -17,7 +16,6 @@ export function AudioRecorder({
   const chunksRef = useRef<Blob[]>([])
 
   const transcribe = useTranscribeAudio()
-  const { toast } = useToast()
 
   useEffect(() => {
     // Check browser support
@@ -65,12 +63,7 @@ export function AudioRecorder({
           const text = await transcribe.mutateAsync(file)
           onTranscribed(text)
         } catch (error) {
-          toast({
-            title: "Transcription failed",
-            description:
-              error instanceof Error ? error.message : "Please try again",
-            variant: "destructive",
-          })
+          console.error("Error transcribing audio:", error)
         }
       }
 
@@ -78,11 +71,6 @@ export function AudioRecorder({
       setIsRecording(true)
     } catch (error) {
       console.error("Error starting recording:", error)
-      toast({
-        title: "Microphone access denied",
-        description: "Please allow microphone access to use voice input",
-        variant: "destructive",
-      })
     }
   }
 

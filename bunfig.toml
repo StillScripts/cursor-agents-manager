@@ -1,3 +1,1 @@
 [test]
-# Always preload mocks before running tests
-preload = ["./lib/hono/__tests__/preload.ts"]
