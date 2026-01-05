@@ -8,8 +8,16 @@ import { FieldDescription, FieldGroup, FieldSet } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { SkeletonCard } from "@/components/ui/skeleton-card"
 import { parseGitHubUrl } from "@/lib/formatting"
-import { useAppForm } from "@/lib/hooks/use-app-form"
+import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 import { type Repository, useRepositories } from "@/lib/hooks/use-repositories"
+import {
+  type RepositoryFormData,
+  repositoriesRequestSchema,
+} from "@/lib/schemas/settings"
+
+type RepositoriesFormData = {
+  repositories: RepositoryFormData[]
+}
 
 function RepositoriesForm({
   initialRepositories,
@@ -31,9 +39,13 @@ function RepositoriesForm({
     }
   }
 
-  const form = useAppForm({
+  // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
+  const form = useAppForm<RepositoriesFormData>({
     defaultValues: {
       repositories: initialRepositories,
+    },
+    validators: {
+      onSubmit: repositoriesRequestSchema,
     },
     onSubmit: async ({ value }) => {
       const validRepos = value.repositories.filter(
@@ -52,132 +64,148 @@ function RepositoriesForm({
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            form.handleSubmit()
-          }}
-        >
-          <FieldSet>
-            <FieldDescription>
-              Paste GitHub URLs to quickly add repositories for agent launches.
-            </FieldDescription>
+        <FormProvider value={form}>
+          <form
+            id={form.formId}
+            onSubmit={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              form.handleSubmit()
+            }}
+          >
+            <FieldSet>
+              <FieldDescription>
+                Paste GitHub URLs to quickly add repositories for agent
+                launches.
+              </FieldDescription>
 
-            <form.Field name="repositories" mode="array">
-              {(field) => {
-                const repositories = field.state.value || []
+              <form.Field name="repositories" mode="array">
+                {(field) => {
+                  const repositories = field.state.value || []
 
-                const handleAdd = () => {
-                  if (!newRepoUrl.trim()) return
+                  const handleAdd = () => {
+                    if (!newRepoUrl.trim()) return
 
-                  const parsed = parseGitHubUrl(newRepoUrl)
-                  if (!parsed) {
-                    setParseError("Please enter a valid GitHub repository URL")
-                    return
+                    const parsed = parseGitHubUrl(newRepoUrl)
+                    if (!parsed) {
+                      setParseError(
+                        "Please enter a valid GitHub repository URL"
+                      )
+                      return
+                    }
+
+                    if (repositories.some((r) => r.url === parsed.url)) {
+                      setParseError("This repository has already been added")
+                      return
+                    }
+
+                    field.pushValue(parsed)
+                    setNewRepoUrl("")
+                    setParseError(null)
                   }
 
-                  if (repositories.some((r) => r.url === parsed.url)) {
-                    setParseError("This repository has already been added")
-                    return
-                  }
-
-                  field.pushValue(parsed)
-                  setNewRepoUrl("")
-                  setParseError(null)
-                }
-
-                return (
-                  <FieldGroup className="gap-4">
-                    {/* Input section */}
-                    <div className="space-y-2">
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            placeholder="Paste GitHub URL..."
-                            value={newRepoUrl}
-                            onChange={(e) => {
-                              setNewRepoUrl(e.target.value)
-                              setParseError(null)
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault()
-                                handleAdd()
-                              }
-                            }}
-                            className="pl-9"
-                          />
-                        </div>
-                        <Button type="button" onClick={handleAdd} size="sm">
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add
-                        </Button>
-                      </div>
-                      {parseError && (
-                        <p className="text-sm text-destructive">{parseError}</p>
-                      )}
-                    </div>
-
-                    {/* Repository list */}
-                    {repositories.length > 0 && (
+                  return (
+                    <FieldGroup className="gap-4">
+                      {/* Input section */}
                       <div className="space-y-2">
-                        {repositories.map((repo, index) => {
-                          const owner = getOwnerFromUrl(repo.url)
-                          return (
-                            <div
-                              key={index}
-                              className="flex items-center gap-3 p-3 rounded-lg border bg-muted/50"
-                            >
-                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-secondary">
-                                <svg
-                                  className="h-5 w-5 text-foreground"
-                                  viewBox="0 0 24 24"
-                                  fill="currentColor"
-                                >
-                                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-                                </svg>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate">
-                                  {repo.name}
-                                </p>
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {owner}
-                                </p>
-                              </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-                                onClick={() => field.removeValue(index)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          )
-                        })}
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              placeholder="Paste GitHub URL..."
+                              value={newRepoUrl}
+                              onChange={(e) => {
+                                setNewRepoUrl(e.target.value)
+                                setParseError(null)
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault()
+                                  handleAdd()
+                                }
+                              }}
+                              className="pl-9"
+                            />
+                          </div>
+                          <Button type="button" onClick={handleAdd} size="sm">
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add
+                          </Button>
+                        </div>
+                        {parseError && (
+                          <p className="text-sm text-destructive">
+                            {parseError}
+                          </p>
+                        )}
                       </div>
-                    )}
 
-                    {/* Count */}
-                    {repositories.length > 0 && (
-                      <p className="text-sm text-center text-muted-foreground">
-                        {repositories.length}{" "}
-                        {repositories.length === 1
-                          ? "repository"
-                          : "repositories"}{" "}
-                        saved
-                      </p>
-                    )}
-                  </FieldGroup>
-                )
-              }}
-            </form.Field>
-          </FieldSet>
-        </form>
+                      {/* Repository list */}
+                      {repositories.length > 0 && (
+                        <div className="space-y-2">
+                          {repositories.map((repo, index) => {
+                            const owner = getOwnerFromUrl(repo.url)
+                            return (
+                              <div
+                                key={index}
+                                className="flex items-center gap-3 p-3 rounded-lg border bg-muted/50"
+                              >
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-secondary">
+                                  <svg
+                                    className="h-5 w-5 text-foreground"
+                                    viewBox="0 0 24 24"
+                                    fill="currentColor"
+                                  >
+                                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                                  </svg>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">
+                                    {repo.name}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {owner}
+                                  </p>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                                  onClick={() => field.removeValue(index)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+
+                      {/* Count */}
+                      {repositories.length > 0 && (
+                        <p className="text-sm text-center text-muted-foreground">
+                          {repositories.length}{" "}
+                          {repositories.length === 1
+                            ? "repository"
+                            : "repositories"}{" "}
+                          saved
+                        </p>
+                      )}
+                    </FieldGroup>
+                  )
+                }}
+              </form.Field>
+            </FieldSet>
+
+            <div className="mt-6">
+              <form.SubscribeButton
+                formId={form.formId}
+                label="Save Repositories"
+                className="w-full"
+              />
+            </div>
+          </form>
+        </FormProvider>
       </CardContent>
     </Card>
   )
