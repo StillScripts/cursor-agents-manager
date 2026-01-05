@@ -3,7 +3,6 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  cacheComponents: true,
   // PWA configuration
   async headers() {
     return [

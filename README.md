@@ -19,21 +19,21 @@ A mobile-first Next.js application for managing Cursor background agents from an
 ## ✨ Features
 
 ### 🔐 Authentication & Security
-- **Secure Authentication**: Email/password auth powered by Better Auth
+- **Secure Authentication**: Email/password auth powered by Better Auth + Convex
 - **Encrypted Storage**: API keys encrypted with AES-256-GCM before database storage
-- **Session Management**: HTTP-only cookies with 7-day expiry
+- **Session Management**: Secure sessions with automatic expiry
 - **Route Protection**: Middleware-based authentication for all routes
 
-### 💾 Database-Backed
-- **User Data Persistence**: All preferences, repositories, and branches stored in Turso SQLite
+### 💾 Convex Backend
+- **Real-time Data**: Convex provides reactive queries with automatic UI updates
 - **Per-User API Keys**: Each user has their own encrypted Cursor API key
-- **Auto-Migration**: Seamlessly migrates data from localStorage to database
-- **Fast & Scalable**: Edge-ready database with global replication
+- **Serverless Functions**: Backend logic runs as Convex actions and mutations
+- **Type-Safe**: End-to-end type safety from database to frontend
 
 ### 🎨 User Experience
 - **Mobile-First Design**: Optimized 448px centered layout for mobile devices
 - **Simulation Mode**: Try the app without a Cursor API key using realistic mock data
-- **Real-time Updates**: React Query with optimistic updates and smart caching
+- **Real-time Updates**: Convex reactive queries with optimistic updates
 - **Theme Support**: Dark/light/system theme modes with no flash on load
 - **Responsive UI**: Works beautifully on phones, tablets, and desktops
 
@@ -41,7 +41,7 @@ A mobile-first Next.js application for managing Cursor background agents from an
 - **Type-Safe**: Full TypeScript coverage with strict mode
 - **Modern Stack**: Next.js 16 App Router, React 19, Tailwind CSS 4
 - **Fast Runtime**: Built with Bun for lightning-fast installs and builds
-- **Database Migrations**: Drizzle ORM with version-controlled schema changes
+- **Convex Backend**: Serverless database and functions with real-time sync
 
 ## 📚 Table of Contents
 
@@ -62,14 +62,14 @@ A mobile-first Next.js application for managing Cursor background agents from an
 |----------|-----------|
 | **Framework** | Next.js 16 (App Router) |
 | **UI Library** | React 19 |
-| **Styling** | Tailwind CSS 4, Radix UI |
-| **Authentication** | Better Auth |
-| **Database** | Drizzle ORM + Turso (SQLite) |
-| **State Management** | TanStack React Query |
+| **Styling** | Tailwind CSS 4, Base UI |
+| **Authentication** | Better Auth + Convex |
+| **Backend** | Convex (database, functions, real-time) |
+| **State Management** | TanStack React Query + Convex |
 | **Forms** | TanStack React Form |
 | **Runtime** | Bun |
 | **Language** | TypeScript 5.0 |
-| **Deployment** | Vercel (recommended) |
+| **Deployment** | Vercel + Convex |
 
 ## 🚀 Quick Start
 
@@ -78,7 +78,7 @@ A mobile-first Next.js application for managing Cursor background agents from an
 ### Prerequisites
 
 - [Bun](https://bun.sh) v1.2.16+ installed
-- [Turso](https://turso.tech) account (free tier available)
+- [Convex](https://convex.dev) account (free tier available)
 
 ### One-Command Setup
 
@@ -89,21 +89,13 @@ git clone <repository-url> && cd cursor-agents-manager && bun install
 
 ### Configuration Steps
 
-1️⃣ **Create Turso Database**
+1️⃣ **Setup Convex**
 ```bash
-turso db create cursor-auth-db
+bunx convex dev
 ```
+This will prompt you to create a Convex project and generate your environment variables.
 
-2️⃣ **Get Database Credentials**
-```bash
-# Get database URL
-turso db show cursor-auth-db --url
-
-# Get auth token
-turso db tokens create cursor-auth-db
-```
-
-3️⃣ **Setup Environment Variables**
+2️⃣ **Setup Environment Variables**
 
 ```bash
 cp .env.example .env.local
@@ -112,12 +104,7 @@ cp .env.example .env.local
 
 See [Environment Setup](#-environment-setup) for details
 
-4️⃣ **Initialize Database**
-```bash
-bun run db:push
-```
-
-5️⃣ **Start Development Server**
+3️⃣ **Start Development Server**
 ```bash
 bun run dev
 ```
@@ -139,65 +126,34 @@ cp .env.example .env.local
 Your `.env.local` should contain:
 
 ```bash
-# Turso Database (Auth DB - Shared)
-TURSO_AUTH_DATABASE_URL=libsql://your-auth-db.turso.io
-TURSO_AUTH_TOKEN=your-auth-token
+# Convex
+# Get these from: bunx convex dev (auto-generated)
+CONVEX_DEPLOYMENT=dev:your-deployment-name
+NEXT_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
+NEXT_PUBLIC_CONVEX_SITE_URL=https://your-deployment.convex.site
 
-# Turso API (for database management)
-TURSO_ORG_NAME=your-org-name
-TURSO_API_TOKEN=your-turso-api-token
-
-# Better Auth
-BETTER_AUTH_SECRET=your-random-secret-min-32-chars
+# Encryption
+# Used for encrypting API keys stored in Convex
+# Generate with: openssl rand -base64 32
 ENCRYPTION_SECRET=your-encryption-secret-min-32-chars
 
-# App URL
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-
-# Optional: Your Cursor API key (can also be set per-user in the app)
-CURSOR_API_KEY=your-cursor-api-key
-
-# Cursor Webhook Configuration (optional, but recommended)
-CURSOR_WEBHOOK_URL=https://your-app.com/api/webhooks/cursor
-CURSOR_WEBHOOK_SECRET=your-webhook-secret-min-32-chars
+# Optional: Cursor Webhook (for real-time agent status updates)
+# CURSOR_WEBHOOK_URL=https://your-app.com/api/webhooks/cursor
+# CURSOR_WEBHOOK_SECRET=your-webhook-secret-min-32-chars
 ```
 
-### Getting Turso Credentials
+### Convex Dashboard Environment Variables
 
-1. Install Turso CLI:
-```bash
-curl -sSfL https://get.tur.so/install.sh | bash
-```
+Set these in your Convex dashboard (Settings → Environment Variables):
 
-2. Create an account and login:
-```bash
-turso auth signup
-turso auth login
-```
-
-3. Create your auth database:
-```bash
-turso db create cursor-auth-db
-```
-
-4. Get your database URL:
-```bash
-turso db show cursor-auth-db --url
-```
-
-5. Create a database token:
-```bash
-turso db tokens create cursor-auth-db
-```
-
-6. Get your API token for database management:
-```bash
-turso auth token
-```
+| Variable | Purpose |
+|----------|---------|
+| `SITE_URL` | Your app URL (e.g., `http://localhost:3000` for dev) |
+| `ENCRYPTION_SECRET` | Same as your local encryption secret |
 
 ### 🔑 Generating Secrets
 
-Generate secure random secrets for `BETTER_AUTH_SECRET` and `ENCRYPTION_SECRET`:
+Generate secure random secrets for `ENCRYPTION_SECRET`:
 
 ```bash
 # macOS/Linux
@@ -219,46 +175,40 @@ graph LR
     B -->|No| C[Redirect to /login]
     B -->|Yes| D[Load App]
     C --> E[User Login/Signup]
-    E --> F[Better Auth Validates]
-    F --> G[Create Session Cookie]
+    E --> F[Better Auth + Convex Validates]
+    F --> G[Create Session]
     G --> D
 ```
 
 **Flow Details**:
 1. User registers via `/signup` with email/password
-2. Better Auth hashes password (bcrypt) and creates user record
-3. Session created with 7-day expiry, stored as HTTP-only cookie
+2. Better Auth (via Convex) hashes password and creates user record
+3. Session created and managed by Convex
 4. Middleware validates session on every request
 5. Unauthenticated users redirected to `/login?callbackUrl=<path>`
 
-### 💾 Database Schema
+### 💾 Convex Schema
 
-**Single Shared Database** (Turso SQLite):
+**Convex Tables** (defined in `convex/schema.ts`):
 
 | Table | Purpose | Key Fields |
 |-------|---------|-----------|
-| `user` | User accounts | id, email, name, emailVerified |
-| `session` | Active sessions | id, userId, expiresAt, token |
-| `account` | Auth credentials | userId, password (hashed) |
-| `user_api_keys` | Encrypted Cursor API keys | userId, encryptedCursorApiKey |
+| `agents` | Cached agent data from Cursor API | agentId, userId, status, name |
+| `apiKeys` | Encrypted API keys | userId, encryptedCursorApiKey |
 | `repositories` | User's GitHub repos | userId, url, name |
 | `branches` | User's branch names | userId, name |
-| `user_settings` | User preferences | userId, key, value |
+| `timeLogs` | Task time tracking | userId, agentId, activityType |
 
-🔗 All user tables have `userId` foreign keys with cascade delete
+🔗 All tables use `userId` for user association
 
 ### 🎭 Simulation vs Live Mode
 
 | Mode | Trigger | Data Source | Use Case |
 |------|---------|-------------|----------|
 | **Simulation** | No API key configured | Mock data (`lib/mock-data.ts`) | Demo, testing, development |
-| **Live** | Valid API key in DB | Cursor API (`api.cursor.com/v0/agents`) | Production use |
+| **Live** | Valid API key in Convex | Cursor API (`api.cursor.com/v0/agents`) | Production use |
 
-**Mode Detection**: `lib/api-utils.ts:isSimulationMode()`
-- Checks user session from request headers
-- Queries `user_api_keys` table for encrypted API key
-- Validates key length and content
-- Returns boolean for mode selection
+**Mode Detection**: Convex actions check for encrypted API key and determine mode automatically.
 
 ## 📜 Available Scripts
 
@@ -267,24 +217,18 @@ graph LR
 | `bun run dev` | Start development server on port 3000 |
 | `bun run build` | Create production build |
 | `bun run start` | Start production server |
-| `bun run lint` | Run ESLint for code quality |
-| `bun run db:generate` | Generate Drizzle migrations from schema changes |
-| `bun run db:push` | Push migrations to Turso database |
-| `bun run db:studio` | Open Drizzle Studio (database GUI) |
+| `bun run lint` | Run Biome for code quality |
+| `bun run lint:fix` | Auto-fix linting and formatting issues |
+| `bun run test` | Run tests |
+| `bun run test:watch` | Run tests in watch mode |
 
 ### Development Workflow
 
 ```bash
-# Make changes to schema files
-nano lib/schema/auth-schema.ts
+# Start Convex dev server (in one terminal)
+bunx convex dev
 
-# Generate migration
-bun run db:generate
-
-# Apply migration to database
-bun run db:push
-
-# Start dev server
+# Start Next.js dev server (in another terminal)
 bun run dev
 ```
 
@@ -293,54 +237,54 @@ bun run dev
 ```
 cursor-agents-manager/
 ├── 📱 app/                       # Next.js App Router
-│   ├── 🔐 login/                 # Login page
-│   ├── 🔐 signup/                # Signup page
-│   ├── 🏠 page.tsx               # Agent list (home)
-│   ├── ➕ new/                   # Launch new agent
-│   ├── 👤 account/               # Account management
-│   ├── ⚙️ settings/              # User settings
-│   ├── 🤖 agent/[id]/            # Agent detail view
-│   └── 🔌 api/                   # API Routes
-│       ├── auth/[...all]/        # Better Auth endpoints
-│       ├── agents/               # Agent operations
-│       └── user/                 # User data endpoints
-│           ├── api-key/          # API key CRUD
-│           ├── repositories/     # Repo CRUD
-│           └── branches/         # Branch CRUD
+│   ├── (authenticated)/          # Pages requiring login
+│   │   ├── page.tsx              # Agent list (home)
+│   │   ├── new/                  # Launch new agent
+│   │   ├── agent/[id]/           # Agent detail view
+│   │   ├── account/              # Account management
+│   │   └── settings/             # User settings
+│   ├── (unauthenticated)/        # Public pages
+│   │   ├── login/                # Login page
+│   │   └── signup/               # Signup page
+│   └── (server)/api/             # API Routes
+│       └── auth/[...all]/        # Better Auth endpoints
+│
+├── 🔧 convex/                    # Convex Backend
+│   ├── schema.ts                 # Database schema
+│   ├── agents.ts                 # Agent queries
+│   ├── agentsActions.ts          # Agent mutations/actions
+│   ├── apiKeys.ts                # API key queries
+│   ├── apiKeysActions.ts         # API key mutations
+│   ├── auth.ts                   # Better Auth + Convex
+│   ├── repositories.ts           # Repository CRUD
+│   ├── branches.ts               # Branch CRUD
+│   ├── timeLogs.ts               # Time tracking
+│   ├── models.ts                 # AI models
+│   └── aiActions.ts              # AI actions (summarize, TTS)
 │
 ├── 🎨 components/                # React Components
-│   ├── ui/                       # Radix UI primitives
-│   ├── api-key-manager.tsx       # API key manager UI
-│   └── settings-form.tsx         # Settings form
+│   ├── ui/                       # Base UI primitives
+│   ├── forms/                    # Form components
+│   └── ai/                       # AI-related components
 │
 ├── 📚 lib/                       # Core Logic
-│   ├── 🔐 auth.ts                # Better Auth config
-│   ├── 🔐 auth-client.ts         # Client-side auth
-│   ├── 💾 db.ts                  # Database connection
-│   ├── 🔒 encryption.ts          # AES-256-GCM crypto
-│   ├── 🛠️ api-utils.ts           # API helpers
-│   ├── 📊 schema/                # Database Schemas
-│   │   ├── auth-schema.ts        # Auth tables
-│   │   └── user-schema.ts        # User data tables
-│   └── 🪝 hooks/                 # React Query Hooks
-│       ├── use-session.ts        # Session hook
-│       ├── use-repositories.ts   # Repos hook
-│       └── use-branches.ts       # Branches hook
+│   ├── hooks/                    # React hooks
+│   ├── schemas/                  # Zod validation schemas
+│   ├── db/encryption.ts          # AES-256-GCM encryption
+│   ├── better-auth/              # Better Auth config
+│   └── types.ts                  # TypeScript types
 │
-├── 🗄️ drizzle/                   # Database migrations
-├── 🛡️ middleware.ts              # Route protection
-└── ⚙️ drizzle.config.ts          # Drizzle config
+└── 🛡️ proxy.ts                   # Route protection middleware
 ```
 
 ### Key Files
 
 | File | Purpose |
 |------|---------|
-| `middleware.ts` | Protects routes, validates sessions |
-| `lib/auth.ts` | Better Auth server configuration |
-| `lib/encryption.ts` | Encrypts/decrypts API keys |
-| `lib/api-utils.ts` | Simulation mode detection |
-| `drizzle.config.ts` | Database connection config |
+| `convex/schema.ts` | Convex database schema |
+| `convex/auth.ts` | Better Auth + Convex integration |
+| `lib/db/encryption.ts` | Encrypts/decrypts API keys |
+| `proxy.ts` | Middleware for route protection |
 
 ## 🔒 Security
 
@@ -348,67 +292,58 @@ This application implements multiple layers of security:
 
 | Layer | Implementation | Details |
 |-------|---------------|---------|
-| **Passwords** | Bcrypt hashing | Handled by Better Auth, industry-standard |
-| **Sessions** | HTTP-only cookies | 7-day expiry, secure flag in production |
-| **API Keys** | AES-256-GCM encryption | Encrypted before storage, decrypted on use |
-| **SQL Injection** | Parameterized queries | Drizzle ORM prevents injection attacks |
-| **HTTPS** | TLS/SSL | Enforced by Vercel in production |
-| **CSRF Protection** | Token validation | Built into Better Auth |
+| **Passwords** | Bcrypt hashing | Handled by Better Auth |
+| **Sessions** | Convex-managed | Secure session handling |
+| **API Keys** | AES-256-GCM encryption | Encrypted before storage |
+| **HTTPS** | TLS/SSL | Enforced in production |
 | **XSS Protection** | React sanitization | Automatic by React/Next.js |
 
 ### Security Best Practices
 
 ✅ Never commit `.env.local` to version control
-✅ Rotate `ENCRYPTION_SECRET` and `BETTER_AUTH_SECRET` regularly
+✅ Set `ENCRYPTION_SECRET` in Convex dashboard for production
 ✅ Use strong passwords (enforced: 8+ characters)
-✅ Enable 2FA in Better Auth (optional plugin)
-✅ Monitor Turso database access logs
 ✅ Keep dependencies updated (`bun update`)
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
+### Vercel + Convex (Recommended)
 
-**One-Click Deploy:**
+**1️⃣ Deploy Convex Backend**
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_USERNAME/cursor-agents-manager)
-
-**Manual Deployment:**
-
-1️⃣ **Push to GitHub**
 ```bash
-git push origin main
+bunx convex deploy
 ```
 
-2️⃣ **Import to Vercel**
-- Go to [vercel.com](https://vercel.com)
-- Click "Add New" → "Project"
-- Import your GitHub repository
+**2️⃣ Set Convex Environment Variables**
 
-3️⃣ **Configure Environment Variables**
+In Convex Dashboard → Settings → Environment Variables:
+- `SITE_URL` = your production URL
+- `ENCRYPTION_SECRET` = your encryption secret
 
-Add all variables from `.env.local` to Vercel:
-- `TURSO_AUTH_DATABASE_URL`
-- `TURSO_AUTH_TOKEN`
-- `TURSO_ORG_NAME`
-- `TURSO_API_TOKEN`
-- `BETTER_AUTH_SECRET`
-- `ENCRYPTION_SECRET`
-- `NEXT_PUBLIC_APP_URL` (set to your Vercel domain)
+**3️⃣ Deploy to Vercel**
 
-4️⃣ **Deploy**
-- Click "Deploy"
-- Wait for build to complete
-- Visit your live site!
+Push to GitHub, then import to Vercel.
+
+**Build Command:**
+```bash
+if [ "$VERCEL_ENV" = "production" ]; then bunx convex deploy --cmd 'bun run build'; else bun run build; fi
+```
+
+**Environment Variables in Vercel:**
+
+| Variable | Environment |
+|----------|-------------|
+| `CONVEX_DEPLOY_KEY` | Production only |
+| `NEXT_PUBLIC_CONVEX_URL` | All |
+| `NEXT_PUBLIC_CONVEX_SITE_URL` | All |
 
 ### Post-Deployment Checklist
 
-- [ ] Verify `NEXT_PUBLIC_APP_URL` is set correctly
-- [ ] Test signup flow
-- [ ] Test login flow
+- [ ] Verify Convex environment variables are set
+- [ ] Test signup/login flow
 - [ ] Configure your Cursor API key in the app
 - [ ] Test agent operations
-- [ ] Check Turso database in Drizzle Studio
 
 ## 🐛 Troubleshooting
 
@@ -424,59 +359,22 @@ bun install
 bun run build
 ```
 
-**Issue**: TypeScript errors during build
-```bash
-# Temporary: Set ignoreBuildErrors in next.config.mjs (not recommended)
-# Better: Fix the TypeScript errors
-```
+#### Convex Issues
 
-#### Database Issues
-
-**Issue**: `LibsqlError: SQLITE_READONLY`
+**Issue**: Convex deployment errors
 ```bash
-# Solution: Check your Turso auth token has write permissions
-turso db tokens create cursor-auth-db
-```
-
-**Issue**: Migration errors
-```bash
-# Solution: Reset and regenerate migrations
-rm -rf drizzle/
-bun run db:generate
-bun run db:push
+# Solution: Re-authenticate with Convex
+bunx convex logout
+bunx convex login
+bunx convex dev
 ```
 
 #### Authentication Issues
 
 **Issue**: "Unauthorized" errors
 ```bash
-# Solution: Check your session cookie settings
-# Ensure NEXT_PUBLIC_APP_URL matches your domain
-```
-
-**Issue**: Can't login after signup
-```bash
-# Solution: Check Better Auth configuration
-# Verify database has user and session tables
-```
-
-#### API Key Issues
-
-**Issue**: Simulation mode even with API key set
-```bash
-# Solution: Verify API key in database is valid
-# Check encryption/decryption is working
-# Ensure API key is > 10 characters
-```
-
-### Debug Mode
-
-Enable debug logging:
-
-```bash
-# .env.local
-DEBUG=better-auth:*
-NODE_ENV=development
+# Solution: Ensure SITE_URL is set correctly in Convex dashboard
+# Should match your app URL exactly
 ```
 
 ### Getting Help
@@ -495,37 +393,24 @@ We welcome contributions! Here's how to get started:
 2. Clone your fork
 3. Create a new branch: `git checkout -b feature/amazing-feature`
 4. Make your changes
-5. Test thoroughly
+5. Run `bun run lint:fix` before committing
 6. Commit: `git commit -m 'Add amazing feature'`
 7. Push: `git push origin feature/amazing-feature`
 8. Open a Pull Request
 
 ### Contribution Guidelines
 
-- ✅ Follow existing code style (TypeScript, ESLint)
+- ✅ Follow existing code style (TypeScript, Biome)
 - ✅ Write meaningful commit messages
 - ✅ Update documentation if needed
 - ✅ Test your changes locally
-- ✅ Keep PRs focused and small
-- ✅ Add comments for complex logic
-
-### Areas for Contribution
-
-- 🐛 Bug fixes
-- ✨ New features
-- 📝 Documentation improvements
-- 🎨 UI/UX enhancements
-- ♿ Accessibility improvements
-- 🌍 Internationalization (i18n)
-- 🧪 Test coverage
+- ✅ Run `bun run lint:fix` before pushing
 
 ## 📚 Documentation
 
 - **[CLAUDE.md](./CLAUDE.md)** - Comprehensive architecture and implementation guide
-- **[AGENTS.md](./AGENTS.md)** - Copy of CLAUDE.md for reference
-- **[Drizzle Docs](https://orm.drizzle.team/docs/overview)** - Database ORM documentation
+- **[Convex Docs](https://docs.convex.dev)** - Backend documentation
 - **[Better Auth Docs](https://www.better-auth.com/docs)** - Authentication documentation
-- **[Turso Docs](https://docs.turso.tech)** - Database platform documentation
 
 ## 📄 License
 
@@ -534,10 +419,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - Built with [Next.js](https://nextjs.org) by Vercel
+- Backend by [Convex](https://convex.dev)
 - Authentication by [Better Auth](https://www.better-auth.com)
-- Database by [Turso](https://turso.tech)
-- ORM by [Drizzle](https://orm.drizzle.team)
-- UI components by [Radix UI](https://www.radix-ui.com)
+- UI components by [Base UI](https://base-ui.com)
 
 ---
 

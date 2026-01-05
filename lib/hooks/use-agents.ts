@@ -1,9 +1,10 @@
 "use client"
 
 import { useMutation } from "@tanstack/react-query"
-import { useAction, useQuery as useConvexQuery } from "convex/react"
+import { useAction } from "convex/react"
 import { useEffect, useState } from "react"
 import { api } from "@/convex/_generated/api"
+import { useStableQuery } from "@/lib/hooks/use-stable-query"
 import type { Agent, AgentConversation, LaunchAgentRequest } from "@/lib/types"
 
 export const AGENTS_QUERY_KEY = ["agents"] as const
@@ -54,7 +55,7 @@ export function useAgent(
   const [syncError, setSyncError] = useState<string | null>(null)
 
   // Convex query for reactive database updates
-  const dbResult = useConvexQuery(api.agents.getById, { agentId: id })
+  const dbResult = useStableQuery(api.agents.getById, { agentId: id })
 
   // Convex action for syncing from Cursor API
   const getAgentById = useAction(api.agentsActions.getAgentById)

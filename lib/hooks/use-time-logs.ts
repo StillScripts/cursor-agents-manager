@@ -1,8 +1,9 @@
 "use client"
 
-import { useMutation, useQuery } from "convex/react"
+import { useMutation } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
+import { useStableQuery } from "@/lib/hooks/use-stable-query"
 
 // TimeLog type matching what the queries actually return
 export type TimeLog = {
@@ -15,7 +16,7 @@ export type TimeLog = {
 }
 
 export function useAgentTimeLogs(agentId: string) {
-  const timeLogs = useQuery(
+  const timeLogs = useStableQuery(
     api.timeLogs.getTimeLogsByAgent,
     agentId ? { agentId } : "skip"
   )
@@ -27,7 +28,7 @@ export function useAgentTimeLogs(agentId: string) {
 }
 
 export function useAllTimeLogs() {
-  const timeLogs = useQuery(api.timeLogs.getAllTimeLogs)
+  const timeLogs = useStableQuery(api.timeLogs.getAllTimeLogs)
 
   return {
     timeLogs,

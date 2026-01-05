@@ -1,14 +1,15 @@
 "use client"
 
-import { useMutation, useQuery } from "convex/react"
+import { useMutation } from "convex/react"
 import { api } from "@/convex/_generated/api"
+import { useStableQuery } from "@/lib/hooks/use-stable-query"
 
 export interface Branch {
   name: string
 }
 
 export function useBranches() {
-  const branches = useQuery(api.branches.getBranches)
+  const branches = useStableQuery(api.branches.getBranches)
   const saveBranches = useMutation(api.branches.saveBranches)
 
   return {
