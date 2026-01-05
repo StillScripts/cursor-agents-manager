@@ -41,9 +41,9 @@ app.post("/summarize", zValidator("json", summarizeSchema), async (c) => {
     .limit(1)
 
   let cursorApiKey: string | null = null
-  if (apiKeyRecord?.encryptedApiKey) {
+  if (apiKeyRecord?.encryptedCursorApiKey) {
     try {
-      cursorApiKey = decryptData(apiKeyRecord.encryptedApiKey)
+      cursorApiKey = decryptData(apiKeyRecord.encryptedCursorApiKey)
     } catch {
       // If decryption fails, treat as simulation mode
       cursorApiKey = null

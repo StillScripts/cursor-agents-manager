@@ -20,11 +20,11 @@ export async function getUserApiKey(
     .where(eq(userApiKeys.userId, session.user.id))
     .limit(1)
 
-  if (!apiKey || !apiKey.encryptedApiKey) {
+  if (!apiKey || !apiKey.encryptedCursorApiKey) {
     return null
   }
 
-  return decryptData(apiKey.encryptedApiKey)
+  return decryptData(apiKey.encryptedCursorApiKey)
 }
 
 export async function isSimulationMode(request: NextRequest): Promise<boolean> {

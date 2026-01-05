@@ -44,12 +44,12 @@ app.get("/api-key", async (c) => {
     .where(eq(userApiKeys.userId, user.id))
     .limit(1)
 
-  if (!apiKey || !apiKey.encryptedApiKey) {
+  if (!apiKey || !apiKey.encryptedCursorApiKey) {
     return c.json({ hasApiKey: false })
   }
 
   try {
-    const decrypted = decryptData(apiKey.encryptedApiKey)
+    const decrypted = decryptData(apiKey.encryptedCursorApiKey)
     const masked = `${decrypted.substring(0, 8)}...${decrypted.substring(decrypted.length - 4)}`
 
     return c.json({
@@ -83,7 +83,7 @@ app.post("/api-key", zValidator("json", apiKeySchema), async (c) => {
       await db
         .update(userApiKeys)
         .set({
-          encryptedApiKey: encryptedKey,
+          encryptedCursorApiKey: encryptedKey,
           updatedAt: new Date(),
         })
         .where(eq(userApiKeys.userId, user.id))
@@ -91,7 +91,7 @@ app.post("/api-key", zValidator("json", apiKeySchema), async (c) => {
       await db.insert(userApiKeys).values({
         id: crypto.randomUUID(),
         userId: user.id,
-        encryptedApiKey: encryptedKey,
+        encryptedCursorApiKey: encryptedKey,
         createdAt: new Date(),
         updatedAt: new Date(),
       })
@@ -111,7 +111,7 @@ app.delete("/api-key", async (c) => {
   try {
     await db
       .update(userApiKeys)
-      .set({ encryptedApiKey: null, updatedAt: new Date() })
+      .set({ encryptedCursorApiKey: null, updatedAt: new Date() })
       .where(eq(userApiKeys.userId, user.id))
 
     return c.json({ success: true })

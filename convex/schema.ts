@@ -2,33 +2,6 @@ import { defineSchema, defineTable } from "convex/server"
 import { v } from "convex/values"
 
 export default defineSchema({
-  repositories: defineTable({
-    userId: v.string(),
-    url: v.string(),
-    name: v.string(),
-    createdAt: v.number(),
-  }).index("by_user", ["userId"]),
-
-  branches: defineTable({
-    userId: v.string(),
-    name: v.string(),
-    createdAt: v.number(),
-  }).index("by_user", ["userId"]),
-
-  timeLogs: defineTable({
-    userId: v.string(),
-    agentId: v.string(),
-    activityType: v.union(
-      v.literal("task_creation"),
-      v.literal("conversation_review")
-    ),
-    startTime: v.number(),
-    endTime: v.optional(v.number()),
-    createdAt: v.number(),
-  })
-    .index("by_user", ["userId"])
-    .index("by_agent", ["userId", "agentId"]),
-
   agents: defineTable({
     // External ID from Cursor (e.g., bc-109be4f0-c6b3-4112-8a2e-4ef48e65486d)
     agentId: v.string(),
@@ -66,4 +39,37 @@ export default defineSchema({
     .index("by_user_agent", ["userId", "agentId"])
     .index("by_user_status", ["userId", "status"])
     .index("by_updated_at", ["updatedAt"]),
+
+  apiKeys: defineTable({
+    userId: v.string(),
+    encryptedCursorApiKey: v.string(),
+    encryptedOpenaiApiKey: v.string(),
+  }).index("by_user", ["userId"]),
+
+  branches: defineTable({
+    userId: v.string(),
+    name: v.string(),
+    createdAt: v.number(),
+  }).index("by_user", ["userId"]),
+
+  repositories: defineTable({
+    userId: v.string(),
+    url: v.string(),
+    name: v.string(),
+    createdAt: v.number(),
+  }).index("by_user", ["userId"]),
+
+  timeLogs: defineTable({
+    userId: v.string(),
+    agentId: v.string(),
+    activityType: v.union(
+      v.literal("task_creation"),
+      v.literal("conversation_review")
+    ),
+    startTime: v.number(),
+    endTime: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_agent", ["userId", "agentId"]),
 })

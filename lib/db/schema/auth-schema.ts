@@ -74,7 +74,7 @@ export const userApiKeys = sqliteTable("user_api_keys", {
     .notNull()
     .unique()
     .references(() => user.id, { onDelete: "cascade" }),
-  encryptedApiKey: text("encrypted_api_key"), // Encrypted Cursor API key
+  encryptedCursorApiKey: text("encrypted_api_key"), // Encrypted Cursor API key
   encryptedOpenaiApiKey: text("encrypted_openai_api_key"), // Encrypted OpenAI API key
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),

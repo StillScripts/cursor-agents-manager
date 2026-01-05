@@ -240,7 +240,7 @@ graph LR
 | `user` | User accounts | id, email, name, emailVerified |
 | `session` | Active sessions | id, userId, expiresAt, token |
 | `account` | Auth credentials | userId, password (hashed) |
-| `user_api_keys` | Encrypted Cursor API keys | userId, encryptedApiKey |
+| `user_api_keys` | Encrypted Cursor API keys | userId, encryptedCursorApiKey |
 | `repositories` | User's GitHub repos | userId, url, name |
 | `branches` | User's branch names | userId, name |
 | `user_settings` | User preferences | userId, key, value |

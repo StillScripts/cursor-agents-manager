@@ -20,7 +20,7 @@
 type ApiKeyRecord = {
   id: string
   userId: string
-  encryptedApiKey: string
+  encryptedCursorApiKey: string
   encryptedOpenaiApiKey?: string
   createdAt: Date
   updatedAt: Date
@@ -68,7 +68,7 @@ type MockState = {
 const DEFAULT_API_KEY: ApiKeyRecord = {
   id: "apikey_123",
   userId: "user_123",
-  encryptedApiKey: "encrypted:cursor_api_key_abc123",
+  encryptedCursorApiKey: "encrypted:cursor_api_key_abc123",
   encryptedOpenaiApiKey: "encrypted:sk-test-openai-key-123",
   createdAt: new Date("2024-01-01"),
   updatedAt: new Date("2024-01-01"),
@@ -168,7 +168,7 @@ export function withValidApiKey(apiKey = "cursor_api_key_abc123"): void {
   state.dbResults.apiKeys = [
     {
       ...DEFAULT_API_KEY,
-      encryptedApiKey: `encrypted:${apiKey}`,
+      encryptedCursorApiKey: `encrypted:${apiKey}`,
     },
   ]
 }
@@ -183,7 +183,7 @@ export function withoutApiKey(): void {
   state.dbResults.apiKeys = [
     {
       ...DEFAULT_API_KEY,
-      encryptedApiKey: "",
+      encryptedCursorApiKey: "",
     },
   ]
 }

@@ -21,7 +21,7 @@ import { mock } from "bun:test"
 const DEFAULT_API_KEY = {
   id: "apikey_123",
   userId: "user_123",
-  encryptedApiKey: "encrypted:cursor_api_key_abc123",
+  encryptedCursorApiKey: "encrypted:cursor_api_key_abc123",
   encryptedOpenaiApiKey: "encrypted:sk-test-openai-key-123",
   createdAt: new Date("2024-01-01"),
   updatedAt: new Date("2024-01-01"),
@@ -286,7 +286,7 @@ const createChainableMock = () => {
       whereConditions = []
       if (table && typeof table === "object") {
         const tableObj = table as Record<string, unknown>
-        if ("encryptedApiKey" in tableObj) currentTable = "userApiKeys"
+        if ("encryptedCursorApiKey" in tableObj) currentTable = "userApiKeys"
         else if ("url" in tableObj) currentTable = "repositories"
         else if (
           "name" in tableObj &&

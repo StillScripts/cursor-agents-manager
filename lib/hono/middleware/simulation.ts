@@ -36,12 +36,12 @@ async function getUserApiKeyFromUserId(userId: string): Promise<string | null> {
     .where(eq(userApiKeys.userId, userId))
     .limit(1)
 
-  if (!apiKey || !apiKey.encryptedApiKey) {
+  if (!apiKey || !apiKey.encryptedCursorApiKey) {
     return null
   }
 
   try {
-    return decryptData(apiKey.encryptedApiKey)
+    return decryptData(apiKey.encryptedCursorApiKey)
   } catch {
     return null
   }

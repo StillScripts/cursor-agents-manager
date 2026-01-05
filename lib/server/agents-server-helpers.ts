@@ -16,12 +16,12 @@ export async function getUserApiKeyServer(
     .where(eq(userApiKeys.userId, userId))
     .limit(1)
 
-  if (!apiKey || !apiKey.encryptedApiKey) {
+  if (!apiKey || !apiKey.encryptedCursorApiKey) {
     return null
   }
 
   try {
-    return decryptData(apiKey.encryptedApiKey)
+    return decryptData(apiKey.encryptedCursorApiKey)
   } catch (error) {
     console.error("Error decrypting API key:", error)
     return null
