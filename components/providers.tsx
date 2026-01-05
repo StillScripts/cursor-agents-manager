@@ -6,7 +6,6 @@ import { ConvexReactClient } from "convex/react"
 import { ThemeProvider } from "next-themes"
 import type React from "react"
 import { useState } from "react"
-import { ToastProvider, ToastViewport } from "@/components/ui/toast"
 import { authClient } from "@/lib/better-auth/auth-client"
 
 // Cache configuration constants
@@ -55,10 +54,7 @@ export function Providers({
         initialToken={initialToken}
       >
         <QueryClientProvider client={queryClient}>
-          <ToastProvider>
-            {children}
-            <ToastViewport />
-          </ToastProvider>
+          {children}
         </QueryClientProvider>
       </ConvexBetterAuthProvider>
     </ThemeProvider>
