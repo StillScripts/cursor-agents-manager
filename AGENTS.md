@@ -1,6 +1,6 @@
 # Project Overview
 
-Cursor Agent Manager is a web app with Progressive Web App (PWA) support. It is powered by Bun, Next.js 16 (with modern features like `cacheComponents` and the `proxy.ts` file which replaces `middleware.ts`), React 19, Biome, Better Auth, Drizzle, Tursor, TailwindCSS and Base UI. It's purpose is to enable developers to manage their managing Cursor AI background agents on the go, particularly on their mobile phone as a PWA. The app provides a simulation mode (with mock data) for people to trial, or live mode (connected to the Cursor API).
+Cursor Agent Manager is a web app with Progressive Web App (PWA) support. It is powered by Bun, Next.js 16 (with modern features like `cacheComponents` and the `proxy.ts` file which replaces `middleware.ts`), React 19, Biome, Better Auth, Convex, TailwindCSS and Base UI. It's purpose is to enable developers to manage their managing Cursor AI background agents on the go, particularly on their mobile phone as a PWA. The app provides a simulation mode (with mock data) for people to trial, or live mode (connected to the Cursor API).
 
 ## Development Commands
 
@@ -29,9 +29,6 @@ bun run format
 
 # Run tests
 bun run test
-
-# Run API tests specifically
-bun run test lib/hono
 
 # Watch mode for tests
 bun run test --watch
@@ -119,8 +116,7 @@ app/
 │
 ├── (server)/                     # API routes (server-only)
 │   └── api/
-│       ├── auth/[...all]/route.ts   # Better Auth endpoints
-│       └── [...route]/route.ts      # Hono catch-all handler
+│       └── auth/[...all]/route.ts   # Better Auth endpoints
 │
 └── layout.tsx                    # Root layout with providers
 ```
@@ -128,7 +124,7 @@ app/
 **Key Concepts**:
 - `(authenticated)` - Pages wrapped with auth layout containing navigation
 - `(unauthenticated)` - Standalone auth pages without app navigation
-- `(server)` - API routes handled by Hono and Better Auth
+- `(server)` - API routes (server-only)
 - `_components/` - Private folder (underscore prefix) not treated as routes
 
 ### The `_components` Pattern
@@ -155,67 +151,6 @@ app/(authenticated)/
 
 **Rule**: If a component is only used within one route segment (and its children), place it in that segment's `_components` folder. If it's shared across multiple route groups or the entire app, place it in the root `/components` folder.
 
-### Hono API Architecture
-
-The API layer uses **Hono** mounted as a catch-all route handler at `app/(server)/api/[...route]/route.ts`. This provides:
-- **Modular routes** - Each domain (agents, user, models) in separate files
-- **Type-safe validation** - `@hono/zod-validator` for request validation
-- **Middleware composition** - Reusable auth and simulation mode middleware
-- **Cleaner code** - Chainable routes with typed context
-
-**Directory Structure**:
-```
-lib/hono/
-├── index.ts                      # Main Hono app - combines all routes
-├── middleware/
-│   ├── auth.ts                   # requireAuth middleware
-│   ├── error-handler.ts          # Global error handling
-│   └── simulation.ts             # Simulation mode detection
-├── routes/
-│   ├── agents.ts                 # /api/agents routes
-│   ├── models.ts                 # /api/models routes
-│   └── user.ts                   # /api/user routes
-└── __tests__/                    # API tests
-    ├── preload.ts                # Bun test preload (mocks)
-    ├── setup.ts                  # Test helpers
-    └── routes/
-        ├── agents.test.ts
-        ├── models.test.ts
-        ├── user.test.ts
-        └── index.test.ts
-```
-
-**Route Handler Pattern** (`lib/hono/routes/agents.ts`):
-```typescript
-import { Hono } from "hono"
-import { zValidator } from "@hono/zod-validator"
-import { requireAuth, type AuthVariables } from "@/lib/hono/middleware/auth"
-import { withSimulationMode, type SimulationVariables } from "@/lib/hono/middleware/simulation"
-
-type Variables = AuthVariables & SimulationVariables
-
-const app = new Hono<{ Variables: Variables }>()
-
-// Apply middleware
-app.use("*", requireAuth)
-app.use("*", withSimulationMode)
-
-// Define routes
-app.get("/", zValidator("query", paginationSchema), async (c) => {
-  const simulationMode = c.get("simulationMode")
-  const apiKey = c.get("apiKey")
-  // ... route logic
-})
-
-export { app as agentsApp }
-```
-
-**Middleware**:
-- `requireAuth` - Sets `user` and `session` in context, returns 401 if unauthenticated
-- `withSimulationMode` - Sets `simulationMode` (boolean) and `apiKey` (string | null) in context
-- `errorHandler` - Catches errors and returns consistent JSON responses
-
-**Note**: Better Auth remains as a separate Next.js route handler at `app/(server)/api/auth/[...all]/route.ts` because it requires special cookie handling via `toNextJsHandler`.
 
 ### TanStack Form Integration
 
@@ -352,7 +287,7 @@ export function formDataToApiRequest(formData: LaunchAgentFormData): LaunchAgent
 ```
 
 **Schema Usage**:
-- **API Routes**: Use `zValidator("json", schema)` from `@hono/zod-validator`
+- **API Routes**: Use Zod schemas for request validation
 - **Forms**: Pass schema to `validators.onSubmit` in `useAppForm`
 - **Types**: Infer TypeScript types from schemas
 
@@ -360,79 +295,14 @@ export function formDataToApiRequest(formData: LaunchAgentFormData): LaunchAgent
 
 Tests use **Bun's test runner** with a preload script for mocking.
 
-**Test Organization**:
-```
-lib/hono/__tests__/
-├── preload.ts              # Module mocks (loaded before tests)
-├── setup.ts                # Test helpers and state management
-└── routes/
-    ├── agents.test.ts      # Agent route tests
-    ├── models.test.ts      # Models route tests
-    ├── user.test.ts        # User route tests
-    └── index.test.ts       # Main app tests
-```
-
 **Running Tests**:
 ```bash
 # Run all tests
 bun run test
 
-# Run API tests only
-bun run test lib/hono
-
 # Watch mode
 bun test --watch
 ```
-
-**Test Patterns** (`lib/hono/__tests__/routes/agents.test.ts`):
-```typescript
-import { afterEach, describe, expect, it } from "bun:test"
-import {
-  mockAgent,
-  resetMockState,
-  withoutApiKey,
-  withoutAuthentication,
-} from "@/lib/hono/__tests__/setup"
-import { agentsApp } from "@/lib/hono/routes/agents"
-
-describe("Agents Routes", () => {
-  afterEach(() => {
-    resetMockState()
-  })
-
-  describe("Authentication", () => {
-    it("returns 401 when not authenticated", async () => {
-      withoutAuthentication()
-      const res = await agentsApp.request("/")
-      expect(res.status).toBe(401)
-    })
-  })
-
-  describe("GET / (List Agents)", () => {
-    it("returns agents in simulation mode", async () => {
-      withoutApiKey() // Enables simulation mode
-      const res = await agentsApp.request("/")
-      expect(res.status).toBe(200)
-      const data = await res.json()
-      expect(data.simulation).toBe(true)
-    })
-  })
-})
-```
-
-**Test Helpers** (`lib/hono/__tests__/setup.ts`):
-- `withoutAuthentication()` - Simulate unauthenticated user
-- `withoutApiKey()` - Enable simulation mode (no Cursor API key)
-- `withValidApiKey()` - Enable live mode (has Cursor API key)
-- `resetMockState()` - Reset all mocks to defaults
-
-**Preload Mocks** (`lib/hono/__tests__/preload.ts`):
-- Mocks `@/lib/auth` - Authentication
-- Mocks `@/lib/db` - Database queries
-- Mocks `@/lib/encryption` - Encryption/decryption
-- Mocks `@/lib/mock-data` - Simulation data
-- Mocks `ai` and `@ai-sdk/openai` - AI SDK
-- Mocks `globalThis.fetch` - Cursor API calls
 
 ### React Query Hooks
 
@@ -492,7 +362,7 @@ export function useLaunchAgent() {
 
 ### Authentication & Database
 
-**Authentication System**: The app uses Better Auth with email/password authentication. All user data is stored in a shared Turso SQLite database.
+**Authentication System**: The app uses Better Auth with email/password authentication. All user data is stored in a shared database.
 
 **Authentication Flow**:
 1. User registers at `/signup` with email/password
@@ -503,7 +373,7 @@ export function useLaunchAgent() {
 6. Unauthenticated users are redirected to `/login` with callback URL
 7. Authenticated users accessing auth pages are redirected to home
 
-**Database Architecture** (Single shared Turso database):
+**Database Architecture**:
 | Table | Purpose |
 |-------|---------|
 | `user` | User accounts (id, name, email, emailVerified, timestamps) |
@@ -522,12 +392,12 @@ All user-specific tables have `userId` foreign keys with cascade delete.
 - Passwords: Hashed with bcrypt by Better Auth
 - API Keys: Encrypted with AES-256-GCM before storage (`lib/encryption.ts`)
 - Sessions: HTTP-only cookies, 7-day expiry with 1-day refresh
-- Database: Parameterized queries via Drizzle ORM (SQL injection protection)
+- Database: Parameterized queries for SQL injection protection
 
 **Key Files**:
 - `lib/auth.ts` - Better Auth server configuration
 - `lib/auth-client.ts` - Client-side auth utilities (signIn, signUp, signOut, useSession)
-- `lib/db.ts` - Drizzle database connection to Turso
+- `lib/db.ts` - Database connection
 - `lib/encryption.ts` - AES-256-GCM encryption/decryption for API keys
 - `lib/schema/auth-schema.ts` - Better Auth tables + user_api_keys
 - `lib/schema/user-schema.ts` - User data tables
@@ -656,21 +526,6 @@ lib/
 │   ├── use-session.ts       # Auth session hook
 │   └── use-time-tracking.ts # Task time tracking
 │
-├── hono/                    # Hono API layer
-│   ├── index.ts             # Main Hono app
-│   ├── middleware/          # Request middleware
-│   │   ├── auth.ts          # requireAuth middleware
-│   │   ├── simulation.ts    # withSimulationMode middleware
-│   │   └── error-handler.ts # Global error handling
-│   ├── routes/              # API route handlers
-│   │   ├── agents.ts        # /api/agents routes
-│   │   ├── models.ts        # /api/models routes
-│   │   └── user.ts          # /api/user routes
-│   └── __tests__/           # API tests
-│       ├── preload.ts       # Bun test preload (mocks)
-│       ├── setup.ts         # Test helpers
-│       └── routes/          # Route-specific tests
-│
 ├── schemas/                 # Zod validation schemas
 │   ├── cursor/              # Cursor API schemas
 │   │   ├── launch-agent.ts  # Launch agent request/form schemas
@@ -684,13 +539,12 @@ lib/
 │   └── ai.ts                # AI-related schemas
 │
 ├── db/                      # Database layer
-│   ├── index.ts             # Drizzle client
+│   ├── index.ts             # Database client
 │   ├── schema/              # Database schemas
 │   │   ├── auth-schema.ts   # Better Auth tables + user_api_keys
 │   │   └── user-schema.ts   # User data tables
 │   ├── encryption.ts        # AES-256-GCM encryption
-│   ├── user-db.ts           # User data queries
-│   └── turso-manager.ts     # Turso database management
+│   └── user-db.ts           # User data queries
 │
 ├── better-auth/             # Better Auth configuration
 ├── server/                  # Server-only utilities
@@ -708,7 +562,6 @@ lib/
 
 **Organization Rules**:
 - `hooks/` - All React hooks (data fetching, forms, utilities)
-- `hono/` - Complete API layer (routes, middleware, tests)
 - `schemas/` - Zod schemas organized by domain (cursor/, settings, auth)
 - `db/` - Database connection, schemas, and encryption
 - Root level - Standalone utilities and types
@@ -736,14 +589,6 @@ Core types in `lib/types.ts`:
 Create a `.env.local` file for environment variables:
 
 ```bash
-# Turso Database (Auth DB - Shared)
-TURSO_AUTH_DATABASE_URL=libsql://your-auth-db.turso.io
-TURSO_AUTH_TOKEN=your-auth-token
-
-# Turso API (for database management)
-TURSO_ORG_NAME=your-org-name
-TURSO_API_TOKEN=your-turso-api-token
-
 # Better Auth
 BETTER_AUTH_SECRET=your-random-secret-min-32-chars
 ENCRYPTION_SECRET=your-encryption-secret-min-32-chars
@@ -759,11 +604,11 @@ CURSOR_WEBHOOK_URL=https://your-app.com/api/webhooks/cursor
 CURSOR_WEBHOOK_SECRET=your-webhook-secret-min-32-chars
 ```
 
-**Simulation Mode**: The app automatically enters simulation mode (using mock data) when a user doesn't have a valid API key configured. Mode detection happens via the `withSimulationMode` Hono middleware which:
-1. Checks the user's session from the request headers
-2. Queries the `user_api_keys` table for their encrypted API key
-3. Sets `simulationMode: true` if no API key exists or if it's invalid
-4. Sets `simulationMode: false` and `apiKey` if a valid key exists
+**Simulation Mode**: The app automatically enters simulation mode (using mock data) when a user doesn't have a valid API key configured. Mode detection happens by:
+1. Checking the user's session from the request headers
+2. Querying the `user_api_keys` table for their encrypted API key
+3. Setting `simulationMode: true` if no API key exists or if it's invalid
+4. Setting `simulationMode: false` and `apiKey` if a valid key exists
 
 ## Important Configuration
 
@@ -794,16 +639,3 @@ Forms use TanStack React Form with Zod validation. The `useAppForm` hook provide
 
 Agent operations use React Query's mutation callbacks to invalidate queries and trigger refetch for immediate UI feedback.
 
-### Database Migrations
-
-Use Drizzle Kit for database migrations:
-```bash
-# Generate migrations from schema changes
-bun run db:generate
-
-# Push migrations to database
-bun run db:push
-
-# Open database GUI
-bun run db:studio
-```
