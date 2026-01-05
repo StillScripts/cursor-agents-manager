@@ -10,11 +10,13 @@
 
 import type * as agents from "../agents.js";
 import type * as agentsActions from "../agentsActions.js";
+import type * as aiActions from "../aiActions.js";
 import type * as apiKeys from "../apiKeys.js";
 import type * as apiKeysActions from "../apiKeysActions.js";
 import type * as auth from "../auth.js";
 import type * as branches from "../branches.js";
 import type * as http from "../http.js";
+import type * as models from "../models.js";
 import type * as repositories from "../repositories.js";
 import type * as timeLogs from "../timeLogs.js";
 
@@ -27,11 +29,13 @@ import type {
 declare const fullApi: ApiFromModules<{
   agents: typeof agents;
   agentsActions: typeof agentsActions;
+  aiActions: typeof aiActions;
   apiKeys: typeof apiKeys;
   apiKeysActions: typeof apiKeysActions;
   auth: typeof auth;
   branches: typeof branches;
   http: typeof http;
+  models: typeof models;
   repositories: typeof repositories;
   timeLogs: typeof timeLogs;
 }>;

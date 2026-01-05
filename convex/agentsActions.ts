@@ -517,3 +517,339 @@ export const launchAgent = action({
     }
   },
 })
+
+/**
+ * Stop a running agent
+ */
+export const stopAgent = action({
+  args: {
+    agentId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
+
+    // Get agent from database
+    const dbAgent = await ctx.runQuery(internal.agents.getByIdInternal, {
+      userId: authUser.userId,
+      agentId: args.agentId,
+    })
+
+    if (!dbAgent) {
+      throw new Error("Agent not found")
+    }
+
+    // Get encrypted API key record
+    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
+      userId: authUser.userId,
+    })
+
+    // Decrypt API key if it exists
+    let apiKey: string | null = null
+    if (record?.encryptedCursorApiKey) {
+      try {
+        apiKey = decryptData(record.encryptedCursorApiKey)
+      } catch {
+        apiKey = null
+      }
+    }
+
+    const simulationMode = !apiKey
+
+    if (simulationMode) {
+      // In simulation mode, just update the status in the database
+      await ctx.runMutation(api.agents.updateStatus, {
+        agentId: args.agentId,
+        status: "FINISHED",
+      })
+      return { success: true, simulation: true }
+    }
+
+    // Live mode - call Cursor API
+    try {
+      const response = await fetch(`${CURSOR_API_URL}/${args.agentId}/stop`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Cursor API error: ${response.status} - ${errorText}`)
+      }
+
+      // Update agent status in database
+      await ctx.runMutation(api.agents.updateStatus, {
+        agentId: args.agentId,
+        status: "FINISHED",
+      })
+
+      return { success: true, simulation: false }
+    } catch (error) {
+      console.error("[Convex stopAgent] Error stopping agent:", error)
+      throw error instanceof Error ? error : new Error("Failed to stop agent")
+    }
+  },
+})
+
+/**
+ * Delete an agent
+ */
+export const deleteAgent = action({
+  args: {
+    agentId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
+
+    // Get agent from database
+    const dbAgent = await ctx.runQuery(internal.agents.getByIdInternal, {
+      userId: authUser.userId,
+      agentId: args.agentId,
+    })
+
+    if (!dbAgent) {
+      throw new Error("Agent not found")
+    }
+
+    // Get encrypted API key record
+    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
+      userId: authUser.userId,
+    })
+
+    // Decrypt API key if it exists
+    let apiKey: string | null = null
+    if (record?.encryptedCursorApiKey) {
+      try {
+        apiKey = decryptData(record.encryptedCursorApiKey)
+      } catch {
+        apiKey = null
+      }
+    }
+
+    const simulationMode = !apiKey
+
+    if (simulationMode) {
+      // In simulation mode, just soft delete in the database
+      await ctx.runMutation(api.agents.softDelete, {
+        agentId: args.agentId,
+      })
+      return { success: true, simulation: true }
+    }
+
+    // Live mode - call Cursor API
+    try {
+      const response = await fetch(`${CURSOR_API_URL}/${args.agentId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Cursor API error: ${response.status} - ${errorText}`)
+      }
+
+      // Soft delete in database
+      await ctx.runMutation(api.agents.softDelete, {
+        agentId: args.agentId,
+      })
+
+      return { success: true, simulation: false }
+    } catch (error) {
+      console.error("[Convex deleteAgent] Error deleting agent:", error)
+      throw error instanceof Error ? error : new Error("Failed to delete agent")
+    }
+  },
+})
+
+/**
+ * Send a follow-up message to an agent
+ */
+export const sendFollowUp = action({
+  args: {
+    agentId: v.string(),
+    message: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
+
+    // Get agent from database
+    const dbAgent = await ctx.runQuery(internal.agents.getByIdInternal, {
+      userId: authUser.userId,
+      agentId: args.agentId,
+    })
+
+    if (!dbAgent) {
+      throw new Error("Agent not found")
+    }
+
+    // Get encrypted API key record
+    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
+      userId: authUser.userId,
+    })
+
+    // Decrypt API key if it exists
+    let apiKey: string | null = null
+    if (record?.encryptedCursorApiKey) {
+      try {
+        apiKey = decryptData(record.encryptedCursorApiKey)
+      } catch {
+        apiKey = null
+      }
+    }
+
+    const simulationMode = !apiKey
+
+    if (simulationMode) {
+      // In simulation mode, return a mock response
+      return {
+        success: true,
+        simulation: true,
+        message: "Follow-up message sent (simulation mode)",
+      }
+    }
+
+    // Live mode - call Cursor API
+    try {
+      const response = await fetch(
+        `${CURSOR_API_URL}/${args.agentId}/followup`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt: { text: args.message },
+          }),
+        }
+      )
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Cursor API error: ${response.status} - ${errorText}`)
+      }
+
+      const data = await response.json()
+
+      // Refresh agent data in database
+      await ctx.runAction(api.agentsActions.getAgentById, {
+        agentId: args.agentId,
+      })
+
+      return {
+        success: true,
+        simulation: false,
+        ...data,
+      }
+    } catch (error) {
+      console.error("[Convex sendFollowUp] Error sending follow-up:", error)
+      throw error instanceof Error
+        ? error
+        : new Error("Failed to send follow-up")
+    }
+  },
+})
+
+/**
+ * Get agent conversation
+ */
+export const getConversation = action({
+  args: {
+    agentId: v.string(),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    conversation: AgentConversation | null
+    simulation: boolean
+  }> => {
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
+
+    // Get encrypted API key record
+    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
+      userId: authUser.userId,
+    })
+
+    // Decrypt API key if it exists
+    let apiKey: string | null = null
+    if (record?.encryptedCursorApiKey) {
+      try {
+        apiKey = decryptData(record.encryptedCursorApiKey)
+      } catch {
+        apiKey = null
+      }
+    }
+
+    const simulationMode = !apiKey
+
+    if (simulationMode) {
+      // Return mock conversation for simulation mode
+      return {
+        conversation: {
+          id: args.agentId,
+          messages: [
+            {
+              id: "msg_placeholder",
+              type: "assistant_message",
+              text: "This is a simulated conversation. Add your Cursor API key to see real conversations.",
+            },
+          ],
+        },
+        simulation: true,
+      }
+    }
+
+    // Live mode - call Cursor API
+    try {
+      const response = await fetch(
+        `${CURSOR_API_URL}/${args.agentId}/conversation`,
+        {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+        }
+      )
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return {
+            conversation: null,
+            simulation: false,
+          }
+        }
+
+        const errorText = await response.text()
+        throw new Error(`Cursor API error: ${response.status} - ${errorText}`)
+      }
+
+      const conversation: AgentConversation = await response.json()
+
+      return {
+        conversation,
+        simulation: false,
+      }
+    } catch (error) {
+      console.error(
+        "[Convex getConversation] Error fetching conversation:",
+        error
+      )
+      throw error instanceof Error
+        ? error
+        : new Error("Failed to fetch conversation")
+    }
+  },
+})
+
+import type { AgentConversation } from "../lib/types"

@@ -277,3 +277,64 @@ export const create = mutation({
     return { _id: id, agentId: args.agentId, updated: false }
   },
 })
+
+/**
+ * Update agent status
+ */
+export const updateStatus = mutation({
+  args: {
+    agentId: v.string(),
+    status: agentStatusValidator,
+  },
+  handler: async (ctx, args) => {
+    const authUser = await getAuthenticatedUser(ctx)
+
+    const agent = await ctx.db
+      .query("agents")
+      .withIndex("by_user_agent", (q) =>
+        q.eq("userId", authUser.userId).eq("agentId", args.agentId)
+      )
+      .first()
+
+    if (!agent) {
+      throw new Error("Agent not found")
+    }
+
+    await ctx.db.patch(agent._id, {
+      status: args.status,
+      updatedAt: Date.now(),
+    })
+
+    return { success: true }
+  },
+})
+
+/**
+ * Soft delete an agent
+ */
+export const softDelete = mutation({
+  args: {
+    agentId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const authUser = await getAuthenticatedUser(ctx)
+
+    const agent = await ctx.db
+      .query("agents")
+      .withIndex("by_user_agent", (q) =>
+        q.eq("userId", authUser.userId).eq("agentId", args.agentId)
+      )
+      .first()
+
+    if (!agent) {
+      throw new Error("Agent not found")
+    }
+
+    await ctx.db.patch(agent._id, {
+      deletedAt: Date.now(),
+      updatedAt: Date.now(),
+    })
+
+    return { success: true }
+  },
+})

@@ -1,33 +1,52 @@
 "use client"
 
-import { useQuery } from "@tanstack/react-query"
+import { useAction } from "convex/react"
+import { useCallback, useEffect, useState } from "react"
+import { api } from "@/convex/_generated/api"
 
-interface ModelsResponse {
-  models: string[]
-  simulation?: boolean
-}
-
-async function fetchModels(): Promise<string[]> {
-  const response = await fetch("/api/models")
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch models")
-  }
-
-  const data: ModelsResponse = await response.json()
-  return data.models || []
+interface ModelsState {
+  data: string[] | undefined
+  isLoading: boolean
+  isSuccess: boolean
+  error: Error | null
 }
 
 export function useModels() {
-  const modelsQuery = useQuery({
-    queryKey: ["models"],
-    queryFn: fetchModels,
-    staleTime: 60 * 60 * 1000, // 1 hour - models don't change frequently
+  const [state, setState] = useState<ModelsState>({
+    data: undefined,
+    isLoading: true,
+    isSuccess: false,
+    error: null,
   })
 
+  const getModels = useAction(api.models.getModels)
+
+  const fetchModels = useCallback(async () => {
+    try {
+      setState((prev) => ({ ...prev, isLoading: true, error: null }))
+      const result = await getModels()
+      setState({
+        data: result.models,
+        isLoading: false,
+        isSuccess: true,
+        error: null,
+      })
+    } catch (err) {
+      setState({
+        data: undefined,
+        isLoading: false,
+        isSuccess: false,
+        error: err instanceof Error ? err : new Error("Failed to fetch models"),
+      })
+    }
+  }, [getModels])
+
+  useEffect(() => {
+    fetchModels()
+  }, [fetchModels])
+
   return {
-    modelsQuery,
-    hasModels:
-      modelsQuery.isSuccess && modelsQuery.data && modelsQuery.data.length > 0,
+    modelsQuery: state,
+    hasModels: state.isSuccess && state.data && state.data.length > 0,
   }
 }

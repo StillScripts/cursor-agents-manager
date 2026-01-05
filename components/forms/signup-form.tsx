@@ -47,17 +47,6 @@ export function SignupForm() {
           return
         }
 
-        // Create user database (non-blocking - don't fail signup if this fails)
-        try {
-          await fetch("/api/user/create-database", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-          })
-        } catch (dbError) {
-          console.error("Failed to create user database:", dbError)
-          // Continue anyway - database can be created later on demand
-        }
-
         // Successfully signed up, redirect to home
         router.push("/")
         router.refresh()

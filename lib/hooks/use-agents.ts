@@ -1,51 +1,12 @@
 "use client"
 
-import {
-  keepPreviousData,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
 import { useAction, useQuery as useConvexQuery } from "convex/react"
 import { useEffect, useState } from "react"
 import { api } from "@/convex/_generated/api"
-import type {
-  Agent,
-  AgentConversation,
-  LaunchAgentRequest,
-  PaginatedAgentsResponse,
-} from "@/lib/types"
-
-// Cache configuration constants
-const FIVE_MINUTES = 5 * 60 * 1000
+import type { Agent, AgentConversation, LaunchAgentRequest } from "@/lib/types"
 
 export const AGENTS_QUERY_KEY = ["agents"] as const
-
-export function useAgents(limit = 10) {
-  return useQuery<PaginatedAgentsResponse>({
-    queryKey: [...AGENTS_QUERY_KEY, limit],
-    queryFn: async () => {
-      const response = await fetch(`/api/agents?limit=${limit}`)
-      if (!response.ok) throw new Error("Failed to fetch agents")
-      return response.json()
-    },
-    // Preserve previous data while fetching new data
-    placeholderData: keepPreviousData,
-    // Refetch every 5 minutes in the background
-    refetchInterval: FIVE_MINUTES,
-    // Keep refetching even when the window is not focused
-    refetchIntervalInBackground: false,
-  })
-}
-
-export function useRefreshAgents() {
-  const queryClient = useQueryClient()
-
-  return {
-    refresh: () =>
-      queryClient.invalidateQueries({ queryKey: AGENTS_QUERY_KEY }),
-  }
-}
 
 // Helper function to convert Convex agent document to API format
 function dbAgentToApiFormat(dbAgent: {
@@ -145,98 +106,112 @@ export function useAgentConversation(
   id: string,
   initialData?: (AgentConversation & { simulation: boolean }) | null
 ) {
-  return useQuery<AgentConversation & { simulation: boolean }>({
-    queryKey: ["conversation", id],
-    queryFn: async () => {
-      const response = await fetch(`/api/agents/${id}/conversation`)
-      if (!response.ok) throw new Error("Failed to fetch conversation")
-      return response.json()
-    },
-    enabled: !!id,
-    initialData: initialData ?? undefined,
-    refetchInterval: 5000,
-    // Refetch in the background to keep data fresh
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-  })
+  const [conversationData, setConversationData] = useState<
+    (AgentConversation & { simulation: boolean }) | null
+  >(initialData ?? null)
+  const [isLoading, setIsLoading] = useState(!initialData)
+  const [error, setError] = useState<string | null>(null)
+
+  const getConversation = useAction(api.agentsActions.getConversation)
+
+  useEffect(() => {
+    if (!id) return
+
+    let cancelled = false
+
+    const fetchConversation = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        const result = await getConversation({ agentId: id })
+        if (!cancelled) {
+          if (result.conversation) {
+            setConversationData({
+              ...result.conversation,
+              simulation: result.simulation,
+            })
+          } else {
+            setConversationData(null)
+          }
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : "Failed to fetch conversation"
+          )
+          setConversationData(null)
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    fetchConversation()
+
+    // Poll every 5 seconds if conversation exists
+    const interval = setInterval(() => {
+      if (id && !cancelled) {
+        fetchConversation()
+      }
+    }, 5000)
+
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [id, getConversation])
+
+  return {
+    data: conversationData,
+    isLoading,
+    error,
+  }
 }
 
 export function useLaunchAgent() {
-  const queryClient = useQueryClient()
+  const launchAgent = useAction(api.agentsActions.launchAgent)
 
   return useMutation({
     mutationFn: async (data: LaunchAgentRequest) => {
-      const response = await fetch("/api/agents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+      return await launchAgent({
+        prompt: data.prompt,
+        source: data.source,
+        model: data.model,
+        target: data.target,
+        webhook: data.webhook,
       })
-      if (!response.ok) throw new Error("Failed to launch agent")
-      return response.json()
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["agents"] })
     },
   })
 }
 
 export function useStopAgent() {
-  const queryClient = useQueryClient()
+  const stopAgent = useAction(api.agentsActions.stopAgent)
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/agents/${id}/stop`, {
-        method: "POST",
-      })
-      if (!response.ok) throw new Error("Failed to stop agent")
-      return response.json()
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["agents"] })
+      return await stopAgent({ agentId: id })
     },
   })
 }
 
 export function useDeleteAgent() {
-  const queryClient = useQueryClient()
+  const deleteAgent = useAction(api.agentsActions.deleteAgent)
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/agents/${id}`, {
-        method: "DELETE",
-      })
-      if (!response.ok) throw new Error("Failed to delete agent")
-      return response.json()
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["agents"] })
+      return await deleteAgent({ agentId: id })
     },
   })
 }
 
 export function useSendFollowUp() {
-  const queryClient = useQueryClient()
+  const sendFollowUp = useAction(api.agentsActions.sendFollowUp)
 
   return useMutation({
     mutationFn: async ({ id, message }: { id: string; message: string }) => {
-      const response = await fetch(`/api/agents/${id}/followup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: { text: message } }),
-      })
-      if (!response.ok) throw new Error("Failed to send follow-up")
-      return response.json()
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ["conversation", variables.id],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ["agent", variables.id],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ["agents"],
-      })
+      return await sendFollowUp({ agentId: id, message })
     },
   })
 }
