@@ -19,6 +19,7 @@ import type * as http from "../http.js";
 import type * as models from "../models.js";
 import type * as repositories from "../repositories.js";
 import type * as timeLogs from "../timeLogs.js";
+import type * as webhookActions from "../webhookActions.js";
 
 import type {
   ApiFromModules,
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   models: typeof models;
   repositories: typeof repositories;
   timeLogs: typeof timeLogs;
+  webhookActions: typeof webhookActions;
 }>;
 
 /**

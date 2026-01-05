@@ -38,7 +38,8 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_user_agent", ["userId", "agentId"])
     .index("by_user_status", ["userId", "status"])
-    .index("by_updated_at", ["updatedAt"]),
+    .index("by_updated_at", ["updatedAt"])
+    .index("by_agent_id", ["agentId"]),
 
   apiKeys: defineTable({
     userId: v.string(),

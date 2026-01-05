@@ -1,5 +1,10 @@
 import { v } from "convex/values"
-import { internalQuery, mutation, query } from "./_generated/server"
+import {
+  internalMutation,
+  internalQuery,
+  mutation,
+  query,
+} from "./_generated/server"
 import { getAuthenticatedUser } from "./auth"
 
 // Agent status validator used across queries and mutations
@@ -176,6 +181,24 @@ export const getByIdInternal = internalQuery({
   },
 })
 
+/**
+ * Internal query to get an agent by agentId only (used by webhooks)
+ */
+export const getByAgentIdInternal = internalQuery({
+  args: {
+    agentId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const agent = await ctx.db
+      .query("agents")
+      .withIndex("by_agent_id", (q) => q.eq("agentId", args.agentId))
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .first()
+
+    return agent
+  },
+})
+
 export const getById = query({
   args: {
     agentId: v.string(),
@@ -336,5 +359,85 @@ export const softDelete = mutation({
     })
 
     return { success: true }
+  },
+})
+
+/**
+ * Internal mutation to update agent from webhook payload (used by webhooks)
+ */
+export const updateFromWebhook = internalMutation({
+  args: {
+    agentId: v.string(),
+    status: agentStatusValidator,
+    name: v.optional(v.string()),
+    summary: v.optional(v.string()),
+    targetUrl: v.optional(v.string()),
+    targetBranchName: v.optional(v.string()),
+    targetPrUrl: v.optional(v.string()),
+    targetAutoCreatePr: v.optional(v.boolean()),
+    sourceRepository: v.optional(v.string()),
+    sourceRef: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const agent = await ctx.db
+      .query("agents")
+      .withIndex("by_agent_id", (q) => q.eq("agentId", args.agentId))
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .first()
+
+    if (!agent) {
+      throw new Error(`Agent not found: ${args.agentId}`)
+    }
+
+    const now = Date.now()
+    const updates: {
+      status: typeof args.status
+      updatedAt: number
+      syncStatus: "synced"
+      syncError?: undefined
+      name?: string
+      summary?: string
+      targetUrl?: string
+      targetBranchName?: string
+      targetPrUrl?: string
+      targetAutoCreatePr?: boolean
+      sourceRepository?: string
+      sourceRef?: string
+    } = {
+      status: args.status,
+      updatedAt: now,
+      syncStatus: "synced",
+      syncError: undefined,
+    }
+
+    // Only update fields that are provided
+    if (args.name !== undefined) {
+      updates.name = args.name
+    }
+    if (args.summary !== undefined) {
+      updates.summary = args.summary
+    }
+    if (args.targetUrl !== undefined) {
+      updates.targetUrl = args.targetUrl
+    }
+    if (args.targetBranchName !== undefined) {
+      updates.targetBranchName = args.targetBranchName
+    }
+    if (args.targetPrUrl !== undefined) {
+      updates.targetPrUrl = args.targetPrUrl
+    }
+    if (args.targetAutoCreatePr !== undefined) {
+      updates.targetAutoCreatePr = args.targetAutoCreatePr
+    }
+    if (args.sourceRepository !== undefined) {
+      updates.sourceRepository = args.sourceRepository
+    }
+    if (args.sourceRef !== undefined) {
+      updates.sourceRef = args.sourceRef
+    }
+
+    await ctx.db.patch(agent._id, updates)
+
+    return { success: true, agentId: args.agentId }
   },
 })
