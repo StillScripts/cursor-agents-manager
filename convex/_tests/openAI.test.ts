@@ -1,21 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-// Mock OpenAI and AI SDK
-// Use vi.hoisted() to ensure mock functions are available when the mock factory runs
-// Store them in a way that's accessible to both the mock factory and the test code
-const mocks = vi.hoisted(() => {
-  return {
-    mockTranscriptionsCreate: vi.fn(),
-    mockSpeechCreate: vi.fn(),
-    mockGenerateText: vi.fn(),
+// Extend globalThis to store our mocks - avoids vi.hoisted() which isn't available in all environments
+declare global {
+  // eslint-disable-next-line no-var
+  var __openAITestMocks: {
+    transcriptionsCreate: ReturnType<typeof vi.fn>
+    speechCreate: ReturnType<typeof vi.fn>
+    generateText: ReturnType<typeof vi.fn>
   }
-})
+}
 
-// Export for use in tests
-const { mockTranscriptionsCreate, mockSpeechCreate, mockGenerateText } = mocks
+// Initialize the global mocks object
+globalThis.__openAITestMocks = {
+  transcriptionsCreate: vi.fn(),
+  speechCreate: vi.fn(),
+  generateText: vi.fn(),
+}
 
-// Mock OpenAI - must be hoisted before any imports
-// Access the hoisted mocks directly via closure
+// Mock OpenAI - uses globalThis to access mocks since vi.mock is hoisted
 vi.mock("openai", () => {
   class MockAPIError extends Error {
     status: number
@@ -33,21 +35,20 @@ vi.mock("openai", () => {
   }
 
   // Create a class that matches OpenAI's structure
-  // This ensures 'new OpenAI()' works correctly
   class MockOpenAI {
     audio: {
-      transcriptions: { create: typeof mocks.mockTranscriptionsCreate }
-      speech: { create: typeof mocks.mockSpeechCreate }
+      transcriptions: { create: ReturnType<typeof vi.fn> }
+      speech: { create: ReturnType<typeof vi.fn> }
     }
 
     constructor(_options: any) {
-      // Access mocks directly via closure - vi.hoisted runs before vi.mock
+      // Access mocks via globalThis - always available
       this.audio = {
         transcriptions: {
-          create: mocks.mockTranscriptionsCreate,
+          create: globalThis.__openAITestMocks.transcriptionsCreate,
         },
         speech: {
-          create: mocks.mockSpeechCreate,
+          create: globalThis.__openAITestMocks.speechCreate,
         },
       }
     }
@@ -61,10 +62,10 @@ vi.mock("openai", () => {
   }
 })
 
-// Mock AI SDK - use the hoisted mock function from mocks object
+// Mock AI SDK - uses globalThis to access mocks
 vi.mock("ai", () => {
   return {
-    generateText: mocks.mockGenerateText,
+    generateText: globalThis.__openAITestMocks.generateText,
   }
 })
 
@@ -78,13 +79,19 @@ import OpenAI from "openai"
 import { createTestInstance, createTestWithUser } from "../../lib/testHelpers"
 import { api } from "../_generated/api"
 
+// Helper getters for mock functions - access via globalThis
+const getMockTranscriptionsCreate = () =>
+  globalThis.__openAITestMocks.transcriptionsCreate
+const getMockSpeechCreate = () => globalThis.__openAITestMocks.speechCreate
+const getMockGenerateText = () => globalThis.__openAITestMocks.generateText
+
 describe("openAI", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // Reset all mock functions
-    mockTranscriptionsCreate.mockReset()
-    mockSpeechCreate.mockReset()
-    mockGenerateText.mockReset()
+    getMockTranscriptionsCreate().mockReset()
+    getMockSpeechCreate().mockReset()
+    getMockGenerateText().mockReset()
   })
 
   // Helper to set up API key in database
@@ -128,7 +135,7 @@ describe("openAI", () => {
       await setupApiKey(asUser)
 
       const mockImprovedText = "This is an improved version of the prompt"
-      mockGenerateText.mockResolvedValue({
+      getMockGenerateText().mockResolvedValue({
         text: mockImprovedText,
       } as any)
 
@@ -137,8 +144,8 @@ describe("openAI", () => {
       })
 
       expect(result.text).toBe(mockImprovedText)
-      expect(mockGenerateText).toHaveBeenCalledTimes(1)
-      const callArgs = mockGenerateText.mock.calls[0][0]
+      expect(getMockGenerateText()).toHaveBeenCalledTimes(1)
+      const callArgs = getMockGenerateText().mock.calls[0][0]
       expect(callArgs.prompt).toContain("fix bug")
     })
 
@@ -152,7 +159,7 @@ describe("openAI", () => {
         "Invalid API key",
         undefined
       )
-      mockGenerateText.mockRejectedValue(apiError)
+      getMockGenerateText().mockRejectedValue(apiError)
 
       await expect(
         asUser.action(api.openAI.improvePrompt, { text: "test prompt" })
@@ -169,7 +176,7 @@ describe("openAI", () => {
         "Rate limit exceeded",
         undefined
       )
-      mockGenerateText.mockRejectedValue(apiError)
+      getMockGenerateText().mockRejectedValue(apiError)
 
       await expect(
         asUser.action(api.openAI.improvePrompt, { text: "test prompt" })
@@ -203,7 +210,7 @@ describe("openAI", () => {
       await setupApiKey(asUser)
 
       const mockTranscription = { text: "Hello world" }
-      mockTranscriptionsCreate.mockResolvedValue(mockTranscription)
+      getMockTranscriptionsCreate().mockResolvedValue(mockTranscription)
 
       const result = await asUser.action(api.openAI.transcribeAudio, {
         audioData: Buffer.from("test audio").toString("base64"),
@@ -211,8 +218,8 @@ describe("openAI", () => {
       })
 
       expect(result.text).toBe("Hello world")
-      expect(mockTranscriptionsCreate).toHaveBeenCalledTimes(1)
-      const callArgs = mockTranscriptionsCreate.mock.calls[0][0]
+      expect(getMockTranscriptionsCreate()).toHaveBeenCalledTimes(1)
+      const callArgs = getMockTranscriptionsCreate().mock.calls[0][0]
       expect(callArgs.model).toBe("whisper-1")
       expect(callArgs.file).toBeInstanceOf(File)
     })
@@ -227,7 +234,7 @@ describe("openAI", () => {
         "Invalid API key",
         undefined
       )
-      mockTranscriptionsCreate.mockRejectedValue(apiError)
+      getMockTranscriptionsCreate().mockRejectedValue(apiError)
 
       await expect(
         asUser.action(api.openAI.transcribeAudio, {
@@ -247,7 +254,7 @@ describe("openAI", () => {
         "Rate limit exceeded",
         undefined
       )
-      mockTranscriptionsCreate.mockRejectedValue(apiError)
+      getMockTranscriptionsCreate().mockRejectedValue(apiError)
 
       await expect(
         asUser.action(api.openAI.transcribeAudio, {
@@ -279,7 +286,7 @@ describe("openAI", () => {
 
       const mockAudioBuffer = Buffer.from("mock audio data")
       const mockArrayBuffer = vi.fn().mockResolvedValue(mockAudioBuffer)
-      mockSpeechCreate.mockResolvedValue({
+      getMockSpeechCreate().mockResolvedValue({
         arrayBuffer: mockArrayBuffer,
       })
 
@@ -289,8 +296,8 @@ describe("openAI", () => {
 
       expect(result.audioData).toBe(mockAudioBuffer.toString("base64"))
       expect(result.mimeType).toBe("audio/mpeg")
-      expect(mockSpeechCreate).toHaveBeenCalledTimes(1)
-      const callArgs = mockSpeechCreate.mock.calls[0][0]
+      expect(getMockSpeechCreate()).toHaveBeenCalledTimes(1)
+      const callArgs = getMockSpeechCreate().mock.calls[0][0]
       expect(callArgs.model).toBe("tts-1")
       expect(callArgs.voice).toBe("alloy")
       expect(callArgs.input).toBe("Hello world")
@@ -302,7 +309,7 @@ describe("openAI", () => {
 
       const mockAudioBuffer = Buffer.from("mock audio data")
       const mockArrayBuffer = vi.fn().mockResolvedValue(mockAudioBuffer)
-      mockSpeechCreate.mockResolvedValue({
+      getMockSpeechCreate().mockResolvedValue({
         arrayBuffer: mockArrayBuffer,
       })
 
@@ -312,7 +319,7 @@ describe("openAI", () => {
       })
 
       expect(result.audioData).toBe(mockAudioBuffer.toString("base64"))
-      const callArgs = mockSpeechCreate.mock.calls[0][0]
+      const callArgs = getMockSpeechCreate().mock.calls[0][0]
       expect(callArgs.voice).toBe("nova")
     })
 
@@ -326,7 +333,7 @@ describe("openAI", () => {
         "Invalid API key",
         undefined
       )
-      mockSpeechCreate.mockRejectedValue(apiError)
+      getMockSpeechCreate().mockRejectedValue(apiError)
 
       await expect(
         asUser.action(api.openAI.textToSpeech, { text: "Hello" })
@@ -343,7 +350,7 @@ describe("openAI", () => {
         "Rate limit exceeded",
         undefined
       )
-      mockSpeechCreate.mockRejectedValue(apiError)
+      getMockSpeechCreate().mockRejectedValue(apiError)
 
       await expect(
         asUser.action(api.openAI.textToSpeech, { text: "Hello" })
