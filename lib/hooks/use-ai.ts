@@ -67,3 +67,14 @@ export function useTextToSpeech() {
     },
   })
 }
+
+export function useImprovePrompt() {
+  const improvePromptAction = useAction(api.openAI.improvePrompt)
+
+  return useMutation({
+    mutationFn: async (text: string) => {
+      const result = await improvePromptAction({ text })
+      return result.text
+    },
+  })
+}

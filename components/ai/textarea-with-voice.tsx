@@ -1,6 +1,6 @@
 "use client"
 
-import { Mic, Square } from "lucide-react"
+import { Mic, Sparkles, Square } from "lucide-react"
 import type React from "react"
 import { useEffect, useRef, useState } from "react"
 import {
@@ -9,7 +9,7 @@ import {
   InputGroupButton,
   InputGroupTextarea,
 } from "@/components/ui/input-group"
-import { useTranscribeAudio } from "@/lib/hooks/use-ai"
+import { useImprovePrompt, useTranscribeAudio } from "@/lib/hooks/use-ai"
 
 interface TextareaWithVoiceProps
   extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -31,6 +31,7 @@ export function TextareaWithVoice({
   const chunksRef = useRef<Blob[]>([])
 
   const transcribe = useTranscribeAudio()
+  const improvePrompt = useImprovePrompt()
 
   useEffect(() => {
     // Check browser support
@@ -119,6 +120,28 @@ export function TextareaWithVoice({
     }
   }
 
+  const handleImprovePrompt = async () => {
+    const currentValue = typeof value === "string" ? value : ""
+    if (!currentValue.trim()) {
+      return
+    }
+
+    try {
+      const improvedText = await improvePrompt.mutateAsync(currentValue)
+
+      if (onChange) {
+        const syntheticEvent = {
+          target: { value: improvedText },
+          currentTarget: { value: improvedText },
+        } as React.ChangeEvent<HTMLTextAreaElement>
+
+        onChange(syntheticEvent)
+      }
+    } catch (error) {
+      console.error("Error improving prompt:", error)
+    }
+  }
+
   return (
     <InputGroup className="flex flex-col-reverse items-start">
       <InputGroupTextarea
@@ -127,13 +150,27 @@ export function TextareaWithVoice({
         className={className}
         {...props}
       />
-      {isSupported && (
-        <InputGroupAddon align="inline-start" className="items-end pb-2">
+      <InputGroupAddon align="inline-start" className="items-end pb-2 gap-1">
+        <InputGroupButton
+          size="icon-xs"
+          variant="ghost"
+          onClick={handleImprovePrompt}
+          disabled={
+            improvePrompt.isPending ||
+            !value ||
+            (typeof value === "string" && !value.trim())
+          }
+          title="Improve prompt with AI"
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+        </InputGroupButton>
+        {isSupported && (
           <InputGroupButton
             size="icon-xs"
             variant={isRecording ? "destructive" : "ghost"}
             onClick={isRecording ? stopRecording : startRecording}
             disabled={transcribe.isPending}
+            title={isRecording ? "Stop recording" : "Start voice input"}
           >
             {isRecording ? (
               <Square className="h-3.5 w-3.5" />
@@ -141,8 +178,8 @@ export function TextareaWithVoice({
               <Mic className="h-3.5 w-3.5" />
             )}
           </InputGroupButton>
-        </InputGroupAddon>
-      )}
+        )}
+      </InputGroupAddon>
     </InputGroup>
   )
 }

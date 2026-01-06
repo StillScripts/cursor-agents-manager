@@ -252,3 +252,72 @@ export const textToSpeech = action({
     }
   },
 })
+
+/**
+ * Improve a task description/prompt to make it clearer and more effective for an AI agent
+ */
+export const improvePrompt = action({
+  args: {
+    text: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
+
+    // Get OpenAI API key
+    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
+      userId: authUser.userId,
+    })
+
+    if (!record?.encryptedOpenaiApiKey) {
+      throw new Error("OpenAI API key not configured")
+    }
+
+    let openaiApiKey: string
+    try {
+      openaiApiKey = decryptData(record.encryptedOpenaiApiKey)
+    } catch {
+      throw new Error("Failed to decrypt OpenAI API key")
+    }
+
+    // Validate input
+    if (!args.text || args.text.trim().length === 0) {
+      throw new Error("Text cannot be empty")
+    }
+
+    try {
+      // Generate improved prompt using AI SDK
+      const openaiProvider = createOpenAI({ apiKey: openaiApiKey })
+      const { text: improvedText } = await generateText({
+        model: openaiProvider("gpt-4o-mini"),
+        prompt: `You are helping to improve task descriptions for AI coding agents. The user has provided a task description that they want to make clearer and more effective.
+
+Your goal is to:
+1. Make the task description more specific and actionable
+2. Clarify any ambiguous requirements
+3. Add context that would help an AI agent understand the goal better
+4. Maintain the original intent and tone
+5. Keep it concise but comprehensive
+
+Original task description:
+${args.text}
+
+Improved task description:`,
+      })
+
+      return { text: improvedText.trim() }
+    } catch (error) {
+      console.error("[Convex improvePrompt] Error:", error)
+      if (error instanceof OpenAI.APIError) {
+        if (error.status === 401) {
+          throw new Error("Invalid OpenAI API key")
+        }
+        if (error.status === 429) {
+          throw new Error("OpenAI rate limit exceeded")
+        }
+      }
+      throw new Error("Failed to improve prompt")
+    }
+  },
+})
