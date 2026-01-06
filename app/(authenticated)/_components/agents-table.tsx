@@ -1,20 +1,30 @@
 "use client"
 
 import { Bot } from "lucide-react"
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { AgentCard } from "@/app/(authenticated)/_components/agent-card"
 import { AgentListSkeleton } from "@/app/(authenticated)/_components/agent-list-skeleton"
 import { PageHeader } from "@/app/(authenticated)/_components/page-header"
 import { Button } from "@/components/ui/button"
 import { api } from "@/convex/_generated/api"
+import { useQuery } from "convex/react"
 import { useStableQuery } from "@/lib/hooks/use-stable-query"
 import type { Agent } from "@/lib/types"
 
 export function AgentsTable() {
   const [limit, setLimit] = useState(10)
+  const hasLoadedOnce = useRef(false)
 
-  // Query for reactive database updates
+  // Use both useQuery (for loading state) and useStableQuery (for stable data)
+  const rawQueryResult = useQuery(api.agents.listByUser, { limit })
   const dbResult = useStableQuery(api.agents.listByUser, { limit })
+
+  // Track if we've ever received a successful query result
+  useEffect(() => {
+    if (rawQueryResult !== undefined) {
+      hasLoadedOnce.current = true
+    }
+  }, [rawQueryResult])
 
   // Transform database result to Agent format
   const agents: Agent[] =
@@ -40,10 +50,16 @@ export function AgentsTable() {
 
   const hasMore = dbResult?.hasMore ?? false
 
-  // Show loading skeleton while query is loading
-  if (dbResult === undefined) {
+  // Show loading skeleton while query is loading (only on initial load)
+  // After first load, useStableQuery will keep showing the last result
+  if (rawQueryResult === undefined && !hasLoadedOnce.current) {
     return <AgentListSkeleton />
   }
+
+  // Only show "No agents yet" if we have a confirmed query result with no agents
+  // Don't show it if we're still loading or if we have agents
+  const showEmptyState =
+    hasLoadedOnce.current && rawQueryResult !== undefined && agents.length === 0
 
   return (
     <>
@@ -51,7 +67,7 @@ export function AgentsTable() {
 
       <div className="flex-1 overflow-auto">
         <div className="px-3 py-2">
-          {agents.length === 0 && (
+          {showEmptyState && (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
                 <Bot className="h-8 w-8 text-muted-foreground" />
