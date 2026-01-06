@@ -161,42 +161,42 @@ export function TextareaWithVoice({
           {...props}
         />
         <InputGroupAddon align="inline-start" className="items-end pb-2 gap-1">
-        <InputGroupButton
-          size="icon-xs"
-          variant="ghost"
-          onClick={handleImprovePrompt}
-          disabled={
-            improvePrompt.isPending ||
-            !value ||
-            (typeof value === "string" && !value.trim())
-          }
-          title="Improve prompt with AI"
-        >
-          <Sparkles className="h-3.5 w-3.5" />
-        </InputGroupButton>
-        {isSupported && (
           <InputGroupButton
             size="icon-xs"
-            variant={isRecording ? "destructive" : "ghost"}
-            onClick={isRecording ? stopRecording : startRecording}
-            disabled={isTranscribing || transcribe.isPending}
-            title={
-              isRecording
-                ? "Stop recording"
-                : isTranscribing || transcribe.isPending
-                  ? "Transcribing..."
-                  : "Start voice input"
+            variant="ghost"
+            onClick={handleImprovePrompt}
+            disabled={
+              improvePrompt.isPending ||
+              !value ||
+              (typeof value === "string" && !value.trim())
             }
+            title="Improve prompt with AI"
           >
-            {isTranscribing || transcribe.isPending ? (
-              <Spinner className="h-3.5 w-3.5" />
-            ) : isRecording ? (
-              <Square className="h-3.5 w-3.5" />
-            ) : (
-              <Mic className="h-3.5 w-3.5" />
-            )}
+            <Sparkles className="h-3.5 w-3.5" />
           </InputGroupButton>
-        )}
+          {isSupported && (
+            <InputGroupButton
+              size="icon-xs"
+              variant={isRecording ? "destructive" : "ghost"}
+              onClick={isRecording ? stopRecording : startRecording}
+              disabled={isTranscribing || transcribe.isPending}
+              title={
+                isRecording
+                  ? "Stop recording"
+                  : isTranscribing || transcribe.isPending
+                    ? "Transcribing..."
+                    : "Start voice input"
+              }
+            >
+              {isTranscribing || transcribe.isPending ? (
+                <Spinner className="h-3.5 w-3.5" />
+              ) : isRecording ? (
+                <Square className="h-3.5 w-3.5" />
+              ) : (
+                <Mic className="h-3.5 w-3.5" />
+              )}
+            </InputGroupButton>
+          )}
         </InputGroupAddon>
       </InputGroup>
       {(isRecording || isProcessing) && (
