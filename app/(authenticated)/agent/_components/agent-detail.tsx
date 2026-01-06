@@ -43,6 +43,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
+import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { filterMessagesForDisplay } from "@/lib/conversation-utils"
 import { formatDurationMs, formatRelativeTime } from "@/lib/formatting"
@@ -355,25 +356,6 @@ export function AgentDetail({
                 {/* Summary Action Buttons */}
                 {conversation && conversation.messages.length > 0 && (
                   <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-border">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setShowThinkingProcess(!showThinkingProcess)
-                      }
-                    >
-                      {showThinkingProcess ? (
-                        <>
-                          <EyeOff className="h-4 w-4 mr-2" />
-                          Hide Thinking Process
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="h-4 w-4 mr-2" />
-                          Show Thinking Process
-                        </>
-                      )}
-                    </Button>
                     {hasOpenAIKey && (
                       <>
                         <Button
@@ -501,6 +483,20 @@ export function AgentDetail({
                   </div>
                 ) : (
                   <div className="space-y-3">
+                    {/* Show Thinking Process Toggle */}
+                    <div className="flex items-center justify-between pb-2 border-b border-border">
+                      <label
+                        htmlFor="show-thinking-toggle"
+                        className="text-sm font-medium text-foreground cursor-pointer"
+                      >
+                        Show Thinking Process
+                      </label>
+                      <Switch
+                        id="show-thinking-toggle"
+                        checked={showThinkingProcess}
+                        onCheckedChange={setShowThinkingProcess}
+                      />
+                    </div>
                     {filterMessagesForDisplay(
                       conversation?.messages || [],
                       showThinkingProcess
