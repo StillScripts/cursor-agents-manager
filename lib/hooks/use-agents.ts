@@ -151,18 +151,12 @@ export function useAgentConversation(
       }
     }
 
-    fetchConversation()
-
-    // Poll every 5 seconds if conversation exists
-    const interval = setInterval(() => {
-      if (id && !cancelled) {
-        fetchConversation()
-      }
-    }, 5000)
+    // Only load once on mount/when id changes.
+    // Convex will handle resyncing the underlying data when it updates.
+    void fetchConversation()
 
     return () => {
       cancelled = true
-      clearInterval(interval)
     }
   }, [id, getConversation])
 
