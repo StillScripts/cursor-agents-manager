@@ -7,7 +7,6 @@ import {
 } from "./_generated/server"
 import { getAuthenticatedUser } from "./auth"
 
-// Agent status validator used across queries and mutations
 const agentStatusValidator = v.union(
   v.literal("CREATING"),
   v.literal("RUNNING"),
@@ -214,6 +213,7 @@ export const getById = query({
       .withIndex("by_user_agent", (q) =>
         q.eq("userId", authUser.userId).eq("agentId", args.agentId)
       )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .first()
 
     return agent

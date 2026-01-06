@@ -39,12 +39,9 @@ export const summarizeConversation = action({
     }
 
     // Get conversation (the action handles API key internally)
-    const conversationData = await ctx.runAction(
-      api.agentsActions.getConversation,
-      {
-        agentId: args.agentId,
-      }
-    )
+    const conversationData = await ctx.runAction(api.cursor.getConversation, {
+      agentId: args.agentId,
+    })
 
     if (!conversationData.conversation) {
       throw new Error("Conversation not found")

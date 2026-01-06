@@ -3,11 +3,20 @@
 import { v } from "convex/values"
 import { decryptData } from "../lib/db/encryption"
 import type { LaunchAgentRequest } from "../lib/schemas/cursor/launch-agent"
-import type { Agent, AgentStatus } from "../lib/types"
+import type { Agent, AgentConversation, AgentStatus } from "../lib/types"
 import { api, internal } from "./_generated/api"
 import { action } from "./_generated/server"
 
 const CURSOR_API_URL = "https://api.cursor.com/v0/agents"
+const CURSOR_MODELS_API_URL = "https://api.cursor.com/v0/models"
+
+const SIMULATED_MODELS = [
+  "claude-3-5-sonnet-20241022",
+  "claude-3-5-haiku-20241022",
+  "gpt-4o",
+  "gpt-4o-mini",
+  "o1-preview",
+]
 
 /**
  * Convert a Cursor API agent to the format for our database
@@ -99,6 +108,16 @@ export const getAgents = action({
       userId: authUser.userId,
       limit,
     })
+
+    // If we have agents in DB and not forcing refresh, return them immediately
+    if (dbAgents.length > 0 && !forceRefresh) {
+      return {
+        agents: dbAgents.map(dbAgentToApiFormat),
+        total: dbAgents.length,
+        hasMore: dbAgents.length >= limit,
+        simulation: false,
+      }
+    }
 
     // Get encrypted API key record
     const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
@@ -741,7 +760,7 @@ export const sendFollowUp = action({
       const data = await response.json()
 
       // Refresh agent data in database
-      await ctx.runAction(api.agentsActions.getAgentById, {
+      await ctx.runAction(api.cursor.getAgentById, {
         agentId: args.agentId,
       })
 
@@ -852,4 +871,69 @@ export const getConversation = action({
   },
 })
 
-import type { AgentConversation } from "../lib/types"
+/**
+ * Get list of available models
+ */
+export const getModels = action({
+  args: {},
+  handler: async (
+    ctx
+  ): Promise<{
+    models: string[]
+    simulation: boolean
+  }> => {
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
+
+    // Get encrypted API key record
+    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
+      userId: authUser.userId,
+    })
+
+    // Decrypt API key if it exists
+    let apiKey: string | null = null
+    if (record?.encryptedCursorApiKey) {
+      try {
+        apiKey = decryptData(record.encryptedCursorApiKey)
+      } catch {
+        apiKey = null
+      }
+    }
+
+    const simulationMode = !apiKey
+
+    if (simulationMode) {
+      return {
+        models: SIMULATED_MODELS,
+        simulation: true,
+      }
+    }
+
+    // Live mode - call Cursor API
+    try {
+      const response = await fetch(CURSOR_MODELS_API_URL, {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
+
+      const data = await response.json()
+      return {
+        models: data.models || [],
+        simulation: false,
+      }
+    } catch (error) {
+      console.error("[Convex getModels] Error fetching models:", error)
+      // Fallback to simulated models on error
+      return {
+        models: SIMULATED_MODELS,
+        simulation: true,
+      }
+    }
+  },
+})

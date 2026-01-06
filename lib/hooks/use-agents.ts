@@ -58,7 +58,7 @@ export function useAgent(
   const dbResult = useStableQuery(api.agents.getById, { agentId: id })
 
   // Convex action for syncing from Cursor API
-  const getAgentById = useAction(api.agentsActions.getAgentById)
+  const getAgentById = useAction(api.cursor.getAgentById)
 
   // Initial sync on mount (if no data in DB, fetches from Cursor API)
   useEffect(() => {
@@ -113,7 +113,7 @@ export function useAgentConversation(
   const [isLoading, setIsLoading] = useState(!initialData)
   const [error, setError] = useState<string | null>(null)
 
-  const getConversation = useAction(api.agentsActions.getConversation)
+  const getConversation = useAction(api.cursor.getConversation)
 
   useEffect(() => {
     if (!id) return
@@ -172,7 +172,7 @@ export function useAgentConversation(
 }
 
 export function useLaunchAgent() {
-  const launchAgent = useAction(api.agentsActions.launchAgent)
+  const launchAgent = useAction(api.cursor.launchAgent)
 
   return useMutation({
     mutationFn: async (data: LaunchAgentRequest) => {
@@ -188,7 +188,7 @@ export function useLaunchAgent() {
 }
 
 export function useStopAgent() {
-  const stopAgent = useAction(api.agentsActions.stopAgent)
+  const stopAgent = useAction(api.cursor.stopAgent)
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -198,7 +198,7 @@ export function useStopAgent() {
 }
 
 export function useDeleteAgent() {
-  const deleteAgent = useAction(api.agentsActions.deleteAgent)
+  const deleteAgent = useAction(api.cursor.deleteAgent)
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -208,7 +208,7 @@ export function useDeleteAgent() {
 }
 
 export function useSendFollowUp() {
-  const sendFollowUp = useAction(api.agentsActions.sendFollowUp)
+  const sendFollowUp = useAction(api.cursor.sendFollowUp)
 
   return useMutation({
     mutationFn: async ({ id, message }: { id: string; message: string }) => {

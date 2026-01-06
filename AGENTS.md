@@ -293,7 +293,7 @@ export function formDataToApiRequest(formData: LaunchAgentFormData): LaunchAgent
 
 ### Test Structure
 
-Tests use **Bun's test runner** with a preload script for mocking.
+The project uses **Vitest** for testing with **convex-test** for Convex function testing. Tests are organized in `convex/__tests__/` and follow a consistent structure and naming convention.
 
 **Running Tests**:
 ```bash
@@ -302,7 +302,146 @@ bun run test
 
 # Watch mode
 bun test --watch
+
+# Run specific test file
+bun test convex/_tests/branches.test.ts
 ```
+
+**Test Organization**:
+```
+convex/_tests/
+├── testHelpers.ts           # Shared test utilities and helpers
+├── branches.test.ts         # Tests for branches Convex functions
+├── repositories.test.ts     # Tests for repositories Convex functions
+└── timeLogs.test.ts        # Tests for timeLogs Convex functions
+```
+
+**Test Structure Convention**:
+
+Tests follow a hierarchical structure using nested `describe` blocks:
+
+```typescript
+describe("modelName", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  describe("functionName", () => {
+    it("describes the specific behavior", async () => {
+      // Test implementation
+    })
+  })
+})
+```
+
+**Structure Pattern**:
+1. **Outer `describe`**: Model/domain name (e.g., `"branches"`, `"repositories"`, `"timeLogs"`)
+2. **Inner `describe`**: Specific function name (e.g., `"getBranches"`, `"saveBranches"`)
+3. **`it` blocks**: Individual test cases with descriptive names
+
+**Example**:
+```typescript
+describe("branches", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  describe("getBranches", () => {
+    it("returns empty array when not authenticated", async () => {
+      // Test implementation
+    })
+
+    it("returns empty array when authenticated but no branches exist", async () => {
+      // Test implementation
+    })
+  })
+
+  describe("saveBranches", () => {
+    it("saves branches for authenticated user", async () => {
+      // Test implementation
+    })
+  })
+
+  describe("multi-user isolation", () => {
+    it("isolates branches per user", async () => {
+      // Test implementation
+    })
+  })
+})
+```
+
+**Test Helpers** (`convex/_tests/testHelpers.ts`):
+
+The test helpers provide utilities for creating test instances with mocked authentication:
+
+- `createTestInstance()` - Creates a base test instance with authentication mocked
+- `createTestWithUser(identity?)` - Creates a test instance with a specific user identity
+- `createTestUsers(identities?)` - Creates multiple test instances for multi-user scenarios
+
+**Common Test Patterns**:
+
+1. **Authentication Tests**:
+   ```typescript
+   it("returns empty array when not authenticated", async () => {
+     const t = createTestInstance()
+     const result = await t.query(api.model.function)
+     expect(result).toEqual([])
+   })
+   ```
+
+2. **Empty State Tests**:
+   ```typescript
+   it("returns empty array when authenticated but no data exists", async () => {
+     const asUser = createTestWithUser()
+     const result = await asUser.query(api.model.function)
+     expect(result).toEqual([])
+   })
+   ```
+
+3. **Mutation Tests**:
+   ```typescript
+   it("saves data for authenticated user", async () => {
+     const asUser = createTestWithUser()
+     const result = await asUser.mutation(api.model.saveFunction, { data })
+     expect(result).toMatchObject(data)
+   })
+   ```
+
+4. **Validation Tests**:
+   ```typescript
+   it("returns validation error for invalid payload", async () => {
+     const asUser = createTestWithUser()
+     await expect(
+       asUser.mutation(api.model.function, { invalid: "data" } as any)
+     ).rejects.toThrow()
+   })
+   ```
+
+5. **Multi-User Isolation Tests**:
+   ```typescript
+   describe("multi-user isolation", () => {
+     it("isolates data per user", async () => {
+       const [asUser1, asUser2] = createTestUsers([
+         { name: "User 1" },
+         { name: "User 2" },
+       ])
+       // Test that each user only sees their own data
+     })
+   })
+   ```
+
+**Test File Naming**:
+- Test files use the pattern: `{model}.test.ts`
+- Located in `convex/__tests__/` directory
+- Example: `branches.test.ts`, `repositories.test.ts`, `timeLogs.test.ts`
+
+**Key Testing Principles**:
+- Use `it` instead of `test` for consistency
+- Group related tests with `describe` blocks
+- Test authentication, empty states, mutations, validation, and multi-user isolation
+- Use `beforeEach` to clear mocks between tests
+- Use descriptive test names that explain the expected behavior
+- Test both success and error cases
 
 ### React Query Hooks
 

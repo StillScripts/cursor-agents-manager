@@ -163,7 +163,7 @@ const ModelSelectField = ({ field }: { field: any }) => {
 
 export function LaunchAgentForm() {
   const router = useRouter()
-  const launchAgentAction = useAction(api.agentsActions.launchAgent)
+  const launchAgentAction = useAction(api.cursor.launchAgent)
   const { saveTimeLog } = useSaveTimeLog()
 
   // Error state
