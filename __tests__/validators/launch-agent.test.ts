@@ -7,7 +7,7 @@ import {
   promptSchema,
   sourceSchema,
   webhookSchema,
-} from "@/lib/schemas/cursor/launch-agent"
+} from "@/lib/validators/cursor/launch-agent"
 
 // Test fixtures
 const validSource = {

@@ -4,7 +4,7 @@ import {
   repositorySchema,
   settingsFormSchema,
   validateSettingsForm,
-} from "@/lib/schemas/settings"
+} from "@/lib/validators/settings"
 
 // Test fixtures
 const validRepository = {

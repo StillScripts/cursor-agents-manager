@@ -2,7 +2,7 @@ import { httpRouter } from "convex/server"
 import {
   webhookHeadersSchema,
   webhookPayloadSchema,
-} from "../lib/schemas/cursor/webhook"
+} from "../lib/validators/cursor/webhook"
 import { api, internal } from "./_generated/api"
 import { httpAction } from "./_generated/server"
 import { authComponent, createAuth } from "./auth"

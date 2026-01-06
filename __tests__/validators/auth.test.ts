@@ -4,7 +4,7 @@ import {
   type SignUpFormData,
   signInFormSchema,
   signUpFormSchema,
-} from "@/lib/schemas/auth"
+} from "@/lib/validators/auth"
 
 // Test fixtures
 const validSignUpData = {

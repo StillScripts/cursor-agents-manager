@@ -5,7 +5,7 @@ import {
   webhookEventSchema,
   webhookHeadersSchema,
   webhookPayloadSchema,
-} from "@/lib/schemas/cursor/webhook"
+} from "@/lib/validators/cursor/webhook"
 
 // Test fixtures
 const validWebhookHeaders = {
