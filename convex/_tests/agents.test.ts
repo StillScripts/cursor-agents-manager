@@ -38,7 +38,7 @@ describe("agents", () => {
     it("returns empty array when authenticated but no agents exist", async () => {
       const asUser = createTestWithUser()
       const result = await asUser.query(api.agents.listByUser, {})
-      expect(result).toEqual({ agents: [], total: 0 })
+      expect(result).toEqual({ agents: [], total: 0, hasMore: false })
     })
 
     it("returns agents for authenticated user after creating", async () => {

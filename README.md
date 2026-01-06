@@ -259,7 +259,7 @@ cursor-agents-manager/
 ├── 🔧 convex/                    # Convex Backend
 │   ├── schema.ts                 # Database schema
 │   ├── agents.ts                 # Agent queries
-│   ├── agentsActions.ts          # Agent mutations/actions
+│   ├── cursor.ts          # Agent mutations/actions
 │   ├── apiKeys.ts                # API key queries
 │   ├── apiKeysActions.ts         # API key mutations
 │   ├── auth.ts                   # Better Auth + Convex

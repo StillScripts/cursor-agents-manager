@@ -19,7 +19,7 @@ export function useModels() {
     error: null,
   })
 
-  const getModels = useAction(api.models.getModels)
+  const getModels = useAction(api.cursor.getModels)
 
   const fetchModels = useCallback(async () => {
     try {

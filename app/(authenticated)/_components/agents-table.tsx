@@ -30,7 +30,7 @@ export function AgentsTable() {
   const dbResult = useStableQuery(api.agents.listByUser, { limit })
 
   // Action for syncing from Cursor API
-  const getAgents = useAction(api.agentsActions.getAgents)
+  const getAgents = useAction(api.cursor.getAgents)
 
   // Initial sync on mount (if no data in DB, fetches from Cursor API)
   useEffect(() => {

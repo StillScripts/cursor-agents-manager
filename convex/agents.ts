@@ -213,6 +213,7 @@ export const getById = query({
       .withIndex("by_user_agent", (q) =>
         q.eq("userId", authUser.userId).eq("agentId", args.agentId)
       )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .first()
 
     return agent
