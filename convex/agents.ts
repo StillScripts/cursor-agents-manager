@@ -222,6 +222,51 @@ export const getByAgentIdInternal = internalQuery({
   },
 })
 
+/**
+ * Internal query to find agents created in the past day that are not finished
+ * Used by the nightly sync job
+ * 
+ * Note: We use updatedAt to find recently created agents since new agents
+ * have updatedAt set to their creation time. This also catches agents that
+ * were recently updated, which is fine for syncing purposes.
+ */
+export const getAgentsNeedingSync = internalQuery({
+  args: {
+    sinceTimestamp: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Get all agents updated/created in the past day using the index
+    const allAgents = await ctx.db
+      .query("agents")
+      .withIndex("by_updated_at", (q) => q.gte("updatedAt", args.sinceTimestamp))
+      .collect()
+
+    // Filter for agents that:
+    // 1. Are not deleted
+    // 2. Are not finished
+    // 3. Are cursor agents
+    const agentsNeedingSync = allAgents.filter(
+      (agent) =>
+        !agent.deletedAt &&
+        agent.status !== "FINISHED" &&
+        agent.provider === "cursor"
+    )
+
+    // Group by userId to batch API key lookups
+    const agentsByUser = new Map<string, typeof agentsNeedingSync>()
+    for (const agent of agentsNeedingSync) {
+      const userAgents = agentsByUser.get(agent.userId) || []
+      userAgents.push(agent)
+      agentsByUser.set(agent.userId, userAgents)
+    }
+
+    return Array.from(agentsByUser.entries()).map(([userId, userAgents]) => ({
+      userId,
+      agents: userAgents,
+    }))
+  },
+})
+
 export const getById = query({
   args: {
     agentId: v.string(),
@@ -453,6 +498,107 @@ export const updateSummary = mutation({
     await ctx.db.patch(agent._id, updates)
 
     return { success: true }
+  },
+})
+
+/**
+ * Internal mutation to update agent status (used by sync job)
+ */
+export const updateStatusInternal = internalMutation({
+  args: {
+    agentId: v.string(),
+    status: agentStatusValidator,
+  },
+  handler: async (ctx, args) => {
+    const agent = await ctx.db
+      .query("agents")
+      .withIndex("by_agent_id", (q) => q.eq("agentId", args.agentId))
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .first()
+
+    if (!agent) {
+      throw new Error(`Agent not found: ${args.agentId}`)
+    }
+
+    await ctx.db.patch(agent._id, {
+      status: args.status,
+      updatedAt: Date.now(),
+      syncStatus: "synced",
+      syncError: undefined,
+    })
+
+    return { success: true, agentId: args.agentId }
+  },
+})
+
+/**
+ * Internal mutation to update agent from sync job (used by nightly sync)
+ */
+export const updateFromSync = internalMutation({
+  args: {
+    agentId: v.string(),
+    name: v.string(),
+    status: agentStatusValidator,
+    sourceRepository: v.string(),
+    sourceRef: v.optional(v.string()),
+    targetBranchName: v.optional(v.string()),
+    targetUrl: v.optional(v.string()),
+    targetPrUrl: v.optional(v.string()),
+    targetAutoCreatePr: v.optional(v.boolean()),
+    summary: v.optional(v.string()),
+    providerData: v.optional(v.any()),
+  },
+  handler: async (ctx, args) => {
+    const agent = await ctx.db
+      .query("agents")
+      .withIndex("by_agent_id", (q) => q.eq("agentId", args.agentId))
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .first()
+
+    if (!agent) {
+      throw new Error(`Agent not found: ${args.agentId}`)
+    }
+
+    const now = Date.now()
+    const patchData: {
+      name: string
+      status: typeof args.status
+      sourceRepository: string
+      sourceRef?: string
+      targetBranchName?: string
+      targetUrl?: string
+      targetPrUrl?: string
+      targetAutoCreatePr?: boolean
+      summary?: string
+      providerData?: any
+      updatedAt: number
+      syncStatus: "synced"
+      syncError?: undefined
+      audioSummary?: undefined
+    } = {
+      name: args.name,
+      status: args.status,
+      sourceRepository: args.sourceRepository,
+      sourceRef: args.sourceRef,
+      targetBranchName: args.targetBranchName,
+      targetUrl: args.targetUrl,
+      targetPrUrl: args.targetPrUrl,
+      targetAutoCreatePr: args.targetAutoCreatePr,
+      summary: args.summary,
+      providerData: args.providerData,
+      updatedAt: now,
+      syncStatus: "synced",
+      syncError: undefined,
+    }
+
+    // If summary is being updated, clear audioSummary since it's now stale
+    if (args.summary !== undefined && args.summary !== agent.summary) {
+      patchData.audioSummary = undefined
+    }
+
+    await ctx.db.patch(agent._id, patchData)
+
+    return { success: true, agentId: args.agentId }
   },
 })
 
