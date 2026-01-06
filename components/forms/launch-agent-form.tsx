@@ -30,7 +30,7 @@ import {
   type LaunchAgentFormData,
   launchAgentFormSchema,
   type Model,
-} from "@/lib/schemas/cursor/launch-agent"
+} from "@/lib/validators/cursor/launch-agent"
 
 const RepositorySelectField = ({ field }: { field: any }) => {
   const { repositories, isLoading, hasRepositories } = useRepositories()

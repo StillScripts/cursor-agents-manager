@@ -14,7 +14,7 @@ import {
 import { FieldGroup } from "@/components/ui/field"
 import { signUp } from "@/lib/better-auth/auth-client"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
-import { type SignUpFormData, signUpFormSchema } from "@/lib/schemas/auth"
+import { type SignUpFormData, signUpFormSchema } from "@/lib/validators/auth"
 
 export function SignupForm() {
   const [error, setError] = useState("")

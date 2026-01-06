@@ -8,7 +8,7 @@ import {
   formatRelativeTime,
   formatTime,
   parseGitHubUrl,
-} from "./formatting"
+} from "@/lib/formatting"
 
 // Set timezone to UTC before any tests run
 beforeAll(() => {
