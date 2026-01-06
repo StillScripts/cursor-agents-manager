@@ -422,7 +422,7 @@ We welcome contributions! Here's how to get started:
 
 ### Testing
 
-Tests use **Vitest** with **convex-test** for Convex function testing. Test files are located in `convex/__tests__/` and follow a consistent structure: `describe(model)` → `describe(function)` → `it(test case)`. See [AGENTS.md](./AGENTS.md#test-structure) for detailed testing conventions and patterns.
+Tests use **Vitest** with **convex-test** for Convex function testing. Test files are located in `convex/_tests/` and follow a consistent structure: `describe(model)` → `describe(function)` → `it(test case)`. See [AGENTS.md](./AGENTS.md#test-structure) for detailed testing conventions and patterns.
 
 ## 📄 License
 

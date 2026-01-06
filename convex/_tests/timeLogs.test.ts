@@ -4,7 +4,7 @@ import {
   createTestInstance,
   createTestUsers,
   createTestWithUser,
-} from "./test-helpers"
+} from "./testHelpers"
 
 const testAgentId = "test-agent-123"
 const testAgentId2 = "test-agent-456"

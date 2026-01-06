@@ -4,7 +4,7 @@ import {
   createTestInstance,
   createTestUsers,
   createTestWithUser,
-} from "./test-helpers"
+} from "./testHelpers"
 
 const defaultBranches = [
   { name: "main" },

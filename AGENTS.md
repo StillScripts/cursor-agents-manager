@@ -304,13 +304,13 @@ bun run test
 bun test --watch
 
 # Run specific test file
-bun test convex/__tests__/branches.test.ts
+bun test convex/_tests/branches.test.ts
 ```
 
 **Test Organization**:
 ```
-convex/__tests__/
-├── test-helpers.ts          # Shared test utilities and helpers
+convex/_tests/
+├── testHelpers.ts           # Shared test utilities and helpers
 ├── branches.test.ts         # Tests for branches Convex functions
 ├── repositories.test.ts     # Tests for repositories Convex functions
 └── timeLogs.test.ts        # Tests for timeLogs Convex functions
@@ -370,7 +370,7 @@ describe("branches", () => {
 })
 ```
 
-**Test Helpers** (`convex/__tests__/test-helpers.ts`):
+**Test Helpers** (`convex/_tests/testHelpers.ts`):
 
 The test helpers provide utilities for creating test instances with mocked authentication:
 

@@ -4,7 +4,7 @@ import {
   createTestInstance,
   createTestUsers,
   createTestWithUser,
-} from "./test-helpers"
+} from "./testHelpers"
 
 const defaultRepositories = [
   { url: "https://github.com/user/repo1", name: "Repo 1" },
