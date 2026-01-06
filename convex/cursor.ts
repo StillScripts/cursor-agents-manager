@@ -1,5 +1,6 @@
 "use node"
 
+import { actionCache } from "convex/action-cache"
 import { v } from "convex/values"
 import { decryptData } from "../lib/db/encryption"
 import type { LaunchAgentRequest } from "../lib/schemas/cursor/launch-agent"
@@ -873,6 +874,7 @@ export const getConversation = action({
 
 /**
  * Get list of available models
+ * Uses a shared cache since models are the same for all users
  */
 export const getModels = action({
   args: {},
@@ -910,8 +912,21 @@ export const getModels = action({
       }
     }
 
-    // Live mode - call Cursor API
+    // Live mode - use cached API call
+    // Models are the same for all users, so we use a shared cache key
+    const cacheKey = "cursor-models"
+    const cacheTtl = 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+
     try {
+      const cachedResult = await actionCache.get(ctx, cacheKey)
+      if (cachedResult) {
+        return {
+          models: cachedResult.models || [],
+          simulation: false,
+        }
+      }
+
+      // Cache miss - fetch from Cursor API
       const response = await fetch(CURSOR_MODELS_API_URL, {
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -923,12 +938,27 @@ export const getModels = action({
       }
 
       const data = await response.json()
+      const models = data.models || []
+
+      // Cache the result for all users (shared cache)
+      await actionCache.set(ctx, cacheKey, { models }, cacheTtl)
+
       return {
-        models: data.models || [],
+        models,
         simulation: false,
       }
     } catch (error) {
       console.error("[Convex getModels] Error fetching models:", error)
+
+      // Try to return cached data even if fresh fetch failed
+      const cachedResult = await actionCache.get(ctx, cacheKey)
+      if (cachedResult) {
+        return {
+          models: cachedResult.models || [],
+          simulation: false,
+        }
+      }
+
       // Fallback to simulated models on error
       return {
         models: SIMULATED_MODELS,
