@@ -1,19 +1,22 @@
 import { convexTest } from "convex-test"
 import { vi } from "vitest"
-import * as authModule from "../auth"
-import schema from "../schema"
+import * as authModule from "../convex/auth"
+import schema from "../convex/schema"
 
 // Manually import modules for Bun compatibility
 // Include _generated files so convex-test can find the modules root
 // Paths should match what import.meta.glob would produce from the convex directory
 const modules = {
-  "./_generated/api.ts": () => import("../_generated/api"),
-  "./_generated/server.ts": () => import("../_generated/server"),
-  "./agents.ts": () => import("../agents"),
-  "./branches.ts": () => import("../branches"),
-  "./repositories.ts": () => import("../repositories"),
-  "./timeLogs.ts": () => import("../timeLogs"),
-  "./auth.ts": () => import("../auth"),
+  "./_generated/api.ts": () => import("../convex/_generated/api"),
+  "./_generated/server.ts": () => import("../convex/_generated/server"),
+  "./agents.ts": () => import("../convex/agents"),
+  "./branches.ts": () => import("../convex/branches"),
+  "./repositories.ts": () => import("../convex/repositories"),
+  "./timeLogs.ts": () => import("../convex/timeLogs"),
+  "./auth.ts": () => import("../convex/auth"),
+  "./apiKeys.ts": () => import("../convex/apiKeys"),
+  "./apiKeysActions.ts": () => import("../convex/apiKeysActions"),
+  "./openAI.ts": () => import("../convex/openAI"),
   // Add more modules as needed
 }
 
@@ -34,6 +37,7 @@ export function createTestInstance() {
 
   // Mock getAuthenticatedUser to use the identity from convex-test
   // This bypasses Better Auth's database lookup
+  // This mock will be used even when called from getAuthenticatedUserInternal
   vi.spyOn(authModule, "getAuthenticatedUser").mockImplementation(
     async (ctx) => {
       const identity = await ctx.auth.getUserIdentity()
@@ -44,6 +48,37 @@ export function createTestInstance() {
       return { userId: identity.subject }
     }
   )
+
+  // Also mock authComponent.getAuthUser to prevent component registration errors
+  // This is called by getAuthenticatedUser, so we need to mock it too
+  // Wrap in try-catch to handle cases where authComponent might not be available
+  try {
+    if (
+      authModule.authComponent &&
+      typeof authModule.authComponent.getAuthUser === "function"
+    ) {
+      vi.spyOn(authModule.authComponent, "getAuthUser").mockImplementation(
+        async (ctx) => {
+          const identity = await ctx.auth.getUserIdentity()
+          if (!identity?.subject) {
+            return null
+          }
+          // Return a mock user object with _id matching the identity subject
+          return {
+            _id: identity.subject,
+            name: identity.name,
+            email: identity.email || `${identity.subject}@test.com`,
+          } as any
+        }
+      )
+    }
+  } catch {
+    // If authComponent is not available, the getAuthenticatedUser mock should be sufficient
+    // This can happen if better-auth modules fail to load in test environment
+    console.warn(
+      "Could not mock authComponent.getAuthUser, relying on getAuthenticatedUser mock only"
+    )
+  }
 
   return t
 }

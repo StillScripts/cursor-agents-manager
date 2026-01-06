@@ -267,7 +267,7 @@ cursor-agents-manager/
 │   ├── branches.ts               # Branch CRUD
 │   ├── timeLogs.ts               # Time tracking
 │   ├── models.ts                 # AI models
-│   └── aiActions.ts              # AI actions (summarize, TTS)
+│   └── openAI.ts              # AI actions (summarize, TTS)
 │
 ├── 🎨 components/                # React Components
 │   ├── ui/                       # Base UI primitives

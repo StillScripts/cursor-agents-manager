@@ -19,6 +19,7 @@ export default defineSchema({
     ),
     model: v.optional(v.string()),
     summary: v.optional(v.string()),
+    audioSummary: v.optional(v.string()), // Base64 encoded audio data
     sourceRepository: v.string(),
     sourceRef: v.optional(v.string()),
     targetBranchName: v.optional(v.string()),

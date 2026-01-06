@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { api } from "../_generated/api"
 import {
   createTestInstance,
   createTestUsers,
   createTestWithUser,
-} from "./testHelpers"
+} from "../../lib/testHelpers"
+import { api } from "../_generated/api"
 
 const createTestAgent = (overrides = {}) => ({
   agentId: "test-agent-123",

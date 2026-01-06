@@ -6,23 +6,26 @@ import { api } from "@/convex/_generated/api"
 
 export function useSummarizeConversation() {
   const queryClient = useQueryClient()
-  const summarizeAction = useAction(api.aiActions.summarizeConversation)
+  const summarizeAction = useAction(api.openAI.summarizeConversation)
 
   return useMutation({
     mutationFn: async (agentId: string) => {
       const result = await summarizeAction({ agentId })
-      return { id: agentId, summary: result.summary }
+      // Summary is saved to database by the action, audioSummary is cleared
+      return {
+        id: agentId,
+        summary: result.summary,
+      }
     },
-    onSuccess: (data) => {
-      // Store in localStorage (matching existing pattern)
-      localStorage.setItem(`agent-summary-${data.id}`, data.summary)
+    onSuccess: () => {
+      // Invalidate queries to refetch agent data with new summary and audio
       queryClient.invalidateQueries({ queryKey: ["agents"] })
     },
   })
 }
 
 export function useTranscribeAudio() {
-  const transcribeAction = useAction(api.aiActions.transcribeAudio)
+  const transcribeAction = useAction(api.openAI.transcribeAudio)
 
   return useMutation({
     mutationFn: async (audioFile: File) => {
@@ -46,7 +49,7 @@ export function useTranscribeAudio() {
 }
 
 export function useTextToSpeech() {
-  const ttsAction = useAction(api.aiActions.textToSpeech)
+  const ttsAction = useAction(api.openAI.textToSpeech)
 
   return useMutation({
     mutationFn: async (params: { text: string; voice?: string }) => {
@@ -61,6 +64,17 @@ export function useTextToSpeech() {
       const blob = new Blob([bytes], { type: result.mimeType })
 
       return URL.createObjectURL(blob)
+    },
+  })
+}
+
+export function useImprovePrompt() {
+  const improvePromptAction = useAction(api.openAI.improvePrompt)
+
+  return useMutation({
+    mutationFn: async (text: string) => {
+      const result = await improvePromptAction({ text })
+      return result.text
     },
   })
 }

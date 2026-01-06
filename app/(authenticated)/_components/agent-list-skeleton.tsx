@@ -37,10 +37,6 @@ export function AgentListSkeleton() {
     <>
       <PageHeader title="Your Agents" action={refreshButton} />
       <div className="px-3 py-2">
-        {/* Simulation banner skeleton */}
-        <Skeleton className="h-10 w-full rounded-lg mb-3" />
-
-        {/* Agent cards skeleton */}
         <div className="flex flex-col gap-4 sm:gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
             <AgentCardSkeleton key={i} />

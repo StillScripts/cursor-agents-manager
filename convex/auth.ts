@@ -12,6 +12,31 @@ const siteUrl = process.env.SITE_URL!
 export const authComponent = createClient<DataModel>(components.betterAuth)
 
 /**
+ * Non-throwing helper to get an authenticated user.
+ * Returns null if the user is not authenticated.
+ * @param ctx - The Convex query or mutation context
+ * @returns An authenticated user object with userId, or null if not authenticated
+ */
+export async function getAuthenticatedUserOrNull(
+  ctx: QueryCtx | MutationCtx
+): Promise<{ userId: string } | null> {
+  try {
+    const authUser = await authComponent.getAuthUser(ctx)
+
+    // Convex documents use _id, not userId
+    const userId = authUser?._id
+    if (!authUser || !userId) {
+      return null
+    }
+
+    return { userId }
+  } catch {
+    // getAuthUser throws ConvexError when unauthenticated
+    return null
+  }
+}
+
+/**
  * Type-safe helper to get an authenticated user with a guaranteed userId.
  * Throws an error if the user is not authenticated or userId is missing.
  * @param ctx - The Convex query or mutation context
@@ -21,15 +46,11 @@ export const authComponent = createClient<DataModel>(components.betterAuth)
 export async function getAuthenticatedUser(
   ctx: QueryCtx | MutationCtx
 ): Promise<{ userId: string }> {
-  const authUser = await authComponent.getAuthUser(ctx)
-
-  // Convex documents use _id, not userId
-  const userId = authUser?._id
-  if (!authUser || !userId) {
+  const result = await getAuthenticatedUserOrNull(ctx)
+  if (!result) {
     throw new Error("Unauthorized")
   }
-
-  return { userId }
+  return result
 }
 
 export const createAuth = (ctx: GenericCtx<DataModel>) => {
@@ -66,10 +87,22 @@ export const getCurrentUser = query({
 /**
  * Internal query to get authenticated user from actions.
  * Actions cannot directly use getAuthenticatedUser since it requires QueryCtx | MutationCtx.
+ * Throws if not authenticated.
  */
 export const getAuthenticatedUserInternal = internalQuery({
   args: {},
   handler: async (ctx) => {
     return getAuthenticatedUser(ctx)
+  },
+})
+
+/**
+ * Internal query to get authenticated user from actions (non-throwing).
+ * Returns null if not authenticated - useful for "check status" type actions.
+ */
+export const getAuthenticatedUserInternalOrNull = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    return getAuthenticatedUserOrNull(ctx)
   },
 })
