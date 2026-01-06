@@ -16,6 +16,7 @@
   "dependencies": {
     "@ai-sdk/openai": "^3.0.1",
     "@base-ui/react": "1.0.0",
+    "@convex-dev/action-cache": "^0.3.0",
     "@convex-dev/better-auth": "^0.10.9",
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-form": "1.27.6",
