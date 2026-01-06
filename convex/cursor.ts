@@ -1,11 +1,12 @@
 "use node"
 
+import { ActionCache } from "@convex-dev/action-cache"
 import { v } from "convex/values"
 import { decryptData } from "../lib/db/encryption"
 import type { LaunchAgentRequest } from "../lib/schemas/cursor/launch-agent"
 import type { Agent, AgentConversation, AgentStatus } from "../lib/types"
-import { api, internal } from "./_generated/api"
-import { action } from "./_generated/server"
+import { api, components, internal } from "./_generated/api"
+import { action, internalAction } from "./_generated/server"
 
 const CURSOR_API_URL = "https://api.cursor.com/v0/agents"
 const CURSOR_MODELS_API_URL = "https://api.cursor.com/v0/models"
@@ -17,6 +18,39 @@ const SIMULATED_MODELS = [
   "gpt-4o-mini",
   "o1-preview",
 ]
+
+/**
+ * Internal action to fetch models from Cursor API
+ * This is wrapped by ActionCache for caching
+ */
+export const fetchModelsFromApi = internalAction({
+  args: { apiKey: v.string() },
+  handler: async (_ctx, { apiKey }): Promise<{ models: string[] }> => {
+    const response = await fetch(CURSOR_MODELS_API_URL, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Cursor API error: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const models = data.models || []
+
+    console.log(`Fetched ${models.length} models from Cursor API`)
+    return { models }
+  },
+})
+
+// ActionCache for models - caches results for 24 hours
+// Models are the same for all users, so we use a shared cache
+const modelsCache = new ActionCache(components.actionCache, {
+  action: internal.cursor.fetchModelsFromApi,
+  name: "cursor-models-v1",
+  ttl: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+})
 
 /**
  * Convert a Cursor API agent to the format for our database
@@ -875,6 +909,7 @@ export const getConversation = action({
 
 /**
  * Get list of available models
+ * Uses ActionCache for caching - models are the same for all users
  */
 export const getModels = action({
   args: {},
@@ -912,25 +947,16 @@ export const getModels = action({
       }
     }
 
-    // Live mode - call Cursor API
+    // Live mode - use ActionCache to fetch and cache models
     try {
-      const response = await fetch(CURSOR_MODELS_API_URL, {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`)
-      }
-
-      const data = await response.json()
+      const result = await modelsCache.fetch(ctx, { apiKey: apiKey ?? "" })
       return {
-        models: data.models || [],
+        models: result.models,
         simulation: false,
       }
     } catch (error) {
       console.error("[Convex getModels] Error fetching models:", error)
+
       // Fallback to simulated models on error
       return {
         models: SIMULATED_MODELS,
