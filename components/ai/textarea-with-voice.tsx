@@ -9,6 +9,7 @@ import {
   InputGroupButton,
   InputGroupTextarea,
 } from "@/components/ui/input-group"
+import { Spinner } from "@/components/ui/spinner"
 import { useImprovePrompt, useTranscribeAudio } from "@/lib/hooks/use-ai"
 
 interface TextareaWithVoiceProps
@@ -26,6 +27,7 @@ export function TextareaWithVoice({
   ...props
 }: TextareaWithVoiceProps) {
   const [isRecording, setIsRecording] = useState(false)
+  const [isTranscribing, setIsTranscribing] = useState(false)
   const [isSupported, setIsSupported] = useState(true)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -97,12 +99,17 @@ export function TextareaWithVoice({
           track.stop()
         }
 
+        // Immediately show transcribing state for better UX
+        setIsTranscribing(true)
+
         // Send to API
         try {
           const text = await transcribe.mutateAsync(file)
           handleTranscribed(text)
         } catch (error) {
           console.error("Error transcribing audio:", error)
+        } finally {
+          setIsTranscribing(false)
         }
       }
 
@@ -142,15 +149,18 @@ export function TextareaWithVoice({
     }
   }
 
+  const isProcessing = isTranscribing || transcribe.isPending
+
   return (
-    <InputGroup className="flex flex-col-reverse items-start">
-      <InputGroupTextarea
-        value={value}
-        onChange={onChange}
-        className={className}
-        {...props}
-      />
-      <InputGroupAddon align="inline-start" className="items-end pb-2 gap-1">
+    <div className="relative w-full">
+      <InputGroup className="flex flex-col-reverse items-start">
+        <InputGroupTextarea
+          value={value}
+          onChange={onChange}
+          className={className}
+          {...props}
+        />
+        <InputGroupAddon align="inline-start" className="items-end pb-2 gap-1">
         <InputGroupButton
           size="icon-xs"
           variant="ghost"
@@ -169,17 +179,41 @@ export function TextareaWithVoice({
             size="icon-xs"
             variant={isRecording ? "destructive" : "ghost"}
             onClick={isRecording ? stopRecording : startRecording}
-            disabled={transcribe.isPending}
-            title={isRecording ? "Stop recording" : "Start voice input"}
+            disabled={isTranscribing || transcribe.isPending}
+            title={
+              isRecording
+                ? "Stop recording"
+                : isTranscribing || transcribe.isPending
+                  ? "Transcribing..."
+                  : "Start voice input"
+            }
           >
-            {isRecording ? (
+            {isTranscribing || transcribe.isPending ? (
+              <Spinner className="h-3.5 w-3.5" />
+            ) : isRecording ? (
               <Square className="h-3.5 w-3.5" />
             ) : (
               <Mic className="h-3.5 w-3.5" />
             )}
           </InputGroupButton>
         )}
-      </InputGroupAddon>
-    </InputGroup>
+        </InputGroupAddon>
+      </InputGroup>
+      {(isRecording || isProcessing) && (
+        <div className="absolute bottom-2 left-2 flex items-center gap-2 px-2 py-1 bg-background/80 backdrop-blur-sm rounded-md text-xs text-muted-foreground border border-border/50">
+          {isProcessing ? (
+            <>
+              <Spinner className="h-3 w-3" />
+              <span>Transcribing audio...</span>
+            </>
+          ) : (
+            <>
+              <div className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
+              <span>Recording...</span>
+            </>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
