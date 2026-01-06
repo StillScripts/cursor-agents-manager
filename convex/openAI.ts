@@ -92,7 +92,7 @@ export const summarizeConversation = action({
     try {
       // Generate summary using AI SDK with user's API key
       const openaiProvider = createOpenAI({ apiKey: openaiApiKey })
-      const { text } = await generateText({
+      const { text: summary } = await generateText({
         model: openaiProvider("gpt-4o-mini"),
         prompt: `Please provide a concise summary of the following conversation between a user and a Cursor AI agent. Focus on:
 - The main task or goal
@@ -106,7 +106,14 @@ ${conversationText}
 Summary:`,
       })
 
-      return { summary: text }
+      // Save summary to database and clear old audio (audio will be generated on-demand when user clicks "Listen")
+      await ctx.runMutation(api.agents.updateSummary, {
+        agentId: args.agentId,
+        summary,
+        audioSummary: undefined, // Clear old audio since summary changed
+      })
+
+      return { summary }
     } catch (error) {
       console.error("[Convex summarizeConversation] Error:", error)
       if (error instanceof OpenAI.APIError) {

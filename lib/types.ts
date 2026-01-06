@@ -21,6 +21,7 @@ export interface Agent {
   }
   createdAt: string
   summary?: string
+  audioSummary?: string // Base64 encoded audio data
 }
 
 export interface AgentMessage {

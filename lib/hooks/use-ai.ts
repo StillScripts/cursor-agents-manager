@@ -11,11 +11,14 @@ export function useSummarizeConversation() {
   return useMutation({
     mutationFn: async (agentId: string) => {
       const result = await summarizeAction({ agentId })
-      return { id: agentId, summary: result.summary }
+      // Summary is saved to database by the action, audioSummary is cleared
+      return {
+        id: agentId,
+        summary: result.summary,
+      }
     },
-    onSuccess: (data) => {
-      // Store in localStorage (matching existing pattern)
-      localStorage.setItem(`agent-summary-${data.id}`, data.summary)
+    onSuccess: () => {
+      // Invalidate queries to refetch agent data with new summary and audio
       queryClient.invalidateQueries({ queryKey: ["agents"] })
     },
   })

@@ -94,19 +94,15 @@ export function AgentDetail({
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
 
-  // Load summary from localStorage on mount
+  // Load summary from agent data (stored in database)
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const key = `agent-summary-${agentId}`
-      const stored = localStorage.getItem(key)
-      if (stored) {
-        setAiSummary(stored)
-        setShowSummary(true)
-      }
+    if (agent?.summary) {
+      setAiSummary(agent.summary)
+      setShowSummary(true)
     }
-  }, [agentId])
+  }, [agent?.summary])
 
-  // Update summary when mutation succeeds
+  // Update summary when mutation succeeds (optimistic update)
   useEffect(() => {
     if (summarizeConversation.isSuccess && summarizeConversation.data) {
       setAiSummary(summarizeConversation.data.summary)
@@ -182,8 +178,21 @@ export function AgentDetail({
     if (!aiSummary) return
 
     try {
-      const url = await textToSpeech.mutateAsync({ text: aiSummary })
-      setAudioUrl(url)
+      // First check if we have stored audio in the database
+      if (agent?.audioSummary) {
+        // Convert base64 to blob URL
+        const binaryString = atob(agent.audioSummary)
+        const bytes = new Uint8Array(binaryString.length)
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i)
+        }
+        const blob = new Blob([bytes], { type: "audio/mpeg" })
+        setAudioUrl(URL.createObjectURL(blob))
+      } else {
+        // Fallback: generate audio on-demand if not stored
+        const url = await textToSpeech.mutateAsync({ text: aiSummary })
+        setAudioUrl(url)
+      }
     } catch (error) {
       console.error("Error generating audio:", error)
     }

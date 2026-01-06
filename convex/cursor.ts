@@ -54,6 +54,7 @@ function dbAgentToApiFormat(dbAgent: {
   targetPrUrl?: string
   targetAutoCreatePr?: boolean
   summary?: string
+  audioSummary?: string
   providerData?: { createdAt?: string }
 }): Agent {
   return {
@@ -72,6 +73,7 @@ function dbAgentToApiFormat(dbAgent: {
     },
     createdAt: dbAgent.providerData?.createdAt ?? new Date().toISOString(),
     summary: dbAgent.summary,
+    audioSummary: dbAgent.audioSummary,
   }
 }
 

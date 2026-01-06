@@ -111,7 +111,24 @@ export const batchUpsert = mutation({
 
       if (existing) {
         // Update existing agent
-        await ctx.db.patch(existing._id, {
+        // If summary is being updated, clear audioSummary since it's now stale
+        const patchData: {
+          name: string
+          status: typeof agent.status
+          sourceRepository: string
+          sourceRef?: string
+          targetBranchName?: string
+          targetUrl?: string
+          targetPrUrl?: string
+          targetAutoCreatePr?: boolean
+          model?: string
+          summary?: string
+          providerData?: any
+          updatedAt: number
+          syncStatus: "synced"
+          syncError?: undefined
+          audioSummary?: undefined
+        } = {
           name: agent.name,
           status: agent.status,
           sourceRepository: agent.sourceRepository,
@@ -126,7 +143,14 @@ export const batchUpsert = mutation({
           updatedAt: now,
           syncStatus: "synced",
           syncError: undefined,
-        })
+        }
+
+        // If summary is being updated, clear audioSummary
+        if (agent.summary !== undefined && agent.summary !== existing.summary) {
+          patchData.audioSummary = undefined
+        }
+
+        await ctx.db.patch(existing._id, patchData)
         results.push({
           _id: existing._id,
           agentId: agent.agentId,
@@ -256,7 +280,23 @@ export const create = mutation({
     if (existing) {
       // Update existing agent
       const now = Date.now()
-      await ctx.db.patch(existing._id, {
+      const patchData: {
+        name: string
+        status: typeof args.status
+        sourceRepository: string
+        sourceRef?: string
+        targetBranchName?: string
+        targetUrl?: string
+        targetPrUrl?: string
+        targetAutoCreatePr?: boolean
+        model?: string
+        summary?: string
+        providerData?: any
+        updatedAt: number
+        syncStatus: "synced"
+        syncError?: undefined
+        audioSummary?: undefined
+      } = {
         name: args.name,
         status: args.status,
         sourceRepository: args.sourceRepository,
@@ -271,7 +311,14 @@ export const create = mutation({
         updatedAt: now,
         syncStatus: "synced",
         syncError: undefined,
-      })
+      }
+
+      // If summary is being updated, clear audioSummary
+      if (args.summary !== undefined && args.summary !== existing.summary) {
+        patchData.audioSummary = undefined
+      }
+
+      await ctx.db.patch(existing._id, patchData)
 
       return { _id: existing._id, agentId: args.agentId, updated: true }
     }
@@ -363,6 +410,53 @@ export const softDelete = mutation({
 })
 
 /**
+ * Update agent summary and audio summary
+ */
+export const updateSummary = mutation({
+  args: {
+    agentId: v.string(),
+    summary: v.string(),
+    audioSummary: v.optional(v.string()), // Base64 encoded audio data
+  },
+  handler: async (ctx, args) => {
+    const authUser = await getAuthenticatedUser(ctx)
+
+    const agent = await ctx.db
+      .query("agents")
+      .withIndex("by_user_agent", (q) =>
+        q.eq("userId", authUser.userId).eq("agentId", args.agentId)
+      )
+      .first()
+
+    if (!agent) {
+      throw new Error("Agent not found")
+    }
+
+    const updates: {
+      summary: string
+      updatedAt: number
+      audioSummary?: string
+    } = {
+      summary: args.summary,
+      updatedAt: Date.now(),
+    }
+
+    // If audioSummary is provided, update it. If summary is being regenerated without audio,
+    // we should clear the old audio (set to undefined)
+    if (args.audioSummary !== undefined) {
+      updates.audioSummary = args.audioSummary
+    } else {
+      // When summary is regenerated, clear old audio
+      updates.audioSummary = undefined
+    }
+
+    await ctx.db.patch(agent._id, updates)
+
+    return { success: true }
+  },
+})
+
+/**
  * Internal mutation to update agent from webhook payload (used by webhooks)
  */
 export const updateFromWebhook = internalMutation({
@@ -397,6 +491,7 @@ export const updateFromWebhook = internalMutation({
       syncError?: undefined
       name?: string
       summary?: string
+      audioSummary?: undefined
       targetUrl?: string
       targetBranchName?: string
       targetPrUrl?: string
@@ -416,6 +511,8 @@ export const updateFromWebhook = internalMutation({
     }
     if (args.summary !== undefined) {
       updates.summary = args.summary
+      // If summary is being updated, clear audioSummary since it's now stale
+      updates.audioSummary = undefined
     }
     if (args.targetUrl !== undefined) {
       updates.targetUrl = args.targetUrl
