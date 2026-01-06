@@ -162,8 +162,34 @@ export const transcribeAudio = action({
       // Convert base64 to buffer
       const audioBuffer = Buffer.from(args.audioData, "base64")
 
+      // Map MIME type to a file extension that OpenAI Whisper accepts.
+      // The API relies on the file extension to detect format.
+      const getExtensionFromMimeType = (mimeType: string): string => {
+        switch (mimeType) {
+          case "audio/webm":
+            return "webm"
+          case "audio/mp4":
+            return "mp4"
+          case "audio/mpeg":
+          case "audio/mp3":
+            return "mp3"
+          case "audio/wav":
+          case "audio/x-wav":
+            return "wav"
+          case "audio/ogg":
+            return "ogg"
+          case "audio/flac":
+            return "flac"
+          default:
+            // Fallback to mp3, which is broadly supported
+            return "mp3"
+        }
+      }
+
+      const extension = getExtensionFromMimeType(args.mimeType)
+
       // Create a File-like object for OpenAI API
-      const audioFile = new File([audioBuffer], "audio", {
+      const audioFile = new File([audioBuffer], `audio.${extension}`, {
         type: args.mimeType,
       })
 
