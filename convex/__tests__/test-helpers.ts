@@ -10,6 +10,8 @@ const modules = {
   "./_generated/api.ts": () => import("../_generated/api"),
   "./_generated/server.ts": () => import("../_generated/server"),
   "./branches.ts": () => import("../branches"),
+  "./repositories.ts": () => import("../repositories"),
+  "./timeLogs.ts": () => import("../timeLogs"),
   "./auth.ts": () => import("../auth"),
   // Add more modules as needed
 }

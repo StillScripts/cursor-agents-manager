@@ -93,6 +93,16 @@ describe("branches", () => {
       const branches = await asUser.query(api.branches.getBranches)
       expect(branches).toEqual([])
     })
+
+    it("returns validation error for invalid payload", async () => {
+      const asUser = createTestWithUser({ name: "Test User" })
+
+      await expect(
+        asUser.mutation(api.branches.saveBranches, {
+          branches: [{ name: 123 }],
+        } as any)
+      ).rejects.toThrow()
+    })
   })
 
   describe("multi-user isolation", () => {
