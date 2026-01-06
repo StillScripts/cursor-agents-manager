@@ -2,37 +2,26 @@
 
 import { v } from "convex/values"
 import { decryptData, encryptData, maskApiKey } from "../lib/encryption"
-import { internal } from "./_generated/api"
+import { api, internal } from "./_generated/api"
 import { action } from "./_generated/server"
 
 // ============================================================================
-// Public actions (handle encryption/decryption)
+// Actions that handle encryption/decryption (require Node.js crypto)
 // ============================================================================
 
 /**
- * Check if user has a Cursor API key configured
+ * Check if user has a Cursor API key configured with proper masking
  * Returns masked version if exists, null if not
- * Returns { hasKey: false, maskedKey: null } if not authenticated
+ * This action is needed because decryption requires Node.js crypto
  */
 export const getCursorApiKeyStatus = action({
   args: {},
   handler: async (
     ctx
   ): Promise<{ hasKey: boolean; maskedKey: string | null }> => {
-    const authUser = await ctx.runQuery(
-      internal.auth.getAuthenticatedUserInternalOrNull
-    )
+    const record = await ctx.runQuery(api.apiKeys.getApiKeysRecord)
 
-    // Return default if not authenticated (avoids throwing during page load)
-    if (!authUser) {
-      return { hasKey: false, maskedKey: null }
-    }
-
-    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
-      userId: authUser.userId,
-    })
-
-    if (!record?.encryptedCursorApiKey) {
+    if (!record?.encryptedCursorApiKey || record.encryptedCursorApiKey === "") {
       return { hasKey: false, maskedKey: null }
     }
 
@@ -51,15 +40,15 @@ export const getCursorApiKeyStatus = action({
 export const getDecryptedCursorApiKey = action({
   args: {},
   handler: async (ctx): Promise<string | null> => {
-    const authUser = await ctx.runQuery(
-      internal.auth.getAuthenticatedUserInternal
+    const record = await ctx.runQuery(
+      internal.apiKeys.getApiKeysRecordInternal,
+      {
+        userId: (await ctx.runQuery(internal.auth.getAuthenticatedUserInternal))
+          .userId,
+      }
     )
 
-    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
-      userId: authUser.userId,
-    })
-
-    if (!record?.encryptedCursorApiKey) {
+    if (!record?.encryptedCursorApiKey || record.encryptedCursorApiKey === "") {
       return null
     }
 
@@ -77,63 +66,27 @@ export const getDecryptedCursorApiKey = action({
 export const saveCursorApiKey = action({
   args: { apiKey: v.string() },
   handler: async (ctx, args): Promise<{ success: boolean }> => {
-    const authUser = await ctx.runQuery(
-      internal.auth.getAuthenticatedUserInternal
-    )
-
     const encrypted = encryptData(args.apiKey)
-
-    await ctx.runMutation(internal.apiKeys.upsertApiKeys, {
-      userId: authUser.userId,
-      encryptedCursorApiKey: encrypted,
+    await ctx.runMutation(api.apiKeys.saveCursorApiKey, {
+      encryptedApiKey: encrypted,
     })
-
     return { success: true }
   },
 })
 
 /**
- * Delete Cursor API key
- */
-export const deleteCursorApiKey = action({
-  args: {},
-  handler: async (ctx): Promise<{ success: boolean }> => {
-    const authUser = await ctx.runQuery(
-      internal.auth.getAuthenticatedUserInternal
-    )
-
-    await ctx.runMutation(internal.apiKeys.clearCursorApiKey, {
-      userId: authUser.userId,
-    })
-
-    return { success: true }
-  },
-})
-
-/**
- * Check if user has an OpenAI API key configured
+ * Check if user has an OpenAI API key configured with proper masking
  * Returns masked version if exists, null if not
- * Returns { hasKey: false, maskedKey: null } if not authenticated
+ * This action is needed because decryption requires Node.js crypto
  */
 export const getOpenaiApiKeyStatus = action({
   args: {},
   handler: async (
     ctx
   ): Promise<{ hasKey: boolean; maskedKey: string | null }> => {
-    const authUser = await ctx.runQuery(
-      internal.auth.getAuthenticatedUserInternalOrNull
-    )
+    const record = await ctx.runQuery(api.apiKeys.getApiKeysRecord)
 
-    // Return default if not authenticated (avoids throwing during page load)
-    if (!authUser) {
-      return { hasKey: false, maskedKey: null }
-    }
-
-    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
-      userId: authUser.userId,
-    })
-
-    if (!record?.encryptedOpenaiApiKey) {
+    if (!record?.encryptedOpenaiApiKey || record.encryptedOpenaiApiKey === "") {
       return { hasKey: false, maskedKey: null }
     }
 
@@ -152,15 +105,15 @@ export const getOpenaiApiKeyStatus = action({
 export const getDecryptedOpenaiApiKey = action({
   args: {},
   handler: async (ctx): Promise<string | null> => {
-    const authUser = await ctx.runQuery(
-      internal.auth.getAuthenticatedUserInternal
+    const record = await ctx.runQuery(
+      internal.apiKeys.getApiKeysRecordInternal,
+      {
+        userId: (await ctx.runQuery(internal.auth.getAuthenticatedUserInternal))
+          .userId,
+      }
     )
 
-    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
-      userId: authUser.userId,
-    })
-
-    if (!record?.encryptedOpenaiApiKey) {
+    if (!record?.encryptedOpenaiApiKey || record.encryptedOpenaiApiKey === "") {
       return null
     }
 
@@ -178,53 +131,43 @@ export const getDecryptedOpenaiApiKey = action({
 export const saveOpenaiApiKey = action({
   args: { apiKey: v.string() },
   handler: async (ctx, args): Promise<{ success: boolean }> => {
-    const authUser = await ctx.runQuery(
-      internal.auth.getAuthenticatedUserInternal
-    )
-
     const encrypted = encryptData(args.apiKey)
-
-    await ctx.runMutation(internal.apiKeys.upsertApiKeys, {
-      userId: authUser.userId,
-      encryptedOpenaiApiKey: encrypted,
+    await ctx.runMutation(api.apiKeys.saveOpenaiApiKey, {
+      encryptedApiKey: encrypted,
     })
-
     return { success: true }
+  },
+})
+
+/**
+ * Delete Cursor API key
+ * Thin wrapper around mutation (no encryption needed)
+ */
+export const deleteCursorApiKey = action({
+  args: {},
+  handler: async (ctx): Promise<{ success: boolean }> => {
+    return await ctx.runMutation(api.apiKeys.deleteCursorApiKey)
   },
 })
 
 /**
  * Delete OpenAI API key
+ * Thin wrapper around mutation (no encryption needed)
  */
 export const deleteOpenaiApiKey = action({
   args: {},
   handler: async (ctx): Promise<{ success: boolean }> => {
-    const authUser = await ctx.runQuery(
-      internal.auth.getAuthenticatedUserInternal
-    )
-
-    await ctx.runMutation(internal.apiKeys.clearOpenaiApiKey, {
-      userId: authUser.userId,
-    })
-
-    return { success: true }
+    return await ctx.runMutation(api.apiKeys.deleteOpenaiApiKey)
   },
 })
 
 /**
  * Delete all API keys for user
+ * Thin wrapper around mutation (no encryption needed)
  */
 export const deleteAllApiKeys = action({
   args: {},
   handler: async (ctx): Promise<{ success: boolean }> => {
-    const authUser = await ctx.runQuery(
-      internal.auth.getAuthenticatedUserInternal
-    )
-
-    await ctx.runMutation(internal.apiKeys.deleteApiKeysRecord, {
-      userId: authUser.userId,
-    })
-
-    return { success: true }
+    return await ctx.runMutation(api.apiKeys.deleteAllApiKeys)
   },
 })

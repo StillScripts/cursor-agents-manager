@@ -40,7 +40,6 @@ export function OpenAIApiKeyManager() {
   )
   const saveOpenaiApiKey = useAction(api.apiKeysActions.saveOpenaiApiKey)
   const deleteOpenaiApiKey = useAction(api.apiKeysActions.deleteOpenaiApiKey)
-  const { refetch: refetchContext } = useOpenAIKey()
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -68,8 +67,6 @@ export function OpenAIApiKeyManager() {
     try {
       await saveOpenaiApiKey({ apiKey: newApiKey.trim() })
       await fetchStatus()
-      // Refresh the context cache
-      refetchContext()
       setIsEditing(false)
       setNewApiKey("")
       setShowKey(false)
@@ -87,8 +84,6 @@ export function OpenAIApiKeyManager() {
     try {
       await deleteOpenaiApiKey()
       await fetchStatus()
-      // Refresh the context cache
-      refetchContext()
     } catch (err) {
       console.error("Failed to delete OpenAI API key:", err)
     } finally {

@@ -156,9 +156,12 @@ export const getAgents = action({
     }
 
     // Get encrypted API key record
-    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
-      userId: authUser.userId,
-    })
+    const record = await ctx.runQuery(
+      internal.apiKeys.getApiKeysRecordInternal,
+      {
+        userId: authUser.userId,
+      }
+    )
 
     // Decrypt API key if it exists
     let apiKey: string | null = null
@@ -300,9 +303,12 @@ export const getAgentById = action({
     }
 
     // Get encrypted API key record
-    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
-      userId: authUser.userId,
-    })
+    const record = await ctx.runQuery(
+      internal.apiKeys.getApiKeysRecordInternal,
+      {
+        userId: authUser.userId,
+      }
+    )
 
     // Decrypt API key if it exists
     let apiKey: string | null = null
@@ -436,9 +442,12 @@ export const launchAgent = action({
     )
 
     // Get encrypted API key record
-    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
-      userId: authUser.userId,
-    })
+    const record = await ctx.runQuery(
+      internal.apiKeys.getApiKeysRecordInternal,
+      {
+        userId: authUser.userId,
+      }
+    )
 
     // Decrypt API key if it exists
     let apiKey: string | null = null
@@ -596,9 +605,12 @@ export const stopAgent = action({
     }
 
     // Get encrypted API key record
-    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
-      userId: authUser.userId,
-    })
+    const record = await ctx.runQuery(
+      internal.apiKeys.getApiKeysRecordInternal,
+      {
+        userId: authUser.userId,
+      }
+    )
 
     // Decrypt API key if it exists
     let apiKey: string | null = null
@@ -672,9 +684,12 @@ export const deleteAgent = action({
     }
 
     // Get encrypted API key record
-    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
-      userId: authUser.userId,
-    })
+    const record = await ctx.runQuery(
+      internal.apiKeys.getApiKeysRecordInternal,
+      {
+        userId: authUser.userId,
+      }
+    )
 
     // Decrypt API key if it exists
     let apiKey: string | null = null
@@ -747,9 +762,12 @@ export const sendFollowUp = action({
     }
 
     // Get encrypted API key record
-    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
-      userId: authUser.userId,
-    })
+    const record = await ctx.runQuery(
+      internal.apiKeys.getApiKeysRecordInternal,
+      {
+        userId: authUser.userId,
+      }
+    )
 
     // Decrypt API key if it exists
     let apiKey: string | null = null
@@ -833,9 +851,12 @@ export const getConversation = action({
     )
 
     // Get encrypted API key record
-    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
-      userId: authUser.userId,
-    })
+    const record = await ctx.runQuery(
+      internal.apiKeys.getApiKeysRecordInternal,
+      {
+        userId: authUser.userId,
+      }
+    )
 
     // Decrypt API key if it exists
     let apiKey: string | null = null
@@ -924,9 +945,12 @@ export const getModels = action({
     )
 
     // Get encrypted API key record
-    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
-      userId: authUser.userId,
-    })
+    const record = await ctx.runQuery(
+      internal.apiKeys.getApiKeysRecordInternal,
+      {
+        userId: authUser.userId,
+      }
+    )
 
     // Decrypt API key if it exists
     let apiKey: string | null = null

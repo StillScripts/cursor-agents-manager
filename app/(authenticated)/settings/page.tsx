@@ -1,8 +1,11 @@
+import { ArrowRight, Mic, Sparkles, Volume2 } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Suspense } from "react"
-import { ArrowRight, Mic, Sparkles, Volume2 } from "lucide-react"
 import { PageHeader } from "@/app/(authenticated)/_components/page-header"
+import { ThemeSelector } from "@/app/(authenticated)/settings/_components/theme-selector"
+import { BranchesFormContainer } from "@/components/forms/branches-form"
+import { RepositoriesFormContainer } from "@/components/forms/repositories-form"
 import {
   Card,
   CardContent,
@@ -10,9 +13,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { ThemeSelector } from "@/app/(authenticated)/settings/_components/theme-selector"
-import { BranchesFormContainer } from "@/components/forms/branches-form"
-import { RepositoriesFormContainer } from "@/components/forms/repositories-form"
 
 export const metadata: Metadata = {
   title: "Settings",
@@ -29,11 +29,13 @@ export default function SettingsPage() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              <CardTitle className="text-lg">Unlock AI-Powered Features</CardTitle>
+              <CardTitle className="text-lg">
+                Unlock AI-Powered Features
+              </CardTitle>
             </div>
             <CardDescription className="text-base">
-              Add your OpenAI API key to unlock powerful AI features that enhance
-              your agent management experience.
+              Add your OpenAI API key to unlock powerful AI features that
+              enhance your agent management experience.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
