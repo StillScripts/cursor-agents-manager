@@ -226,7 +226,7 @@ graph LR
 | `bun run start` | Start production server |
 | `bun run lint` | Run Biome for code quality |
 | `bun run lint:fix` | Auto-fix linting and formatting issues |
-| `bun run test` | Run tests |
+| `bun run test` | Run tests (Vitest + convex-test) |
 | `bun run test:watch` | Run tests in watch mode |
 
 ### Development Workflow
@@ -415,9 +415,14 @@ We welcome contributions! Here's how to get started:
 
 ## 📚 Documentation
 
-- **[CLAUDE.md](./CLAUDE.md)** - Comprehensive architecture and implementation guide
+- **[AGENTS.md](./AGENTS.md)** - Comprehensive architecture, testing, and implementation guide
+- **[CLAUDE.md](./CLAUDE.md)** - Detailed development guide
 - **[Convex Docs](https://docs.convex.dev)** - Backend documentation
 - **[Better Auth Docs](https://www.better-auth.com/docs)** - Authentication documentation
+
+### Testing
+
+Tests use **Vitest** with **convex-test** for Convex function testing. Test files are located in `convex/__tests__/` and follow a consistent structure: `describe(model)` → `describe(function)` → `it(test case)`. See [AGENTS.md](./AGENTS.md#test-structure) for detailed testing conventions and patterns.
 
 ## 📄 License
 
