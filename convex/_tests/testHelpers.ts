@@ -1,3 +1,4 @@
+"use node"
 import { convexTest } from "convex-test"
 import { vi } from "vitest"
 import * as authModule from "../auth"
@@ -14,6 +15,9 @@ const modules = {
   "./repositories.ts": () => import("../repositories"),
   "./timeLogs.ts": () => import("../timeLogs"),
   "./auth.ts": () => import("../auth"),
+  "./apiKeys.ts": () => import("../apiKeys"),
+  "./apiKeysActions.ts": () => import("../apiKeysActions"),
+  "./openAI.ts": () => import("../openAI"),
   // Add more modules as needed
 }
 
@@ -34,6 +38,7 @@ export function createTestInstance() {
 
   // Mock getAuthenticatedUser to use the identity from convex-test
   // This bypasses Better Auth's database lookup
+  // This mock will be used even when called from getAuthenticatedUserInternal
   vi.spyOn(authModule, "getAuthenticatedUser").mockImplementation(
     async (ctx) => {
       const identity = await ctx.auth.getUserIdentity()
@@ -44,6 +49,37 @@ export function createTestInstance() {
       return { userId: identity.subject }
     }
   )
+
+  // Also mock authComponent.getAuthUser to prevent component registration errors
+  // This is called by getAuthenticatedUser, so we need to mock it too
+  // Wrap in try-catch to handle cases where authComponent might not be available
+  try {
+    if (
+      authModule.authComponent &&
+      typeof authModule.authComponent.getAuthUser === "function"
+    ) {
+      vi.spyOn(authModule.authComponent, "getAuthUser").mockImplementation(
+        async (ctx) => {
+          const identity = await ctx.auth.getUserIdentity()
+          if (!identity?.subject) {
+            return null
+          }
+          // Return a mock user object with _id matching the identity subject
+          return {
+            _id: identity.subject,
+            name: identity.name,
+            email: identity.email || `${identity.subject}@test.com`,
+          } as any
+        }
+      )
+    }
+  } catch {
+    // If authComponent is not available, the getAuthenticatedUser mock should be sufficient
+    // This can happen if better-auth modules fail to load in test environment
+    console.warn(
+      "Could not mock authComponent.getAuthUser, relying on getAuthenticatedUser mock only"
+    )
+  }
 
   return t
 }
