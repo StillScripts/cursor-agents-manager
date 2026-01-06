@@ -6,7 +6,7 @@ import { api } from "@/convex/_generated/api"
 
 export function useSummarizeConversation() {
   const queryClient = useQueryClient()
-  const summarizeAction = useAction(api.aiActions.summarizeConversation)
+  const summarizeAction = useAction(api.openAI.summarizeConversation)
 
   return useMutation({
     mutationFn: async (agentId: string) => {
@@ -22,7 +22,7 @@ export function useSummarizeConversation() {
 }
 
 export function useTranscribeAudio() {
-  const transcribeAction = useAction(api.aiActions.transcribeAudio)
+  const transcribeAction = useAction(api.openAI.transcribeAudio)
 
   return useMutation({
     mutationFn: async (audioFile: File) => {
@@ -46,7 +46,7 @@ export function useTranscribeAudio() {
 }
 
 export function useTextToSpeech() {
-  const ttsAction = useAction(api.aiActions.textToSpeech)
+  const ttsAction = useAction(api.openAI.textToSpeech)
 
   return useMutation({
     mutationFn: async (params: { text: string; voice?: string }) => {
