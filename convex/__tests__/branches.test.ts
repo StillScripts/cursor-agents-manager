@@ -25,13 +25,13 @@ describe("branches", () => {
     })
 
     it("returns empty array when authenticated but no branches exist", async () => {
-      const asUser = createTestWithUser({ name: "Test User" })
+      const asUser = createTestWithUser()
       const branches = await asUser.query(api.branches.getBranches)
       expect(branches).toEqual([])
     })
 
     it("returns branches for authenticated user after saving", async () => {
-      const asUser = createTestWithUser({ name: "Test User" })
+      const asUser = createTestWithUser()
 
       await asUser.mutation(api.branches.saveBranches, {
         branches: defaultBranches,
@@ -45,7 +45,7 @@ describe("branches", () => {
 
   describe("saveBranches", () => {
     it("saves branches for authenticated user", async () => {
-      const asUser = createTestWithUser({ name: "Test User" })
+      const asUser = createTestWithUser()
 
       const savedBranches = await asUser.mutation(api.branches.saveBranches, {
         branches: defaultBranches,
@@ -56,7 +56,7 @@ describe("branches", () => {
     })
 
     it("replaces existing branches when called multiple times", async () => {
-      const asUser = createTestWithUser({ name: "Test User" })
+      const asUser = createTestWithUser()
 
       // Save initial branches
       await asUser.mutation(api.branches.saveBranches, {
@@ -78,7 +78,7 @@ describe("branches", () => {
     })
 
     it("removes all branches when called with empty array", async () => {
-      const asUser = createTestWithUser({ name: "Test User" })
+      const asUser = createTestWithUser()
 
       // Save some branches
       await asUser.mutation(api.branches.saveBranches, {
@@ -95,7 +95,7 @@ describe("branches", () => {
     })
 
     it("returns validation error for invalid payload", async () => {
-      const asUser = createTestWithUser({ name: "Test User" })
+      const asUser = createTestWithUser()
 
       await expect(
         asUser.mutation(api.branches.saveBranches, {

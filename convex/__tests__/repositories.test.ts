@@ -25,13 +25,13 @@ describe("repositories", () => {
     })
 
     it("returns empty array when authenticated but no repositories exist", async () => {
-      const asUser = createTestWithUser({ name: "Test User" })
+      const asUser = createTestWithUser()
       const repositories = await asUser.query(api.repositories.getRepositories)
       expect(repositories).toEqual([])
     })
 
     it("returns repositories for authenticated user after saving", async () => {
-      const asUser = createTestWithUser({ name: "Test User" })
+      const asUser = createTestWithUser()
 
       await asUser.mutation(api.repositories.saveRepositories, {
         repositories: defaultRepositories,
@@ -45,7 +45,7 @@ describe("repositories", () => {
 
   describe("saveRepositories", () => {
     it("saves repositories for authenticated user", async () => {
-      const asUser = createTestWithUser({ name: "Test User" })
+      const asUser = createTestWithUser()
 
       const savedRepositories = await asUser.mutation(
         api.repositories.saveRepositories,
@@ -59,7 +59,7 @@ describe("repositories", () => {
     })
 
     it("replaces existing repositories when called multiple times", async () => {
-      const asUser = createTestWithUser({ name: "Test User" })
+      const asUser = createTestWithUser()
 
       // Save initial repositories
       await asUser.mutation(api.repositories.saveRepositories, {
@@ -88,7 +88,7 @@ describe("repositories", () => {
     })
 
     it("removes all repositories when called with empty array", async () => {
-      const asUser = createTestWithUser({ name: "Test User" })
+      const asUser = createTestWithUser()
 
       // Save some repositories
       await asUser.mutation(api.repositories.saveRepositories, {
@@ -105,7 +105,7 @@ describe("repositories", () => {
     })
 
     it("returns validation error for invalid payload", async () => {
-      const asUser = createTestWithUser({ name: "Test User" })
+      const asUser = createTestWithUser()
 
       await expect(
         asUser.mutation(api.repositories.saveRepositories, {
