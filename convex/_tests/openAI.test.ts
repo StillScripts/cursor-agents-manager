@@ -1,3 +1,13 @@
+// Ensure ENCRYPTION_SECRET is set for CI environments
+// This must be before any imports that might use encryption
+if (
+  !process.env.ENCRYPTION_SECRET ||
+  process.env.ENCRYPTION_SECRET.length < 32
+) {
+  process.env.ENCRYPTION_SECRET =
+    "test-encryption-secret-key-for-testing-only-32-chars-min"
+}
+
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 // Extend globalThis to store our mocks - avoids vi.hoisted() which isn't available in all environments
