@@ -2,7 +2,7 @@
 
 import { ActionCache } from "@convex-dev/action-cache"
 import { v } from "convex/values"
-import { decryptData } from "../lib/db/encryption"
+import { decryptData } from "../lib/encryption"
 import type { LaunchAgentRequest } from "../lib/schemas/cursor/launch-agent"
 import type { Agent, AgentConversation, AgentStatus } from "../lib/types"
 import { api, components, internal } from "./_generated/api"
