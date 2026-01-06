@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest"
 import {
+  branchesRequestSchema,
   branchSchema,
+  repositoriesRequestSchema,
   repositorySchema,
   settingsFormSchema,
   validateSettingsForm,
@@ -149,6 +151,94 @@ describe("settingsFormSchema", () => {
     expect(() =>
       settingsFormSchema.parse({ repositories: [validRepository] })
     ).toThrow()
+  })
+})
+
+describe("repositoriesRequestSchema", () => {
+  it("accepts valid repositories array", () => {
+    const request = {
+      repositories: [validRepository],
+    }
+    expect(() => repositoriesRequestSchema.parse(request)).not.toThrow()
+  })
+
+  it("accepts empty repositories array", () => {
+    const request = {
+      repositories: [],
+    }
+    expect(() => repositoriesRequestSchema.parse(request)).not.toThrow()
+  })
+
+  it("accepts multiple repositories", () => {
+    const request = {
+      repositories: [
+        { url: "https://github.com/user/repo1", name: "Repo 1" },
+        { url: "https://github.com/user/repo2", name: "Repo 2" },
+      ],
+    }
+    expect(() => repositoriesRequestSchema.parse(request)).not.toThrow()
+  })
+
+  it("rejects missing repositories field", () => {
+    expect(() => repositoriesRequestSchema.parse({})).toThrow()
+  })
+
+  it("rejects invalid repository in array", () => {
+    const request = {
+      repositories: [
+        validRepository,
+        { url: "https://gitlab.com/user/repo", name: "Bad Repo" },
+      ],
+    }
+    expect(() => repositoriesRequestSchema.parse(request)).toThrow()
+  })
+
+  it("rejects non-array repositories", () => {
+    const request = {
+      repositories: "not-an-array",
+    }
+    expect(() => repositoriesRequestSchema.parse(request)).toThrow()
+  })
+})
+
+describe("branchesRequestSchema", () => {
+  it("accepts valid branches array", () => {
+    const request = {
+      branches: [validBranch],
+    }
+    expect(() => branchesRequestSchema.parse(request)).not.toThrow()
+  })
+
+  it("accepts empty branches array", () => {
+    const request = {
+      branches: [],
+    }
+    expect(() => branchesRequestSchema.parse(request)).not.toThrow()
+  })
+
+  it("accepts multiple branches", () => {
+    const request = {
+      branches: [{ name: "main" }, { name: "develop" }, { name: "staging" }],
+    }
+    expect(() => branchesRequestSchema.parse(request)).not.toThrow()
+  })
+
+  it("rejects missing branches field", () => {
+    expect(() => branchesRequestSchema.parse({})).toThrow()
+  })
+
+  it("rejects invalid branch in array", () => {
+    const request = {
+      branches: [validBranch, { name: "" }],
+    }
+    expect(() => branchesRequestSchema.parse(request)).toThrow()
+  })
+
+  it("rejects non-array branches", () => {
+    const request = {
+      branches: "not-an-array",
+    }
+    expect(() => branchesRequestSchema.parse(request)).toThrow()
   })
 })
 
