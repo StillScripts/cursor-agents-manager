@@ -8,7 +8,6 @@
  * @module
  */
 
-import type * as _tests_testHelpers from "../_tests/testHelpers.js";
 import type * as agents from "../agents.js";
 import type * as apiKeys from "../apiKeys.js";
 import type * as apiKeysActions from "../apiKeysActions.js";
@@ -28,7 +27,6 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  "_tests/testHelpers": typeof _tests_testHelpers;
   agents: typeof agents;
   apiKeys: typeof apiKeys;
   apiKeysActions: typeof apiKeysActions;

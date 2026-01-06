@@ -1,23 +1,22 @@
-"use node"
 import { convexTest } from "convex-test"
 import { vi } from "vitest"
-import * as authModule from "../auth"
-import schema from "../schema"
+import * as authModule from "../convex/auth"
+import schema from "../convex/schema"
 
 // Manually import modules for Bun compatibility
 // Include _generated files so convex-test can find the modules root
 // Paths should match what import.meta.glob would produce from the convex directory
 const modules = {
-  "./_generated/api.ts": () => import("../_generated/api"),
-  "./_generated/server.ts": () => import("../_generated/server"),
-  "./agents.ts": () => import("../agents"),
-  "./branches.ts": () => import("../branches"),
-  "./repositories.ts": () => import("../repositories"),
-  "./timeLogs.ts": () => import("../timeLogs"),
-  "./auth.ts": () => import("../auth"),
-  "./apiKeys.ts": () => import("../apiKeys"),
-  "./apiKeysActions.ts": () => import("../apiKeysActions"),
-  "./openAI.ts": () => import("../openAI"),
+  "./_generated/api.ts": () => import("../convex/_generated/api"),
+  "./_generated/server.ts": () => import("../convex/_generated/server"),
+  "./agents.ts": () => import("../convex/agents"),
+  "./branches.ts": () => import("../convex/branches"),
+  "./repositories.ts": () => import("../convex/repositories"),
+  "./timeLogs.ts": () => import("../convex/timeLogs"),
+  "./auth.ts": () => import("../convex/auth"),
+  "./apiKeys.ts": () => import("../convex/apiKeys"),
+  "./apiKeysActions.ts": () => import("../convex/apiKeysActions"),
+  "./openAI.ts": () => import("../convex/openAI"),
   // Add more modules as needed
 }
 

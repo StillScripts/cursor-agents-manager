@@ -1,0 +1,6 @@
+# Exclude test files from Convex deployment
+__tests__/
+_tests/
+*.test.ts
+*.test.js
+

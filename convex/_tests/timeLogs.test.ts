@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { api } from "../_generated/api"
 import {
   createTestInstance,
   createTestUsers,
   createTestWithUser,
-} from "./testHelpers"
+} from "../../lib/testHelpers"
+import { api } from "../_generated/api"
 
 const testAgentId = "test-agent-123"
 const testAgentId2 = "test-agent-456"

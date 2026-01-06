@@ -12,6 +12,7 @@ import { action } from "./_generated/server"
 /**
  * Check if user has a Cursor API key configured
  * Returns masked version if exists, null if not
+ * Returns { hasKey: false, maskedKey: null } if not authenticated
  */
 export const getCursorApiKeyStatus = action({
   args: {},
@@ -19,8 +20,13 @@ export const getCursorApiKeyStatus = action({
     ctx
   ): Promise<{ hasKey: boolean; maskedKey: string | null }> => {
     const authUser = await ctx.runQuery(
-      internal.auth.getAuthenticatedUserInternal
+      internal.auth.getAuthenticatedUserInternalOrNull
     )
+
+    // Return default if not authenticated (avoids throwing during page load)
+    if (!authUser) {
+      return { hasKey: false, maskedKey: null }
+    }
 
     const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
       userId: authUser.userId,
@@ -107,6 +113,7 @@ export const deleteCursorApiKey = action({
 /**
  * Check if user has an OpenAI API key configured
  * Returns masked version if exists, null if not
+ * Returns { hasKey: false, maskedKey: null } if not authenticated
  */
 export const getOpenaiApiKeyStatus = action({
   args: {},
@@ -114,8 +121,13 @@ export const getOpenaiApiKeyStatus = action({
     ctx
   ): Promise<{ hasKey: boolean; maskedKey: string | null }> => {
     const authUser = await ctx.runQuery(
-      internal.auth.getAuthenticatedUserInternal
+      internal.auth.getAuthenticatedUserInternalOrNull
     )
+
+    // Return default if not authenticated (avoids throwing during page load)
+    if (!authUser) {
+      return { hasKey: false, maskedKey: null }
+    }
 
     const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
       userId: authUser.userId,

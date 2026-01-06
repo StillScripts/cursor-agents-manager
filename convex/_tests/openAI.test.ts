@@ -75,8 +75,8 @@ vi.mock("@ai-sdk/openai", () => {
 })
 
 import OpenAI from "openai"
+import { createTestInstance, createTestWithUser } from "../../lib/testHelpers"
 import { api } from "../_generated/api"
-import { createTestInstance, createTestWithUser } from "./testHelpers"
 
 describe("openAI", () => {
   beforeEach(() => {
