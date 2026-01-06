@@ -10,6 +10,7 @@ import {
   InputGroupTextarea,
 } from "@/components/ui/input-group"
 import { useImprovePrompt, useTranscribeAudio } from "@/lib/hooks/use-ai"
+import { useOpenAIKey } from "@/lib/hooks/use-openai-key"
 
 interface TextareaWithVoiceProps
   extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -32,6 +33,7 @@ export function TextareaWithVoice({
 
   const transcribe = useTranscribeAudio()
   const improvePrompt = useImprovePrompt()
+  const { hasOpenAIKey } = useOpenAIKey()
 
   useEffect(() => {
     // Check browser support
@@ -151,33 +153,37 @@ export function TextareaWithVoice({
         {...props}
       />
       <InputGroupAddon align="inline-start" className="items-end pb-2 gap-1">
-        <InputGroupButton
-          size="icon-xs"
-          variant="ghost"
-          onClick={handleImprovePrompt}
-          disabled={
-            improvePrompt.isPending ||
-            !value ||
-            (typeof value === "string" && !value.trim())
-          }
-          title="Improve prompt with AI"
-        >
-          <Sparkles className="h-3.5 w-3.5" />
-        </InputGroupButton>
-        {isSupported && (
-          <InputGroupButton
-            size="icon-xs"
-            variant={isRecording ? "destructive" : "ghost"}
-            onClick={isRecording ? stopRecording : startRecording}
-            disabled={transcribe.isPending}
-            title={isRecording ? "Stop recording" : "Start voice input"}
-          >
-            {isRecording ? (
-              <Square className="h-3.5 w-3.5" />
-            ) : (
-              <Mic className="h-3.5 w-3.5" />
+        {hasOpenAIKey && (
+          <>
+            <InputGroupButton
+              size="icon-xs"
+              variant="ghost"
+              onClick={handleImprovePrompt}
+              disabled={
+                improvePrompt.isPending ||
+                !value ||
+                (typeof value === "string" && !value.trim())
+              }
+              title="Improve prompt with AI"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+            </InputGroupButton>
+            {isSupported && (
+              <InputGroupButton
+                size="icon-xs"
+                variant={isRecording ? "destructive" : "ghost"}
+                onClick={isRecording ? stopRecording : startRecording}
+                disabled={transcribe.isPending}
+                title={isRecording ? "Stop recording" : "Start voice input"}
+              >
+                {isRecording ? (
+                  <Square className="h-3.5 w-3.5" />
+                ) : (
+                  <Mic className="h-3.5 w-3.5" />
+                )}
+              </InputGroupButton>
             )}
-          </InputGroupButton>
+          </>
         )}
       </InputGroupAddon>
     </InputGroup>

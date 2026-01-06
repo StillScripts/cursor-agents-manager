@@ -43,6 +43,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
+import { Textarea } from "@/components/ui/textarea"
 import { filterMessagesForDisplay } from "@/lib/conversation-utils"
 import { formatDurationMs, formatRelativeTime } from "@/lib/formatting"
 import {
@@ -53,6 +54,7 @@ import {
   useStopAgent,
 } from "@/lib/hooks/use-agents"
 import { useSummarizeConversation, useTextToSpeech } from "@/lib/hooks/use-ai"
+import { useOpenAIKey } from "@/lib/hooks/use-openai-key"
 import { useAgentTimeLogs, useSaveTimeLog } from "@/lib/hooks/use-time-logs"
 import { useTimeTracking } from "@/lib/hooks/use-time-tracking"
 import type { Agent, AgentConversation } from "@/lib/types"
@@ -89,6 +91,7 @@ export function AgentDetail({
   const sendFollowUp = useSendFollowUp()
   const summarizeConversation = useSummarizeConversation()
   const textToSpeech = useTextToSpeech()
+  const { hasOpenAIKey } = useOpenAIKey()
 
   // Audio player state
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
@@ -371,51 +374,55 @@ export function AgentDetail({
                         </>
                       )}
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSummarize}
-                      disabled={summarizeConversation.isPending}
-                    >
-                      {summarizeConversation.isPending ? (
-                        <Spinner className="h-4 w-4 mr-2" />
-                      ) : (
-                        <Sparkles className="h-4 w-4 mr-2" />
-                      )}
-                      {aiSummary ? "Regenerate Summary" : "Summarize"}
-                    </Button>
-                    {aiSummary && (
+                    {hasOpenAIKey && (
                       <>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setShowSummary(!showSummary)}
+                          onClick={handleSummarize}
+                          disabled={summarizeConversation.isPending}
                         >
-                          {showSummary ? (
-                            <>
-                              <EyeOff className="h-4 w-4 mr-2" />
-                              Hide Summary
-                            </>
-                          ) : (
-                            <>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Summary
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleListenToSummary}
-                          disabled={textToSpeech.isPending}
-                        >
-                          {textToSpeech.isPending ? (
+                          {summarizeConversation.isPending ? (
                             <Spinner className="h-4 w-4 mr-2" />
                           ) : (
-                            <Volume2 className="h-4 w-4 mr-2" />
+                            <Sparkles className="h-4 w-4 mr-2" />
                           )}
-                          Listen to Summary
+                          {aiSummary ? "Regenerate Summary" : "Summarize"}
                         </Button>
+                        {aiSummary && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShowSummary(!showSummary)}
+                            >
+                              {showSummary ? (
+                                <>
+                                  <EyeOff className="h-4 w-4 mr-2" />
+                                  Hide Summary
+                                </>
+                              ) : (
+                                <>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Summary
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleListenToSummary}
+                              disabled={textToSpeech.isPending}
+                            >
+                              {textToSpeech.isPending ? (
+                                <Spinner className="h-4 w-4 mr-2" />
+                              ) : (
+                                <Volume2 className="h-4 w-4 mr-2" />
+                              )}
+                              Listen to Summary
+                            </Button>
+                          </>
+                        )}
                       </>
                     )}
                   </div>
@@ -566,18 +573,33 @@ export function AgentDetail({
         {canSendFollowUp && (
           <div className="border border-border rounded-xl p-4 bg-card">
             <div className="flex flex-col gap-3">
-              <TextareaWithVoice
-                placeholder="Send a follow-up message to continue the task..."
-                value={followUpMessage}
-                onChange={(e) => setFollowUpMessage(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                    e.preventDefault()
-                    handleSendFollowUp()
-                  }
-                }}
-                className="min-h-[100px] resize-none"
-              />
+              {hasOpenAIKey ? (
+                <TextareaWithVoice
+                  placeholder="Send a follow-up message to continue the task..."
+                  value={followUpMessage}
+                  onChange={(e) => setFollowUpMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                      e.preventDefault()
+                      handleSendFollowUp()
+                    }
+                  }}
+                  className="min-h-[100px] resize-none"
+                />
+              ) : (
+                <Textarea
+                  placeholder="Send a follow-up message to continue the task..."
+                  value={followUpMessage}
+                  onChange={(e) => setFollowUpMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                      e.preventDefault()
+                      handleSendFollowUp()
+                    }
+                  }}
+                  className="min-h-[100px] resize-none"
+                />
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">
                   Press ⌘+Enter or Ctrl+Enter to send

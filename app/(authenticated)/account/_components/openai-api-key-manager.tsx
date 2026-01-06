@@ -1,5 +1,6 @@
 "use client"
 
+import { useQueryClient } from "@tanstack/react-query"
 import { useAction } from "convex/react"
 import { Check, Eye, EyeOff, Key, Trash2 } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
@@ -34,6 +35,7 @@ export function OpenAIApiKeyManager() {
     maskedKey: null,
   })
 
+  const queryClient = useQueryClient()
   const getOpenaiApiKeyStatus = useAction(
     api.apiKeysActions.getOpenaiApiKeyStatus
   )
@@ -66,6 +68,8 @@ export function OpenAIApiKeyManager() {
     try {
       await saveOpenaiApiKey({ apiKey: newApiKey.trim() })
       await fetchStatus()
+      // Invalidate the OpenAI key status query to update context
+      queryClient.invalidateQueries({ queryKey: ["openai-api-key-status"] })
       setIsEditing(false)
       setNewApiKey("")
       setShowKey(false)
@@ -83,6 +87,8 @@ export function OpenAIApiKeyManager() {
     try {
       await deleteOpenaiApiKey()
       await fetchStatus()
+      // Invalidate the OpenAI key status query to update context
+      queryClient.invalidateQueries({ queryKey: ["openai-api-key-status"] })
     } catch (err) {
       console.error("Failed to delete OpenAI API key:", err)
     } finally {
