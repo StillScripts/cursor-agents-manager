@@ -7,7 +7,6 @@ import {
 } from "./_generated/server"
 import { getAuthenticatedUser } from "./auth"
 
-// Agent status validator used across queries and mutations
 const agentStatusValidator = v.union(
   v.literal("CREATING"),
   v.literal("RUNNING"),

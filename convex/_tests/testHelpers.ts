@@ -9,6 +9,7 @@ import schema from "../schema"
 const modules = {
   "./_generated/api.ts": () => import("../_generated/api"),
   "./_generated/server.ts": () => import("../_generated/server"),
+  "./agents.ts": () => import("../agents"),
   "./branches.ts": () => import("../branches"),
   "./repositories.ts": () => import("../repositories"),
   "./timeLogs.ts": () => import("../timeLogs"),
