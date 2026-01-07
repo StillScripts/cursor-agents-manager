@@ -204,46 +204,50 @@ export function TextareaWithVoice({
           {...props}
         />
         {hasOpenAIKey && (
-        <InputGroupAddon align="inline-start" className="items-end pb-2 gap-1">
-          <InputGroupButton
-            size="icon-xs"
-            variant="ghost"
-            onClick={handleImprovePrompt}
-            disabled={
-              improvePrompt.isPending ||
-              !value ||
-              (typeof value === "string" && !value.trim())
-            }
-            title="Improve prompt with AI"
+          <InputGroupAddon
+            align="inline-start"
+            className="items-end pb-2 gap-1"
           >
-            <Sparkles className="h-3.5 w-3.5" />
-          </InputGroupButton>
-          {isSupported && (
             <InputGroupButton
               size="icon-xs"
-              variant={isRecording ? "destructive" : "ghost"}
-              onClick={isRecording ? stopRecording : startRecording}
+              variant="ghost"
+              onClick={handleImprovePrompt}
               disabled={
-                !isRecording && (isTranscribing || transcribe.isPending)
+                improvePrompt.isPending ||
+                !value ||
+                (typeof value === "string" && !value.trim())
               }
-              title={
-                isRecording
-                  ? "Stop recording"
-                  : isTranscribing || transcribe.isPending
-                    ? "Transcribing..."
-                    : "Start voice input"
-              }
+              title="Improve prompt with AI"
             >
-              {isTranscribing || transcribe.isPending ? (
-                <Spinner className="h-3.5 w-3.5" />
-              ) : isRecording ? (
-                <Square className="h-3.5 w-3.5" />
-              ) : (
-                <Mic className="h-3.5 w-3.5" />
-              )}
+              <Sparkles className="h-3.5 w-3.5" />
             </InputGroupButton>
-          )}
-        </InputGroupAddon>)}
+            {isSupported && (
+              <InputGroupButton
+                size="icon-xs"
+                variant={isRecording ? "destructive" : "ghost"}
+                onClick={isRecording ? stopRecording : startRecording}
+                disabled={
+                  !isRecording && (isTranscribing || transcribe.isPending)
+                }
+                title={
+                  isRecording
+                    ? "Stop recording"
+                    : isTranscribing || transcribe.isPending
+                      ? "Transcribing..."
+                      : "Start voice input"
+                }
+              >
+                {isTranscribing || transcribe.isPending ? (
+                  <Spinner className="h-3.5 w-3.5" />
+                ) : isRecording ? (
+                  <Square className="h-3.5 w-3.5" />
+                ) : (
+                  <Mic className="h-3.5 w-3.5" />
+                )}
+              </InputGroupButton>
+            )}
+          </InputGroupAddon>
+        )}
       </InputGroup>
       {(isRecording || isProcessing) && (
         <div className="absolute bottom-2 left-2 flex items-center gap-2 px-2 py-1 bg-background/80 backdrop-blur-sm rounded-md text-xs text-muted-foreground border border-border/50">
