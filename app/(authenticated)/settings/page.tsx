@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Suspense } from "react"
 import { PageHeader } from "@/app/(authenticated)/_components/page-header"
 import { ThemeSelector } from "@/app/(authenticated)/settings/_components/theme-selector"
+import { NotificationSettings } from "@/app/(authenticated)/settings/_components/notification-settings"
 import { BranchesFormContainer } from "@/components/forms/branches-form"
 import { RepositoriesFormContainer } from "@/components/forms/repositories-form"
 
@@ -16,6 +17,7 @@ export default function SettingsPage() {
       <div className="p-4 flex flex-col gap-4 sm:gap-6">
         <PageHeader title="Settings" showBack />
         <ThemeSelector />
+        <NotificationSettings />
         <RepositoriesFormContainer />
         <BranchesFormContainer />
       </div>

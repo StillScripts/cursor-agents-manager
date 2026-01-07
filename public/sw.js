@@ -1,8 +1,8 @@
 // Service Worker for Cursor Agent Manager PWA
-// Version: 2.0.0 - Network First strategy for fresh content
+// Version: 3.0.0 - Network First strategy + Push Notifications
 
-const CACHE_NAME = "cursor-agent-manager-v2"
-const RUNTIME_CACHE = "cursor-agent-manager-runtime-v2"
+const CACHE_NAME = "cursor-agent-manager-v3"
+const RUNTIME_CACHE = "cursor-agent-manager-runtime-v3"
 
 // Assets to cache on install (only static assets, not pages)
 const PRECACHE_ASSETS = ["/manifest.json"]
@@ -148,4 +148,84 @@ self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SKIP_WAITING") {
     self.skipWaiting()
   }
+})
+
+// Push event - handle incoming push notifications
+self.addEventListener("push", (event) => {
+  let notificationData = {
+    title: "Cursor Agent Manager",
+    body: "You have a new notification",
+    icon: "/android-chrome-192x192.png",
+    badge: "/android-chrome-192x192.png",
+    tag: "default",
+    requireInteraction: false,
+    data: {},
+  }
+
+  // Parse push data if available
+  if (event.data) {
+    try {
+      const data = event.data.json()
+      notificationData = {
+        ...notificationData,
+        ...data,
+        data: data.data || {},
+      }
+    } catch (e) {
+      // If not JSON, try text
+      const text = event.data.text()
+      if (text) {
+        notificationData.body = text
+      }
+    }
+  }
+
+  // Show notification
+  event.waitUntil(
+    self.registration.showNotification(notificationData.title, {
+      body: notificationData.body,
+      icon: notificationData.icon,
+      badge: notificationData.badge,
+      tag: notificationData.tag,
+      requireInteraction: notificationData.requireInteraction,
+      data: notificationData.data,
+      actions: notificationData.actions || [],
+      vibrate: notificationData.vibrate || [200, 100, 200],
+    })
+  )
+})
+
+// Notification click event - handle user clicking on notification
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close()
+
+  const notificationData = event.notification.data || {}
+  const urlToOpen = notificationData.url || "/"
+
+  // Open or focus the app
+  event.waitUntil(
+    clients
+      .matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      })
+      .then((clientList) => {
+        // Check if there's already a window/tab open with the target URL
+        for (const client of clientList) {
+          if (client.url === urlToOpen && "focus" in client) {
+            return client.focus()
+          }
+        }
+        // If no window is open, open a new one
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen)
+        }
+      })
+  )
+})
+
+// Notification close event - handle user dismissing notification
+self.addEventListener("notificationclose", (event) => {
+  // Can be used for analytics or cleanup
+  console.log("Notification closed:", event.notification.tag)
 })

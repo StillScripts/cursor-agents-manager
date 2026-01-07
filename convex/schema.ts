@@ -74,4 +74,16 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_agent", ["userId", "agentId"]),
+
+  pushSubscriptions: defineTable({
+    userId: v.string(),
+    endpoint: v.string(),
+    p256dh: v.string(), // Public key for encryption
+    auth: v.string(), // Auth secret for encryption
+    userAgent: v.optional(v.string()),
+    createdAt: v.number(),
+    lastUsed: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_endpoint", ["endpoint"]),
 })

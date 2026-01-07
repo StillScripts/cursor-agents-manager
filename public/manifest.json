@@ -8,6 +8,7 @@
   "theme_color": "#06070B",
   "orientation": "portrait-primary",
   "scope": "/",
+  "permissions": ["notifications"],
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
