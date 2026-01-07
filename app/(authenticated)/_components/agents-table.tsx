@@ -1,13 +1,13 @@
 "use client"
 
+import { useQuery } from "convex/react"
 import { Bot } from "lucide-react"
-import { useState, useRef, useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 import { AgentCard } from "@/app/(authenticated)/_components/agent-card"
 import { AgentListSkeleton } from "@/app/(authenticated)/_components/agent-list-skeleton"
 import { PageHeader } from "@/app/(authenticated)/_components/page-header"
 import { Button } from "@/components/ui/button"
 import { api } from "@/convex/_generated/api"
-import { useQuery } from "convex/react"
 import { useStableQuery } from "@/lib/hooks/use-stable-query"
 import type { Agent } from "@/lib/types"
 
