@@ -13,10 +13,12 @@ import type * as apiKeys from "../apiKeys.js";
 import type * as apiKeysActions from "../apiKeysActions.js";
 import type * as auth from "../auth.js";
 import type * as branches from "../branches.js";
+import type * as crons from "../crons.js";
 import type * as cursor from "../cursor.js";
 import type * as http from "../http.js";
 import type * as openAI from "../openAI.js";
 import type * as repositories from "../repositories.js";
+import type * as syncAgents from "../syncAgents.js";
 import type * as timeLogs from "../timeLogs.js";
 import type * as webhookActions from "../webhookActions.js";
 
@@ -32,10 +34,12 @@ declare const fullApi: ApiFromModules<{
   apiKeysActions: typeof apiKeysActions;
   auth: typeof auth;
   branches: typeof branches;
+  crons: typeof crons;
   cursor: typeof cursor;
   http: typeof http;
   openAI: typeof openAI;
   repositories: typeof repositories;
+  syncAgents: typeof syncAgents;
   timeLogs: typeof timeLogs;
   webhookActions: typeof webhookActions;
 }>;

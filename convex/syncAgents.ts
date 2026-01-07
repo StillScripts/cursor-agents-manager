@@ -1,9 +1,8 @@
 "use node"
 
-import { v } from "convex/values"
-import { decryptData } from "../lib/db/encryption"
+import { decryptData } from "@/lib/encryption"
 import type { Agent } from "../lib/types"
-import { api, internal } from "./_generated/api"
+import { internal } from "./_generated/api"
 import { internalAction } from "./_generated/server"
 
 const CURSOR_API_URL = "https://api.cursor.com/v0/agents"
@@ -49,15 +48,15 @@ async function syncAgent(
       },
     })
 
-      if (!response.ok) {
-        if (response.status === 404) {
-          // Agent no longer exists in Cursor, mark as expired
-          await ctx.runMutation(internal.agents.updateStatusInternal, {
-            agentId: agent.agentId,
-            status: "EXPIRED",
-          })
-          return { success: true }
-        }
+    if (!response.ok) {
+      if (response.status === 404) {
+        // Agent no longer exists in Cursor, mark as expired
+        await ctx.runMutation(internal.agents.updateStatusInternal, {
+          agentId: agent.agentId,
+          status: "EXPIRED",
+        })
+        return { success: true }
+      }
 
       const errorText = await response.text()
       console.error(
@@ -132,7 +131,7 @@ export const syncRecentAgents = internalAction({
     for (const { userId, agents } of agentsByUser) {
       // Get encrypted API key for this user
       const apiKeyRecord = await ctx.runQuery(
-        internal.apiKeys.getApiKeysRecord,
+        internal.apiKeys.getApiKeysRecordInternal,
         {
           userId,
         }
