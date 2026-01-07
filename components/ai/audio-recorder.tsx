@@ -28,11 +28,14 @@ export function AudioRecorder({
 
     // Cleanup on unmount
     return () => {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state !== "inactive"
+      ) {
         try {
           mediaRecorderRef.current.stop()
         } catch (error) {
-          // Ignore errors during cleanup
+          console.error("Error stopping MediaRecorder:", error)
         }
       }
       if (streamRef.current) {
@@ -104,7 +107,10 @@ export function AudioRecorder({
 
   const stopRecording = () => {
     // Stop the MediaRecorder if it exists and is recording
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== "inactive"
+    ) {
       try {
         mediaRecorderRef.current.stop()
       } catch (error) {

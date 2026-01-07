@@ -44,11 +44,14 @@ export function TextareaWithVoice({
 
     // Cleanup on unmount
     return () => {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state !== "inactive"
+      ) {
         try {
           mediaRecorderRef.current.stop()
         } catch (error) {
-          // Ignore errors during cleanup
+          console.error("Error stopping MediaRecorder:", error)
         }
       }
       if (streamRef.current) {
@@ -143,7 +146,10 @@ export function TextareaWithVoice({
 
   const stopRecording = () => {
     // Stop the MediaRecorder if it exists and is recording
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== "inactive"
+    ) {
       try {
         mediaRecorderRef.current.stop()
       } catch (error) {
@@ -214,7 +220,9 @@ export function TextareaWithVoice({
               size="icon-xs"
               variant={isRecording ? "destructive" : "ghost"}
               onClick={isRecording ? stopRecording : startRecording}
-              disabled={!isRecording && (isTranscribing || transcribe.isPending)}
+              disabled={
+                !isRecording && (isTranscribing || transcribe.isPending)
+              }
               title={
                 isRecording
                   ? "Stop recording"
