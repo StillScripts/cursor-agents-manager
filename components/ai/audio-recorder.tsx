@@ -3,6 +3,7 @@
 import { Mic, Square } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { useTranscribeAudio } from "@/lib/hooks/use-ai"
 
 export function AudioRecorder({
@@ -11,6 +12,7 @@ export function AudioRecorder({
   onTranscribed: (text: string) => void
 }) {
   const [isRecording, setIsRecording] = useState(false)
+  const [isTranscribing, setIsTranscribing] = useState(false)
   const [isSupported, setIsSupported] = useState(true)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
@@ -58,12 +60,17 @@ export function AudioRecorder({
           track.stop()
         }
 
+        // Immediately show transcribing state for better UX
+        setIsTranscribing(true)
+
         // Send to API
         try {
           const text = await transcribe.mutateAsync(file)
           onTranscribed(text)
         } catch (error) {
           console.error("Error transcribing audio:", error)
+        } finally {
+          setIsTranscribing(false)
         }
       }
 
@@ -89,19 +96,37 @@ export function AudioRecorder({
     )
   }
 
+  const isProcessing = isTranscribing || transcribe.isPending
+
   return (
-    <Button
-      type="button"
-      variant={isRecording ? "destructive" : "outline"}
-      size="icon"
-      onClick={isRecording ? stopRecording : startRecording}
-      disabled={transcribe.isPending}
-    >
-      {isRecording ? (
-        <Square className="h-4 w-4" />
-      ) : (
-        <Mic className="h-4 w-4" />
+    <div className="flex items-center gap-2">
+      <Button
+        type="button"
+        variant={isRecording ? "destructive" : "outline"}
+        size="icon"
+        onClick={isRecording ? stopRecording : startRecording}
+        disabled={isProcessing}
+        title={
+          isRecording
+            ? "Stop recording"
+            : isProcessing
+              ? "Transcribing..."
+              : "Start voice input"
+        }
+      >
+        {isProcessing ? (
+          <Spinner className="h-4 w-4" />
+        ) : isRecording ? (
+          <Square className="h-4 w-4" />
+        ) : (
+          <Mic className="h-4 w-4" />
+        )}
+      </Button>
+      {(isRecording || isProcessing) && (
+        <span className="text-sm text-muted-foreground">
+          {isRecording ? "Recording..." : "Transcribing..."}
+        </span>
       )}
-    </Button>
+    </div>
   )
 }
