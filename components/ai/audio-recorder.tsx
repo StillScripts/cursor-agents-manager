@@ -3,6 +3,7 @@
 import { Mic, Square } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { useTranscribeAudio } from "@/lib/hooks/use-ai"
 
 export function AudioRecorder({
@@ -11,8 +12,10 @@ export function AudioRecorder({
   onTranscribed: (text: string) => void
 }) {
   const [isRecording, setIsRecording] = useState(false)
+  const [isTranscribing, setIsTranscribing] = useState(false)
   const [isSupported, setIsSupported] = useState(true)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
   const chunksRef = useRef<Blob[]>([])
 
   const transcribe = useTranscribeAudio()
@@ -21,6 +24,25 @@ export function AudioRecorder({
     // Check browser support
     if (!navigator.mediaDevices || !window.MediaRecorder) {
       setIsSupported(false)
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state !== "inactive"
+      ) {
+        try {
+          mediaRecorderRef.current.stop()
+        } catch (error) {
+          console.error("Error stopping MediaRecorder:", error)
+        }
+      }
+      if (streamRef.current) {
+        for (const track of streamRef.current.getTracks()) {
+          track.stop()
+        }
+      }
     }
   }, [])
 
@@ -41,6 +63,7 @@ export function AudioRecorder({
 
       const mediaRecorder = new MediaRecorder(stream, { mimeType })
       mediaRecorderRef.current = mediaRecorder
+      streamRef.current = stream
       chunksRef.current = []
 
       mediaRecorder.ondataavailable = (e) => {
@@ -58,12 +81,20 @@ export function AudioRecorder({
           track.stop()
         }
 
+        // Clear stream reference
+        streamRef.current = null
+
+        // Immediately show transcribing state for better UX
+        setIsTranscribing(true)
+
         // Send to API
         try {
           const text = await transcribe.mutateAsync(file)
           onTranscribed(text)
         } catch (error) {
           console.error("Error transcribing audio:", error)
+        } finally {
+          setIsTranscribing(false)
         }
       }
 
@@ -75,10 +106,27 @@ export function AudioRecorder({
   }
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop()
-      setIsRecording(false)
+    // Stop the MediaRecorder if it exists and is recording
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== "inactive"
+    ) {
+      try {
+        mediaRecorderRef.current.stop()
+      } catch (error) {
+        console.error("Error stopping MediaRecorder:", error)
+      }
     }
+
+    // Stop all tracks in the stream
+    if (streamRef.current) {
+      for (const track of streamRef.current.getTracks()) {
+        track.stop()
+      }
+      streamRef.current = null
+    }
+
+    setIsRecording(false)
   }
 
   if (!isSupported) {
@@ -89,19 +137,37 @@ export function AudioRecorder({
     )
   }
 
+  const isProcessing = isTranscribing || transcribe.isPending
+
   return (
-    <Button
-      type="button"
-      variant={isRecording ? "destructive" : "outline"}
-      size="icon"
-      onClick={isRecording ? stopRecording : startRecording}
-      disabled={transcribe.isPending}
-    >
-      {isRecording ? (
-        <Square className="h-4 w-4" />
-      ) : (
-        <Mic className="h-4 w-4" />
+    <div className="flex items-center gap-2">
+      <Button
+        type="button"
+        variant={isRecording ? "destructive" : "outline"}
+        size="icon"
+        onClick={isRecording ? stopRecording : startRecording}
+        disabled={!isRecording && isProcessing}
+        title={
+          isRecording
+            ? "Stop recording"
+            : isProcessing
+              ? "Transcribing..."
+              : "Start voice input"
+        }
+      >
+        {isProcessing ? (
+          <Spinner className="h-4 w-4" />
+        ) : isRecording ? (
+          <Square className="h-4 w-4" />
+        ) : (
+          <Mic className="h-4 w-4" />
+        )}
+      </Button>
+      {(isRecording || isProcessing) && (
+        <span className="text-sm text-muted-foreground">
+          {isRecording ? "Recording..." : "Transcribing..."}
+        </span>
       )}
-    </Button>
+    </div>
   )
 }

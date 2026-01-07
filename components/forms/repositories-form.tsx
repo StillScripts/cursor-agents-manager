@@ -13,7 +13,7 @@ import { type Repository, useRepositories } from "@/lib/hooks/use-repositories"
 import {
   type RepositoryFormData,
   repositoriesRequestSchema,
-} from "@/lib/schemas/settings"
+} from "@/lib/validators/settings"
 
 type RepositoriesFormData = {
   repositories: RepositoryFormData[]

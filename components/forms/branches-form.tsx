@@ -10,7 +10,7 @@ import { type Branch, useBranches } from "@/lib/hooks/use-branches"
 import {
   type BranchFormData,
   branchesRequestSchema,
-} from "@/lib/schemas/settings"
+} from "@/lib/validators/settings"
 
 type BranchesFormData = {
   branches: BranchFormData[]

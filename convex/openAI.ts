@@ -5,7 +5,7 @@ import { generateText } from "ai"
 import { v } from "convex/values"
 import OpenAI from "openai"
 import { extractUserMessagesAndLastAssistant } from "../lib/conversation-utils"
-import { decryptData } from "../lib/db/encryption"
+import { decryptData } from "../lib/encryption"
 import type { AgentConversation } from "../lib/types"
 import { api, internal } from "./_generated/api"
 import { action } from "./_generated/server"
@@ -23,9 +23,12 @@ export const summarizeConversation = action({
     )
 
     // Get OpenAI API key
-    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
-      userId: authUser.userId,
-    })
+    const record = await ctx.runQuery(
+      internal.apiKeys.getApiKeysRecordInternal,
+      {
+        userId: authUser.userId,
+      }
+    )
 
     if (!record?.encryptedOpenaiApiKey) {
       throw new Error("OpenAI API key not configured")
@@ -143,9 +146,12 @@ export const transcribeAudio = action({
     )
 
     // Get OpenAI API key
-    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
-      userId: authUser.userId,
-    })
+    const record = await ctx.runQuery(
+      internal.apiKeys.getApiKeysRecordInternal,
+      {
+        userId: authUser.userId,
+      }
+    )
 
     if (!record?.encryptedOpenaiApiKey) {
       throw new Error("OpenAI API key not configured")
@@ -230,9 +236,12 @@ export const textToSpeech = action({
     )
 
     // Get OpenAI API key
-    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
-      userId: authUser.userId,
-    })
+    const record = await ctx.runQuery(
+      internal.apiKeys.getApiKeysRecordInternal,
+      {
+        userId: authUser.userId,
+      }
+    )
 
     if (!record?.encryptedOpenaiApiKey) {
       throw new Error("OpenAI API key not configured")
@@ -292,9 +301,12 @@ export const improvePrompt = action({
     )
 
     // Get OpenAI API key
-    const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecord, {
-      userId: authUser.userId,
-    })
+    const record = await ctx.runQuery(
+      internal.apiKeys.getApiKeysRecordInternal,
+      {
+        userId: authUser.userId,
+      }
+    )
 
     if (!record?.encryptedOpenaiApiKey) {
       throw new Error("OpenAI API key not configured")

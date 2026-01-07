@@ -62,4 +62,4 @@ export type {
   Source,
   Target,
   Webhook,
-} from "@/lib/schemas/cursor/launch-agent"
+} from "@/lib/validators/cursor/launch-agent"

@@ -3,7 +3,7 @@ import {
   createTestInstance,
   createTestUsers,
   createTestWithUser,
-} from "../../lib/testHelpers"
+} from "../../lib/convex-test-helpers"
 import { api } from "../_generated/api"
 
 const testAgentId = "test-agent-123"
