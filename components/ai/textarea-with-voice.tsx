@@ -1,9 +1,9 @@
 "use client"
 
 import { Mic, Sparkles, Square } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import type React from "react"
 import { useEffect, useRef, useState } from "react"
+import { Button } from "@/components/ui/button"
 import {
   InputGroup,
   InputGroupAddon,
