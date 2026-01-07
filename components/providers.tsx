@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes"
 import type React from "react"
 import { useState } from "react"
 import { authClient } from "@/lib/better-auth/auth-client"
+import { OpenAIKeyProvider } from "@/lib/hooks/use-openai-key"
 
 // Cache configuration constants
 const FIVE_MINUTES = 5 * 60 * 1000
@@ -54,7 +55,7 @@ export function Providers({
         initialToken={initialToken}
       >
         <QueryClientProvider client={queryClient}>
-          {children}
+          <OpenAIKeyProvider>{children}</OpenAIKeyProvider>
         </QueryClientProvider>
       </ConvexBetterAuthProvider>
     </ThemeProvider>

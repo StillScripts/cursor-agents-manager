@@ -23,6 +23,7 @@ import { api } from "@/convex/_generated/api"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 import { useBranches } from "@/lib/hooks/use-branches"
 import { useModels } from "@/lib/hooks/use-models"
+import { useOpenAIKey } from "@/lib/hooks/use-openai-key"
 import { useRepositories } from "@/lib/hooks/use-repositories"
 import { useSaveTimeLog } from "@/lib/hooks/use-time-logs"
 import { useTimeTracking } from "@/lib/hooks/use-time-tracking"
@@ -165,6 +166,7 @@ export function LaunchAgentForm() {
   const router = useRouter()
   const launchAgentAction = useAction(api.cursor.launchAgent)
   const { saveTimeLog } = useSaveTimeLog()
+  const { hasOpenAIKey } = useOpenAIKey()
 
   // Error state
   const [error, setError] = useState<Error | null>(null)
@@ -273,24 +275,43 @@ export function LaunchAgentForm() {
                 </FieldDescription>
                 <FieldGroup>
                   <form.AppField name="prompt.text">
-                    {(field) => (
-                      <field.ControlledTextareaWithVoice
-                        field={field}
-                        label="Task Description"
-                        description="Describe the task you want the agent to perform (10-5000 characters)"
-                        placeholder="Add a README.md file with installation instructions..."
-                        className="min-h-[120px]"
-                        onFocus={() => {
-                          // Start tracking when user focuses on the textarea
-                          if (!timeTracking.isTracking) {
-                            timeTracking.start()
-                          }
-                        }}
-                        onChange={(e) => {
-                          field.handleChange(e.target.value)
-                        }}
-                      />
-                    )}
+                    {(field) =>
+                      hasOpenAIKey ? (
+                        <field.ControlledTextareaWithVoice
+                          field={field}
+                          label="Task Description"
+                          description="Describe the task you want the agent to perform (10-5000 characters)"
+                          placeholder="Add a README.md file with installation instructions..."
+                          className="min-h-[120px]"
+                          onFocus={() => {
+                            // Start tracking when user focuses on the textarea
+                            if (!timeTracking.isTracking) {
+                              timeTracking.start()
+                            }
+                          }}
+                          onChange={(e) => {
+                            field.handleChange(e.target.value)
+                          }}
+                        />
+                      ) : (
+                        <field.ControlledTextarea
+                          field={field}
+                          label="Task Description"
+                          description="Describe the task you want the agent to perform (10-5000 characters)"
+                          placeholder="Add a README.md file with installation instructions..."
+                          className="min-h-[120px]"
+                          onFocus={() => {
+                            // Start tracking when user focuses on the textarea
+                            if (!timeTracking.isTracking) {
+                              timeTracking.start()
+                            }
+                          }}
+                          onChange={(e) => {
+                            field.handleChange(e.target.value)
+                          }}
+                        />
+                      )
+                    }
                   </form.AppField>
 
                   <form.AppField name="prompt.images">
