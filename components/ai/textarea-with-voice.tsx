@@ -3,6 +3,7 @@
 import { Mic, Sparkles, Square } from "lucide-react"
 import type React from "react"
 import { useEffect, useRef, useState } from "react"
+import { Button } from "@/components/ui/button"
 import {
   InputGroup,
   InputGroupAddon,
@@ -260,6 +261,18 @@ export function TextareaWithVoice({
             <>
               <div className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
               <span>Recording...</span>
+              <Button
+                variant="destructive"
+                size="xs"
+                className="h-5 px-2 text-[10px] ml-1"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  stopRecording()
+                }}
+              >
+                Stop
+              </Button>
             </>
           )}
         </div>
