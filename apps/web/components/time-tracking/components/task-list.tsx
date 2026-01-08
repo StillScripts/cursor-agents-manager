@@ -13,6 +13,15 @@ import {
 import type React from "react"
 import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import type { Id } from "@/convex/_generated/dataModel"
 import {
@@ -172,7 +181,7 @@ export function TaskList() {
                 <button
                   type="button"
                   onClick={() => toggleExpanded(task._id)}
-                  className="flex-1 min-w-0 text-left hover:bg-secondary/50 rounded p-2 -m-2 transition-colors cursor-pointer"
+                  className="flex-1 min-w-0 text-left rounded p-2 -m-2 transition-colors cursor-pointer"
                   aria-expanded={isExpanded}
                 >
                   <p className="font-medium text-foreground truncate">
@@ -196,14 +205,37 @@ export function TaskList() {
                   </div>
                 </button>
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(task._id)}
-                    className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  <Dialog>
+                    <DialogTrigger
+                      render={
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      }
+                    />
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Are You Sure?</DialogTitle>
+                        <DialogDescription>
+                          You are about to delete the task:{" "}
+                          <strong className="font-bold">{task.title}</strong>.
+                          This action cannot be undone.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button
+                          variant="destructive"
+                          onClick={() => handleDelete(task._id)}
+                        >
+                          Delete
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                   <Button
                     variant="ghost"
                     size="sm"
