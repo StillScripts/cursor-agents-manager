@@ -1,27 +1,39 @@
 "use client"
 
 import { formatDuration } from "helpers"
-import { useAtom, useAtomValue } from "jotai"
+import { useAtom } from "jotai"
 import { Clock, Play, Square } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import type { Id } from "@/convex/_generated/dataModel"
 import {
   activeTimerAtom,
   descriptionInputAtom,
   taskInputAtom,
-  timeEntriesAtom,
-  todayTotalAtom,
 } from "@/lib/atoms"
+import { useTasks } from "@/lib/hooks/use-tasks"
+import { useSaveTimeLog, useTodayTimeLogs } from "@/lib/hooks/use-time-logs"
 
 export function TimerDisplay() {
   const [activeTimer, setActiveTimer] = useAtom(activeTimerAtom)
-  const [entries, setEntries] = useAtom(timeEntriesAtom)
   const [taskInput, setTaskInput] = useAtom(taskInputAtom)
   const [descriptionInput, setDescriptionInput] = useAtom(descriptionInputAtom)
-  const todayTotal = useAtomValue(todayTotalAtom)
   const [elapsed, setElapsed] = useState(0)
+  const [isStarting, setIsStarting] = useState(false)
+  const [isStopping, setIsStopping] = useState(false)
+
+  const { tasks, createTask } = useTasks()
+  const { saveTimeLog } = useSaveTimeLog()
+  const { timeLogs: todayTimeLogs } = useTodayTimeLogs()
+
+  // Calculate today's total from Convex timeLogs
+  const todayTotal =
+    todayTimeLogs?.reduce(
+      (total, log) => total + (log.endTime - log.startTime),
+      0
+    ) ?? 0
 
   useEffect(() => {
     if (!activeTimer) {
@@ -36,33 +48,57 @@ export function TimerDisplay() {
     return () => clearInterval(interval)
   }, [activeTimer])
 
-  const handleStart = () => {
-    if (!taskInput.trim()) return
+  const handleStart = async () => {
+    if (!taskInput.trim() || isStarting) return
 
-    setActiveTimer({
-      title: taskInput.trim(),
-      description: descriptionInput.trim() || undefined,
-      startTime: Date.now(),
-    })
+    setIsStarting(true)
+    try {
+      const title = taskInput.trim()
+      const description = descriptionInput.trim() || undefined
+
+      // Find existing task with same title, or create new one
+      let taskId: Id<"tasks">
+      const existingTask = tasks?.find((t) => t.title === title)
+      if (existingTask) {
+        taskId = existingTask._id
+      } else {
+        taskId = await createTask({ title, description })
+      }
+
+      setActiveTimer({
+        title,
+        description,
+        startTime: Date.now(),
+        taskId,
+      })
+    } catch (error) {
+      console.error("Failed to start timer:", error)
+    } finally {
+      setIsStarting(false)
+    }
   }
 
-  const handleStop = () => {
-    if (!activeTimer) return
+  const handleStop = async () => {
+    if (!activeTimer || !activeTimer.taskId || isStopping) return
 
-    const endTime = Date.now()
-    const entry = {
-      id: crypto.randomUUID(),
-      title: activeTimer.title,
-      description: activeTimer.description,
-      startTime: activeTimer.startTime,
-      endTime,
-      duration: endTime - activeTimer.startTime,
+    setIsStopping(true)
+    try {
+      const endTime = Date.now()
+
+      await saveTimeLog({
+        taskId: activeTimer.taskId as Id<"tasks">,
+        startTime: activeTimer.startTime,
+        endTime,
+      })
+
+      setActiveTimer(null)
+      setTaskInput("")
+      setDescriptionInput("")
+    } catch (error) {
+      console.error("Failed to save time log:", error)
+    } finally {
+      setIsStopping(false)
     }
-
-    setEntries([...entries, entry])
-    setActiveTimer(null)
-    setTaskInput("")
-    setDescriptionInput("")
   }
 
   const isRunning = activeTimer !== null
@@ -121,7 +157,7 @@ export function TimerDisplay() {
       <Button
         size="lg"
         onClick={isRunning ? handleStop : handleStart}
-        disabled={!isRunning && !taskInput.trim()}
+        disabled={(!isRunning && !taskInput.trim()) || isStarting || isStopping}
         className={`h-14 px-10 text-lg font-medium rounded-full transition-all ${
           isRunning
             ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground"
@@ -131,12 +167,12 @@ export function TimerDisplay() {
         {isRunning ? (
           <>
             <Square className="w-5 h-5 mr-2 fill-current" />
-            Stop
+            {isStopping ? "Stopping..." : "Stop"}
           </>
         ) : (
           <>
             <Play className="w-5 h-5 mr-2 fill-current" />
-            Start
+            {isStarting ? "Starting..." : "Start"}
           </>
         )}
       </Button>

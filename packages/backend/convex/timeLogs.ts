@@ -2,9 +2,9 @@ import { v } from "convex/values"
 import { mutation, query } from "./_generated/server"
 import { getAuthenticatedUser } from "./auth"
 
-export const getTimeLogsByAgent = query({
+export const getTimeLogsByTask = query({
   args: {
-    agentId: v.string(),
+    taskId: v.id("tasks"),
   },
   handler: async (ctx, args) => {
     const authUser = await getAuthenticatedUser(ctx).catch(() => null)
@@ -12,16 +12,21 @@ export const getTimeLogsByAgent = query({
       return []
     }
 
+    // Verify task belongs to user
+    const task = await ctx.db.get(args.taskId)
+    if (!task || task.userId !== authUser.userId) {
+      return []
+    }
+
     const timeLogs = await ctx.db
       .query("timeLogs")
-      .withIndex("by_agent", (q) =>
-        q.eq("userId", authUser.userId).eq("agentId", args.agentId)
-      )
+      .withIndex("by_task", (q) => q.eq("taskId", args.taskId))
+      .order("desc")
       .collect()
 
     return timeLogs.map((log) => ({
       _id: log._id,
-      agentId: log.agentId,
+      taskId: log.taskId,
       activityType: log.activityType,
       startTime: log.startTime,
       endTime: log.endTime,
@@ -41,11 +46,12 @@ export const getAllTimeLogs = query({
     const timeLogs = await ctx.db
       .query("timeLogs")
       .withIndex("by_user", (q) => q.eq("userId", authUser.userId))
+      .order("desc")
       .collect()
 
     return timeLogs.map((log) => ({
       _id: log._id,
-      agentId: log.agentId,
+      taskId: log.taskId,
       activityType: log.activityType,
       startTime: log.startTime,
       endTime: log.endTime,
@@ -54,27 +60,88 @@ export const getAllTimeLogs = query({
   },
 })
 
+export const getTodayTimeLogs = query({
+  args: {},
+  handler: async (ctx) => {
+    const authUser = await getAuthenticatedUser(ctx).catch(() => null)
+    if (!authUser) {
+      return []
+    }
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const todayStart = today.getTime()
+
+    const timeLogs = await ctx.db
+      .query("timeLogs")
+      .withIndex("by_user", (q) => q.eq("userId", authUser.userId))
+      .order("desc")
+      .collect()
+
+    return timeLogs
+      .filter((log) => log.startTime >= todayStart)
+      .map((log) => ({
+        _id: log._id,
+        taskId: log.taskId,
+        activityType: log.activityType,
+        startTime: log.startTime,
+        endTime: log.endTime,
+        createdAt: log.createdAt,
+      }))
+  },
+})
+
 export const saveTimeLog = mutation({
   args: {
-    agentId: v.string(),
-    activityType: v.union(
-      v.literal("task_creation"),
-      v.literal("conversation_review")
-    ),
+    taskId: v.id("tasks"),
     startTime: v.number(),
+    endTime: v.number(),
+    activityType: v.optional(
+      v.union(
+        v.literal("development"),
+        v.literal("testing"),
+        v.literal("review"),
+        v.literal("meeting"),
+        v.literal("other")
+      )
+    ),
   },
   handler: async (ctx, args) => {
     const authUser = await getAuthenticatedUser(ctx)
 
+    // Verify task belongs to user
+    const task = await ctx.db.get(args.taskId)
+    if (!task || task.userId !== authUser.userId) {
+      throw new Error("Task not found or unauthorized")
+    }
+
     const now = Date.now()
-    await ctx.db.insert("timeLogs", {
+    const timeLogId = await ctx.db.insert("timeLogs", {
       userId: authUser.userId,
-      agentId: args.agentId,
+      taskId: args.taskId,
       activityType: args.activityType,
       startTime: args.startTime,
-      endTime: now,
+      endTime: args.endTime,
       createdAt: now,
     })
+
+    return timeLogId
+  },
+})
+
+export const deleteTimeLog = mutation({
+  args: {
+    timeLogId: v.id("timeLogs"),
+  },
+  handler: async (ctx, args) => {
+    const authUser = await getAuthenticatedUser(ctx)
+
+    const timeLog = await ctx.db.get(args.timeLogId)
+    if (!timeLog || timeLog.userId !== authUser.userId) {
+      throw new Error("Time log not found or unauthorized")
+    }
+
+    await ctx.db.delete(args.timeLogId)
 
     return { success: true }
   },

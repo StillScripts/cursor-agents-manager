@@ -14,6 +14,7 @@ export interface ActiveTimer {
   title: string
   description?: string
   startTime: number
+  taskId?: string // Convex task ID, stored when task is created/found
 }
 
 // Persisted atoms using localStorage

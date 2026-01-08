@@ -17,6 +17,7 @@ import type * as cursor from "../cursor.js";
 import type * as http from "../http.js";
 import type * as openAI from "../openAI.js";
 import type * as repositories from "../repositories.js";
+import type * as tasks from "../tasks.js";
 import type * as timeLogs from "../timeLogs.js";
 import type * as types from "../types.js";
 import type * as webhookActions from "../webhookActions.js";
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   openAI: typeof openAI;
   repositories: typeof repositories;
+  tasks: typeof tasks;
   timeLogs: typeof timeLogs;
   types: typeof types;
   webhookActions: typeof webhookActions;

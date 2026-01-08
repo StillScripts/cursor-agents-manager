@@ -61,17 +61,33 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_user", ["userId"]),
 
-  timeLogs: defineTable({
+  tasks: defineTable({
     userId: v.string(),
-    agentId: v.string(),
-    activityType: v.union(
-      v.literal("task_creation"),
-      v.literal("conversation_review")
-    ),
-    startTime: v.number(),
-    endTime: v.optional(v.number()),
+    title: v.string(),
+    description: v.optional(v.string()),
     createdAt: v.number(),
   })
     .index("by_user", ["userId"])
-    .index("by_agent", ["userId", "agentId"]),
+    .index("by_user_created", ["userId", "createdAt"]),
+
+  timeLogs: defineTable({
+    userId: v.string(),
+    taskId: v.id("tasks"),
+    activityType: v.optional(
+      v.union(
+        v.literal("development"),
+        v.literal("testing"),
+        v.literal("review"),
+        v.literal("meeting"),
+        v.literal("other")
+      )
+    ),
+    startTime: v.number(),
+    endTime: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_task", ["taskId"])
+    .index("by_user_task", ["userId", "taskId"])
+    .index("by_user_created", ["userId", "createdAt"]),
 })

@@ -8,17 +8,17 @@ import { useStableQuery } from "@/lib/hooks/use-stable-query"
 // TimeLog type matching what the queries actually return
 export type TimeLog = {
   _id: Id<"timeLogs">
-  agentId: string
-  activityType: "task_creation" | "conversation_review"
+  taskId: Id<"tasks">
+  activityType?: "development" | "testing" | "review" | "meeting" | "other"
   startTime: number
-  endTime?: number
+  endTime: number
   createdAt: number
 }
 
-export function useAgentTimeLogs(agentId: string) {
+export function useTimeLogsByTask(taskId: Id<"tasks"> | null) {
   const timeLogs = useStableQuery(
-    api.timeLogs.getTimeLogsByAgent,
-    agentId ? { agentId } : "skip"
+    api.timeLogs.getTimeLogsByTask,
+    taskId ? { taskId } : "skip"
   )
 
   return {
@@ -36,14 +36,32 @@ export function useAllTimeLogs() {
   }
 }
 
+export function useTodayTimeLogs() {
+  const timeLogs = useStableQuery(api.timeLogs.getTodayTimeLogs)
+
+  return {
+    timeLogs,
+    isLoading: timeLogs === undefined,
+  }
+}
+
 export function useSaveTimeLog() {
   const saveTimeLog = useMutation(api.timeLogs.saveTimeLog)
 
   return {
     saveTimeLog: (data: {
-      agentId: string
-      activityType: TimeLog["activityType"]
+      taskId: Id<"tasks">
       startTime: number
+      endTime: number
+      activityType?: TimeLog["activityType"]
     }) => saveTimeLog(data),
+  }
+}
+
+export function useDeleteTimeLog() {
+  const deleteTimeLog = useMutation(api.timeLogs.deleteTimeLog)
+
+  return {
+    deleteTimeLog: (timeLogId: Id<"timeLogs">) => deleteTimeLog({ timeLogId }),
   }
 }

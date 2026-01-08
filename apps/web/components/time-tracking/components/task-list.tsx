@@ -1,7 +1,7 @@
 "use client"
 
 import { formatDuration } from "helpers"
-import { useAtom, useAtomValue, useSetAtom } from "jotai"
+import { useAtomValue, useSetAtom } from "jotai"
 import {
   Calendar,
   ChevronDown,
@@ -11,17 +11,18 @@ import {
   Trash2,
 } from "lucide-react"
 import type React from "react"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import type { Id } from "@/convex/_generated/dataModel"
 import {
   activeTimerAtom,
   descriptionInputAtom,
   taskInputAtom,
-  tasksWithEntriesAtom,
-  timeEntriesAtom,
   viewAtom,
 } from "@/lib/atoms"
+import { useTasks } from "@/lib/hooks/use-tasks"
+import { useAllTimeLogs, useDeleteTimeLog } from "@/lib/hooks/use-time-logs"
 
 function formatEntryDateTime(timestamp: number): string {
   const date = new Date(timestamp)
@@ -51,50 +52,101 @@ function formatEntryDateTime(timestamp: number): string {
 }
 
 export function TaskList() {
-  const tasks = useAtomValue(tasksWithEntriesAtom)
+  const { tasks, deleteTask } = useTasks()
+  const { timeLogs } = useAllTimeLogs()
+  const { deleteTimeLog } = useDeleteTimeLog()
   const activeTimer = useAtomValue(activeTimerAtom)
   const setActiveTimer = useSetAtom(activeTimerAtom)
   const setTaskInput = useSetAtom(taskInputAtom)
   const setDescriptionInput = useSetAtom(descriptionInputAtom)
   const setView = useSetAtom(viewAtom)
-  const [entries, setEntries] = useAtom(timeEntriesAtom)
-  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set())
+  const [expandedTasks, setExpandedTasks] = useState<Set<Id<"tasks">>>(
+    new Set()
+  )
 
-  const toggleExpanded = (title: string) => {
+  // Group time logs by task and calculate totals
+  const tasksWithEntries = useMemo(() => {
+    if (!tasks || !timeLogs) return []
+
+    return tasks
+      .map((task) => {
+        const taskTimeLogs = timeLogs.filter((log) => log.taskId === task._id)
+        const totalDuration = taskTimeLogs.reduce(
+          (sum, log) => sum + (log.endTime - log.startTime),
+          0
+        )
+        const lastUsed = Math.max(
+          ...taskTimeLogs.map((log) => log.startTime),
+          0
+        )
+
+        return {
+          ...task,
+          totalDuration,
+          lastUsed,
+          entries: taskTimeLogs.map((log) => ({
+            _id: log._id,
+            startTime: log.startTime,
+            endTime: log.endTime,
+            duration: log.endTime - log.startTime,
+          })),
+        }
+      })
+      .filter((task) => task.entries.length > 0) // Only show tasks with time logs
+      .sort((a, b) => b.lastUsed - a.lastUsed) // Sort by most recently used
+  }, [tasks, timeLogs])
+
+  const toggleExpanded = (taskId: Id<"tasks">) => {
     setExpandedTasks((prev) => {
       const next = new Set(prev)
-      if (next.has(title)) {
-        next.delete(title)
+      if (next.has(taskId)) {
+        next.delete(taskId)
       } else {
-        next.add(title)
+        next.add(taskId)
       }
       return next
     })
   }
 
-  const handleContinue = (task: { title: string; description?: string }) => {
+  const handleContinue = (task: {
+    title: string
+    description?: string
+    _id: Id<"tasks">
+  }) => {
     if (activeTimer) return
 
     setActiveTimer({
       title: task.title,
       description: task.description,
       startTime: Date.now(),
+      taskId: task._id,
     })
     setTaskInput(task.title)
     setDescriptionInput(task.description || "")
     setView("timer")
   }
 
-  const handleDelete = (title: string) => {
-    setEntries(entries.filter((entry) => entry.title !== title))
+  const handleDelete = async (taskId: Id<"tasks">) => {
+    try {
+      await deleteTask(taskId)
+    } catch (error) {
+      console.error("Failed to delete task:", error)
+    }
   }
 
-  const handleDeleteEntry = (entryId: string, e: React.MouseEvent) => {
+  const handleDeleteEntry = async (
+    timeLogId: Id<"timeLogs">,
+    e: React.MouseEvent
+  ) => {
     e.stopPropagation()
-    setEntries(entries.filter((entry) => entry.id !== entryId))
+    try {
+      await deleteTimeLog(timeLogId)
+    } catch (error) {
+      console.error("Failed to delete time log:", error)
+    }
   }
 
-  if (tasks.length === 0) {
+  if (tasksWithEntries.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center py-20">
         <Clock className="w-16 h-16 text-muted-foreground/30 mb-4" />
@@ -109,17 +161,17 @@ export function TaskList() {
   return (
     <ScrollArea className="h-[calc(100vh-200px)]">
       <div className="space-y-3 pr-4">
-        {tasks.map((task) => {
-          const isExpanded = expandedTasks.has(task.title)
+        {tasksWithEntries.map((task) => {
+          const isExpanded = expandedTasks.has(task._id)
           return (
             <div
-              key={task.title}
+              key={task._id}
               className="rounded-lg bg-secondary/50 overflow-hidden"
             >
               <div className="group flex items-center gap-2 p-4">
                 <button
                   type="button"
-                  onClick={() => toggleExpanded(task.title)}
+                  onClick={() => toggleExpanded(task._id)}
                   className="flex-1 min-w-0 text-left hover:bg-secondary/50 rounded p-2 -m-2 transition-colors cursor-pointer"
                   aria-expanded={isExpanded}
                 >
@@ -147,7 +199,7 @@ export function TaskList() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleDelete(task.title)}
+                    onClick={() => handleDelete(task._id)}
                     className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -164,7 +216,7 @@ export function TaskList() {
                   </Button>
                   <button
                     type="button"
-                    onClick={() => toggleExpanded(task.title)}
+                    onClick={() => toggleExpanded(task._id)}
                     className="text-muted-foreground hover:text-foreground transition-colors p-1 -m-1 rounded hover:bg-secondary/50"
                     aria-expanded={isExpanded}
                     aria-label={isExpanded ? "Collapse task" : "Expand task"}
@@ -182,7 +234,7 @@ export function TaskList() {
                 <div className="border-t border-border/50 bg-background/50">
                   {task.entries.map((entry) => (
                     <div
-                      key={entry.id}
+                      key={entry._id}
                       className="group/entry flex items-center justify-between px-4 py-3 border-b border-border/30 last:border-b-0 hover:bg-secondary/30 transition-colors"
                     >
                       <div className="flex items-center gap-3">
@@ -200,7 +252,7 @@ export function TaskList() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={(e) => handleDeleteEntry(entry.id, e)}
+                          onClick={(e) => handleDeleteEntry(entry._id, e)}
                           className="h-7 w-7 opacity-0 group-hover/entry:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                         >
                           <Trash2 className="w-3 h-3" />
