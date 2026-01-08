@@ -167,6 +167,137 @@ export function useAgentConversation(
   }
 }
 
+/**
+ * Hook to fetch agent conversation with cursor-based pagination
+ * This hook uses the getConversationWithCursor action which fetches
+ * directly from the Cursor API without interacting with the database
+ */
+export function useAgentConversationWithCursor(
+  agentId: string,
+  options?: {
+    limit?: number
+    enabled?: boolean
+  }
+) {
+  const [conversationData, setConversationData] = useState<
+    (AgentConversation & { simulation: boolean }) | null
+  >(null)
+  const [nextCursor, setNextCursor] = useState<string | undefined>(undefined)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const getConversationWithCursor = useAction(
+    api.cursor.getConversationWithCursor
+  )
+
+  const enabled = options?.enabled !== false
+
+  // Initial fetch
+  useEffect(() => {
+    if (!agentId || !enabled) return
+
+    let cancelled = false
+
+    const fetchConversation = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        const result = await getConversationWithCursor({
+          agentId,
+          limit: options?.limit,
+        })
+        if (!cancelled) {
+          if (result.conversation) {
+            setConversationData({
+              ...result.conversation,
+              simulation: result.simulation,
+            })
+            setNextCursor(result.nextCursor)
+          } else {
+            setConversationData(null)
+            setNextCursor(undefined)
+          }
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Failed to fetch conversation"
+          )
+          setConversationData(null)
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void fetchConversation()
+
+    return () => {
+      cancelled = true
+    }
+  }, [agentId, enabled, getConversationWithCursor, options?.limit])
+
+  // Function to load more messages
+  const loadMore = async () => {
+    if (!nextCursor || isLoadingMore || !enabled) return
+
+    try {
+      setIsLoadingMore(true)
+      setError(null)
+      const result = await getConversationWithCursor({
+        agentId,
+        cursor: nextCursor,
+        limit: options?.limit,
+      })
+
+      if (result.conversation) {
+        // Merge new messages with existing ones
+        setConversationData((prev) => {
+          if (!prev) {
+            return {
+              ...result.conversation!,
+              simulation: result.simulation,
+            }
+          }
+
+          // Combine messages, avoiding duplicates
+          const existingIds = new Set(prev.messages.map((m) => m.id))
+          const newMessages = result.conversation!.messages.filter(
+            (m) => !existingIds.has(m.id)
+          )
+
+          return {
+            ...prev,
+            messages: [...prev.messages, ...newMessages],
+            simulation: result.simulation,
+          }
+        })
+        setNextCursor(result.nextCursor)
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to load more messages"
+      )
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }
+
+  return {
+    data: conversationData,
+    isLoading,
+    isLoadingMore,
+    error,
+    hasMore: !!nextCursor,
+    loadMore,
+  }
+}
+
 export function useLaunchAgent() {
   const launchAgent = useAction(api.cursor.launchAgent)
 

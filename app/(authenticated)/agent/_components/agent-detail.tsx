@@ -50,6 +50,7 @@ import { formatDurationMs, formatRelativeTime } from "@/lib/formatting"
 import {
   useAgent,
   useAgentConversation,
+  useAgentConversationWithCursor,
   useDeleteAgent,
   useSendFollowUp,
   useStopAgent,
@@ -83,8 +84,17 @@ export function AgentDetail({
     agentId,
     initialAgent
   )
-  const { data: conversation, isLoading: conversationLoading } =
-    useAgentConversation(agentId, initialConversation)
+  // Use the new cursor-based conversation hook for direct Cursor API access
+  const {
+    data: conversation,
+    isLoading: conversationLoading,
+    hasMore,
+    loadMore,
+    isLoadingMore,
+  } = useAgentConversationWithCursor(agentId, {
+    limit: 50, // Fetch up to 50 messages per page
+    enabled: true,
+  })
   const { timeLogs } = useAgentTimeLogs(agentId)
   const { saveTimeLog } = useSaveTimeLog()
   const stopAgent = useStopAgent()
@@ -477,7 +487,7 @@ export function AgentDetail({
             </AccordionTrigger>
             <AccordionContent className="bg-card">
               <div className="px-4 pb-4">
-                {!initialConversation && conversationLoading ? (
+                {conversationLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <Spinner className="h-6 w-6 text-primary" />
                   </div>
@@ -558,6 +568,26 @@ export function AgentDetail({
                         )}
                       </div>
                     ))}
+                    {/* Load More Button */}
+                    {hasMore && (
+                      <div className="flex justify-center pt-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={loadMore}
+                          disabled={isLoadingMore}
+                        >
+                          {isLoadingMore ? (
+                            <>
+                              <Spinner className="h-4 w-4 mr-2" />
+                              Loading...
+                            </>
+                          ) : (
+                            "Load More Messages"
+                          )}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

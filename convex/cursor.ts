@@ -929,6 +929,149 @@ export const getConversation = action({
 })
 
 /**
+ * Get agent conversation with cursor-based pagination
+ * This action fetches conversations directly from the Cursor API
+ * and does NOT interact with the Convex database
+ */
+export const getConversationWithCursor = action({
+  args: {
+    agentId: v.string(),
+    cursor: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    conversation: AgentConversation | null
+    nextCursor?: string
+    simulation: boolean
+  }> => {
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
+
+    // Get encrypted API key record
+    const record = await ctx.runQuery(
+      internal.apiKeys.getApiKeysRecordInternal,
+      {
+        userId: authUser.userId,
+      }
+    )
+
+    // Decrypt API key if it exists
+    let apiKey: string | null = null
+    if (record?.encryptedCursorApiKey) {
+      try {
+        apiKey = decryptData(record.encryptedCursorApiKey)
+      } catch {
+        apiKey = null
+      }
+    }
+
+    const simulationMode = !apiKey
+
+    if (simulationMode) {
+      // Return mock conversation for simulation mode
+      return {
+        conversation: {
+          id: args.agentId,
+          messages: [
+            {
+              id: "msg_placeholder",
+              type: "assistant_message",
+              text: "This is a simulated conversation. Add your Cursor API key to see real conversations.",
+            },
+          ],
+        },
+        simulation: true,
+      }
+    }
+
+    // Live mode - call Cursor API with pagination support
+    try {
+      const url = new URL(
+        `${CURSOR_API_URL}/${args.agentId}/conversation`
+      )
+
+      // Add cursor parameter if provided
+      if (args.cursor) {
+        url.searchParams.set("cursor", args.cursor)
+      }
+
+      // Add limit parameter if provided (default to API default)
+      if (args.limit) {
+        url.searchParams.set("limit", String(args.limit))
+      }
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      })
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          return {
+            conversation: null,
+            simulation: false,
+          }
+        }
+
+        const errorText = await response.text()
+        console.error(
+          "[Convex getConversationWithCursor] Cursor API error:",
+          {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText,
+          }
+        )
+        throw new Error(`Cursor API error: ${response.status} - ${errorText}`)
+      }
+
+      const data = await response.json()
+
+      // Handle both paginated and non-paginated responses
+      // If the response has a messages array directly, it's the conversation
+      // If it has a conversation object, extract it
+      let conversation: AgentConversation | null = null
+      let nextCursor: string | undefined = undefined
+
+      if (data.conversation) {
+        conversation = data.conversation
+        nextCursor = data.nextCursor
+      } else if (data.messages) {
+        // Response is the conversation itself
+        conversation = {
+          id: args.agentId,
+          messages: data.messages,
+        }
+        nextCursor = data.nextCursor
+      } else if (data.id && data.messages) {
+        // Response is already in AgentConversation format
+        conversation = data
+        nextCursor = data.nextCursor
+      }
+
+      return {
+        conversation,
+        nextCursor,
+        simulation: false,
+      }
+    } catch (error) {
+      console.error(
+        "[Convex getConversationWithCursor] Error fetching conversation:",
+        error
+      )
+      throw error instanceof Error
+        ? error
+        : new Error("Failed to fetch conversation")
+    }
+  },
+})
+
+/**
  * Get list of available models
  * Uses ActionCache for caching - models are the same for all users
  */
