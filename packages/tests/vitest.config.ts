@@ -5,7 +5,7 @@ export default defineConfig({
     include: [
       "./validators/**/*.test.ts",
       "./helpers/**/*.test.ts",
-      "../db/convex/_tests/**/*.test.ts",
+      "../backend/convex/_tests/**/*.test.ts",
     ],
     environment: "node",
     server: { deps: { inline: ["convex-test"] } },

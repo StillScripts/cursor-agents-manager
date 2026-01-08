@@ -35,4 +35,4 @@ next-env.d.ts
 
 # convex
 .convex/
-packages/db/.convex/
+packages/backend/.convex/

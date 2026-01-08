@@ -27,10 +27,10 @@ export function AgentCard({ agent }: AgentCardProps) {
                 {agent.name}
               </h3>
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-                <GitBranch className="h-3 w-3 flex-shrink-0" />
+                <GitBranch className="h-3 w-3 shrink-0" />
                 <span className="truncate">{repoName}</span>
                 <span className="text-border">·</span>
-                <span className="flex-shrink-0">{agent.source.ref}</span>
+                <span className="shrink-0">{agent.source.ref}</span>
               </div>
               {agent.summary && (
                 <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
@@ -41,7 +41,7 @@ export function AgentCard({ agent }: AgentCardProps) {
                 {formatRelativeTime(agent.createdAt, { addSuffix: true })}
               </p>
             </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
           </div>
         </CardContent>
       </Card>

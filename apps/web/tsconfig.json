@@ -20,7 +20,7 @@
     ],
     "paths": {
       "@/*": ["./*"],
-      "@/convex/*": ["../../packages/db/convex/*"],
+      "@/convex/*": ["../../packages/backend/convex/*"],
       "validators": ["../../packages/validators/index.ts"],
       "validators/*": ["../../packages/validators/src/*"],
       "encryption": ["../../packages/encryption/index.ts"],

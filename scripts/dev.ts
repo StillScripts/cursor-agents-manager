@@ -13,7 +13,7 @@ const web = spawn(["bun", "run", "--filter=web", "dev"], {
 })
 
 const db = spawn(["bunx", "convex", "dev"], {
-  cwd: "packages/db",
+  cwd: "packages/backend",
   stdout: "inherit",
   stderr: "inherit",
 })

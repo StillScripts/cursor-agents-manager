@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "bun scripts/dev.ts",
     "dev:web": "bun run --filter=web dev",
-    "dev:db": "bun run --filter=db dev",
+    "dev:backend": "bun run --filter=backend dev",
     "build": "bun run --filter=web build",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",

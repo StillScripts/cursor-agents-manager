@@ -74,7 +74,7 @@ function generateMockAgents(): Agent[] {
     agents.push({
       id: `bc_sim${String(i + 1).padStart(3, "0")}`,
       name: `${task} #${i + 1}`,
-      status,
+      status: status as Agent["status"],
       source: {
         repository: `https://github.com/${repo}`,
         ref: branch,

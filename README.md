@@ -238,7 +238,7 @@ bun run dev
 
 # Or run individually in separate terminals:
 bun run dev:web    # Next.js only (apps/web)
-bun run dev:db     # Convex only (packages/db)
+bun run dev:backend     # Convex only (packages/backend)
 ```
 
 The unified `bun run dev` command uses `scripts/dev.ts` to spawn both servers in parallel.
@@ -266,7 +266,7 @@ cursor-agents-manager/
 │   └── proxy.ts                  # Route protection middleware
 │
 ├── 📦 packages/
-│   ├── db/                       # Convex Backend
+│   ├── backend/                       # Convex Backend
 │   │   └── convex/               # Convex functions
 │   │       ├── schema.ts         # Database schema
 │   │       ├── agents.ts         # Agent queries
@@ -290,7 +290,7 @@ cursor-agents-manager/
 | Workspace | Purpose |
 |-----------|---------|
 | `apps/web` | Next.js 16 web application |
-| `packages/db` | Convex backend (schema, functions, actions) |
+| `packages/backend` | Convex backend (schema, functions, actions) |
 | `packages/validators` | Shared Zod validation schemas |
 | `packages/encryption` | AES-256-GCM encryption utilities |
 | `packages/helpers` | Shared utilities (formatting, mock data) |
@@ -300,8 +300,8 @@ cursor-agents-manager/
 
 | File | Purpose |
 |------|---------|
-| `packages/db/convex/schema.ts` | Convex database schema |
-| `packages/db/convex/auth.ts` | Better Auth + Convex integration |
+| `packages/backend/convex/schema.ts` | Convex database schema |
+| `packages/backend/convex/auth.ts` | Better Auth + Convex integration |
 | `packages/encryption/src/encryption.ts` | Encrypts/decrypts API keys |
 | `apps/web/proxy.ts` | Middleware for route protection |
 | `scripts/dev.ts` | Unified dev server script |
@@ -396,7 +396,7 @@ rm -rf apps/web/node_modules/convex
 bun install
 ```
 
-**Prevention**: Only `packages/db` should declare `convex` as a dependency. `apps/web` uses the hoisted version.
+**Prevention**: Only `packages/backend` should declare `convex` as a dependency. `apps/web` uses the hoisted version.
 
 #### Convex Deployment Issues
 
@@ -405,7 +405,7 @@ bun install
 # Solution: Re-authenticate with Convex
 bunx convex logout
 bunx convex login
-cd packages/db && bunx convex dev
+cd packages/backend && bunx convex dev
 ```
 
 #### Authentication Issues

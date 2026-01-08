@@ -11,7 +11,7 @@ cursor-agents-manager/
 ├── apps/
 │   └── web/                 # Next.js 16 web application
 ├── packages/
-│   ├── db/                  # Convex backend (schema, functions, actions)
+│   ├── backend/                  # Convex backend (schema, functions, actions)
 │   ├── validators/          # Shared Zod validation schemas
 │   ├── encryption/          # AES-256-GCM encryption utilities
 │   ├── helpers/             # Shared utilities (formatting, mock data)
@@ -33,7 +33,7 @@ cursor-agents-manager/
 **IMPORTANT**: The `convex` package must be consistent across the monorepo. Having multiple versions installed will cause React context issues where `useQuery` cannot find the `ConvexProvider`.
 
 **Rules**:
-1. **Only `packages/db`** should declare `convex` as a dependency
+1. **Only `packages/backend`** should declare `convex` as a dependency
 2. **`apps/web`** should NOT have `convex` in its `package.json` - it uses the hoisted version from root
 3. If you see "Could not find Convex client" errors, check for duplicate `convex` installations:
    ```bash
@@ -54,7 +54,7 @@ bun run dev
 
 # Or run individually:
 bun run dev:web    # Next.js only
-bun run dev:db     # Convex only
+bun run dev:backend     # Convex only
 
 # Production build
 bun run build
@@ -82,8 +82,8 @@ The unified dev command (`scripts/dev.ts`) spawns both servers in parallel:
 // Spawns Next.js dev server
 spawn(["bun", "run", "--filter=web", "dev"])
 
-// Spawns Convex dev server from packages/db
-spawn(["bunx", "convex", "dev"], { cwd: "packages/db" })
+// Spawns Convex dev server from packages/backend
+spawn(["bunx", "convex", "dev"], { cwd: "packages/backend" })
 ```
 
 This ensures both the frontend and Convex backend are running together.
@@ -590,7 +590,7 @@ All user-specific tables have `userId` foreign keys with cascade delete.
 **Key Files**:
 - `lib/auth.ts` - Better Auth server configuration
 - `lib/auth-client.ts` - Client-side auth utilities (signIn, signUp, signOut, useSession)
-- `lib/db.ts` - Database connection
+- `lib/backend.ts` - Database connection
 - `lib/encryption.ts` - AES-256-GCM encryption/decryption for API keys
 - `lib/schema/auth-schema.ts` - Better Auth tables + user_api_keys
 - `lib/schema/user-schema.ts` - User data tables
@@ -731,7 +731,7 @@ lib/
 │   ├── auth.test.ts
 │   └── ai.ts                # AI-related schemas
 │
-├── db/                      # Database layer
+├── backend/                      # Database layer
 │   ├── index.ts             # Database client
 │   ├── schema/              # Database schemas
 │   │   ├── auth-schema.ts   # Better Auth tables + user_api_keys
@@ -756,7 +756,7 @@ lib/
 **Organization Rules**:
 - `hooks/` - All React hooks (data fetching, forms, utilities)
 - `schemas/` - Zod schemas organized by domain (cursor/, settings, auth)
-- `db/` - Database connection, schemas, and encryption
+- `backend/` - Database connection, schemas, and encryption
 - Root level - Standalone utilities and types
 
 ### UI Architecture
