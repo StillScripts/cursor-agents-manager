@@ -1,9 +1,8 @@
 "use client"
 
-import { formatDurationMs, formatRelativeTime } from "helpers"
+import { formatRelativeTime } from "helpers"
 import {
   Bot,
-  Clock,
   ExternalLink,
   Eye,
   EyeOff,
@@ -42,7 +41,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
@@ -56,8 +54,6 @@ import {
 } from "@/lib/hooks/use-agents"
 import { useSummarizeConversation, useTextToSpeech } from "@/lib/hooks/use-ai"
 import { useOpenAIKey } from "@/lib/hooks/use-openai-key"
-import { useAgentTimeLogs, useSaveTimeLog } from "@/lib/hooks/use-time-logs"
-import { useTimeTracking } from "@/lib/hooks/use-time-tracking"
 import type { Agent, AgentConversation } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -85,8 +81,6 @@ export function AgentDetail({
   )
   const { data: conversation, isLoading: conversationLoading } =
     useAgentConversation(agentId, initialConversation)
-  const { timeLogs } = useAgentTimeLogs(agentId)
-  const { saveTimeLog } = useSaveTimeLog()
   const stopAgent = useStopAgent()
   const deleteAgent = useDeleteAgent()
   const sendFollowUp = useSendFollowUp()
@@ -123,14 +117,6 @@ export function AgentDetail({
     }
   }, [audioUrl])
 
-  // Time tracking for conversation review (auto-start on mount)
-  const timeTracking = useTimeTracking()
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Only want to start once on mount
-  useEffect(() => {
-    timeTracking.start()
-  }, [])
-
   const handleStop = async () => {
     await stopAgent.mutateAsync(agentId)
   }
@@ -143,27 +129,8 @@ export function AgentDetail({
   const handleSendFollowUp = async () => {
     if (!followUpMessage.trim()) return
 
-    // Capture start time before sending
-    const startTime = timeTracking.startsAt
-
     await sendFollowUp.mutateAsync({ id: agentId, message: followUpMessage })
     setFollowUpMessage("")
-
-    // Save time log after successful follow-up
-    if (startTime) {
-      try {
-        await saveTimeLog({
-          agentId,
-          activityType: "conversation_review",
-          startTime,
-        })
-        // Reset timer after saving
-        timeTracking.stop()
-        timeTracking.start()
-      } catch (error) {
-        console.error("Failed to save time log:", error)
-      }
-    }
   }
 
   const handleSummarize = async () => {
@@ -232,14 +199,6 @@ export function AgentDetail({
     agent.status === "FINISHED" ||
     agent.status === "ERROR"
 
-  // Calculate total time spent from time logs (duration = endTime - startTime)
-  // Falls back to createdAt if endTime is undefined (for future "ongoing" task support)
-  const totalTimeSpent = timeLogs?.reduce((total, log) => {
-    const start = log.startTime
-    const end = log.endTime ?? log.createdAt
-    return total + (end - start)
-  }, 0)
-
   return (
     <>
       <PageHeader title={agent.name} showBack expandable />
@@ -264,20 +223,6 @@ export function AgentDetail({
                     Created{" "}
                     {formatRelativeTime(agent.createdAt, { addSuffix: true })}
                   </span>
-                </div>
-
-                <div className="flex items-center gap-2 text-sm py-2 px-3 bg-primary/10 rounded-lg border border-primary/20">
-                  <Clock className="h-4 w-4 text-primary" />
-                  {typeof totalTimeSpent === "number" && totalTimeSpent > 0 ? (
-                    <>
-                      <span className="text-muted-foreground">Time spent:</span>
-                      <span className="text-foreground font-medium">
-                        {formatDurationMs(totalTimeSpent)}
-                      </span>
-                    </>
-                  ) : (
-                    <Skeleton className="h-4 w-28" />
-                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -307,12 +252,6 @@ export function AgentDetail({
                     </a>
                   )}
                 </div>
-
-                {agent.summary && (
-                  <p className="text-sm text-muted-foreground pt-3 border-t border-border">
-                    {agent.summary}
-                  </p>
-                )}
 
                 {/* AI-Generated Summary */}
                 {aiSummary && showSummary && (

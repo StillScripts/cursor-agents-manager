@@ -152,6 +152,16 @@ export function formatRelativeTime(
   })
 }
 
+export function formatDuration(ms: number): string {
+  const seconds = Math.floor(ms / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+
+  const pad = (n: number) => n.toString().padStart(2, "0")
+
+  return `${pad(hours)}:${pad(minutes % 60)}:${pad(seconds % 60)}`
+}
+
 /**
  * Formats an activity type from snake_case to Title Case
  * Example: "task_creation" -> "Task Creation"

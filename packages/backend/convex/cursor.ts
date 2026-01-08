@@ -431,6 +431,7 @@ export const launchAgent = action({
         secret: v.optional(v.string()),
       })
     ),
+    taskId: v.optional(v.id("tasks")),
   },
   handler: async (
     ctx,
@@ -487,6 +488,7 @@ export const launchAgent = action({
         targetAutoCreatePr: args.target?.autoCreatePr ?? false,
         model: args.model,
         summary: undefined,
+        taskId: args.taskId,
         providerData: {
           simulation: true,
           createdAt,
@@ -566,6 +568,7 @@ export const launchAgent = action({
         targetAutoCreatePr: cursorAgent.target?.autoCreatePr ?? false,
         model: args.model,
         summary: cursorAgent.summary,
+        taskId: args.taskId,
         providerData: {
           createdAt: cursorAgent.createdAt,
           ...cursorAgent,

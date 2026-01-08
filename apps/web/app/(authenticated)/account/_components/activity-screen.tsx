@@ -11,7 +11,7 @@ import Link from "next/link"
 import { PageHeader } from "@/app/(authenticated)/_components/page-header"
 import { Card, CardContent } from "@/components/ui/card"
 import { SkeletonCard } from "@/components/ui/skeleton-card"
-import { useAgent } from "@/lib/hooks/use-agents"
+import { useTasks } from "@/lib/hooks/use-tasks"
 import { type TimeLog, useAllTimeLogs } from "@/lib/hooks/use-time-logs"
 
 function ActivityItem({ log }: { log: TimeLog }) {
@@ -23,7 +23,7 @@ function ActivityItem({ log }: { log: TimeLog }) {
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-muted-foreground" />
               <p className="text-sm font-medium text-foreground">
-                {formatActivityType(log.activityType)}
+                {formatActivityType(log.activityType ?? "")}
               </p>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -46,24 +46,23 @@ function ActivityItem({ log }: { log: TimeLog }) {
 }
 
 interface GroupedLogs {
-  agentId: string
+  taskId: string
   logs: TimeLog[]
   totalDuration: number
 }
 
-function AgentActivityGroup({ group }: { group: GroupedLogs }) {
-  const { data: agent, isLoading } = useAgent(group.agentId)
+function TaskActivityGroup({ group }: { group: GroupedLogs }) {
+  const { tasks } = useTasks()
+  const task = tasks?.find((t) => t._id === group.taskId)
 
-  // Show loading state or agent name
-  const displayName = isLoading
-    ? "Loading..."
-    : agent?.name || `Agent ${group.agentId}`
+  // Show loading state or task name
+  const displayName = task?.title || `Task ${group.taskId}`
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <Link
-          href={`/agent/${group.agentId}`}
+          href="/tasks"
           className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
         >
           {displayName}
@@ -100,30 +99,31 @@ export function ActivityScreen() {
 
   const logs = timeLogs ?? []
 
-  // Group logs by agent
-  const groupedByAgent = logs.reduce(
+  // Group logs by task
+  const groupedByTask = logs.reduce(
     (acc, log) => {
-      if (!acc[log.agentId]) {
-        acc[log.agentId] = []
+      const taskId = log.taskId
+      if (!acc[taskId]) {
+        acc[taskId] = []
       }
-      acc[log.agentId].push(log)
+      acc[taskId].push(log)
       return acc
     },
     {} as Record<string, TimeLog[]>
   )
 
   // Convert to array and calculate totals
-  const groups: GroupedLogs[] = Object.entries(groupedByAgent).map(
-    ([agentId, agentLogs]) => {
-      const totalDuration = agentLogs.reduce((total, log) => {
+  const groups: GroupedLogs[] = Object.entries(groupedByTask).map(
+    ([taskId, taskLogs]) => {
+      const totalDuration = taskLogs.reduce((total, log) => {
         const start = log.startTime
-        const end = log.endTime ?? Date.now()
+        const end = log.endTime
         return total + (end - start)
       }, 0)
 
       return {
-        agentId,
-        logs: agentLogs.sort((a, b) => b.createdAt - a.createdAt),
+        taskId,
+        logs: taskLogs.sort((a, b) => b.createdAt - a.createdAt),
         totalDuration,
       }
     }
@@ -158,9 +158,7 @@ export function ActivityScreen() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-muted-foreground">
-                      Total Agents
-                    </p>
+                    <p className="text-sm text-muted-foreground">Total Tasks</p>
                     <p className="text-2xl font-bold text-foreground">
                       {groups.length}
                     </p>
@@ -171,7 +169,7 @@ export function ActivityScreen() {
 
             <div className="space-y-6">
               {groups.map((group) => (
-                <AgentActivityGroup key={group.agentId} group={group} />
+                <TaskActivityGroup key={group.taskId} group={group} />
               ))}
             </div>
           </>

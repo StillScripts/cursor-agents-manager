@@ -8,6 +8,9 @@ export default defineSchema({
     userId: v.string(),
     provider: v.union(v.literal("cursor"), v.literal("claude-code")),
 
+    // Link to a task if the user has associated it with a task
+    taskId: v.optional(v.id("tasks")),
+
     // Agent metadata
     name: v.string(),
     status: v.union(
@@ -40,7 +43,8 @@ export default defineSchema({
     .index("by_user_agent", ["userId", "agentId"])
     .index("by_user_status", ["userId", "status"])
     .index("by_updated_at", ["updatedAt"])
-    .index("by_agent_id", ["agentId"]),
+    .index("by_agent_id", ["agentId"])
+    .index("by_task", ["taskId"]),
 
   apiKeys: defineTable({
     userId: v.string(),
@@ -61,17 +65,25 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_user", ["userId"]),
 
-  timeLogs: defineTable({
+  tasks: defineTable({
     userId: v.string(),
-    agentId: v.string(),
-    activityType: v.union(
-      v.literal("task_creation"),
-      v.literal("conversation_review")
-    ),
-    startTime: v.number(),
-    endTime: v.optional(v.number()),
+    title: v.string(),
+    description: v.optional(v.string()),
     createdAt: v.number(),
   })
     .index("by_user", ["userId"])
-    .index("by_agent", ["userId", "agentId"]),
+    .index("by_user_created", ["userId", "createdAt"]),
+
+  timeLogs: defineTable({
+    userId: v.string(),
+    taskId: v.id("tasks"),
+    activityType: v.optional(v.string()),
+    startTime: v.number(),
+    endTime: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_task", ["taskId"])
+    .index("by_user_task", ["userId", "taskId"])
+    .index("by_user_created", ["userId", "createdAt"]),
 })
