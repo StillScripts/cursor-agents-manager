@@ -60,6 +60,7 @@ A mobile-first Next.js application for managing Cursor background agents from an
 
 | Category | Technology |
 |----------|-----------|
+| **Architecture** | Bun Monorepo with Workspaces |
 | **Framework** | Next.js 16 (App Router) |
 | **UI Library** | React 19 |
 | **Styling** | Tailwind CSS 4, Base UI |
@@ -232,66 +233,78 @@ graph LR
 ### Development Workflow
 
 ```bash
-# Start Convex dev server (in one terminal)
-bunx convex dev
-
-# Start Next.js dev server (in another terminal)
+# Start both Next.js and Convex dev servers together (recommended)
 bun run dev
+
+# Or run individually in separate terminals:
+bun run dev:web    # Next.js only (apps/web)
+bun run dev:db     # Convex only (packages/db)
 ```
+
+The unified `bun run dev` command uses `scripts/dev.ts` to spawn both servers in parallel.
 
 ## 📁 Project Structure
 
+This is a **Bun monorepo** with the following structure:
+
 ```
 cursor-agents-manager/
-├── 📱 app/                       # Next.js App Router
-│   ├── (authenticated)/          # Pages requiring login
-│   │   ├── page.tsx              # Agent list (home)
-│   │   ├── new/                  # Launch new agent
-│   │   ├── agent/[id]/           # Agent detail view
-│   │   ├── account/              # Account management
-│   │   └── settings/             # User settings
-│   ├── (unauthenticated)/        # Public pages
-│   │   ├── login/                # Login page
-│   │   └── signup/               # Signup page
-│   └── (server)/api/             # API Routes
-│       └── auth/[...all]/        # Better Auth endpoints
+├── 📱 apps/web/                  # Next.js Web Application
+│   ├── app/                      # Next.js App Router
+│   │   ├── (authenticated)/      # Pages requiring login
+│   │   │   ├── page.tsx          # Agent list (home)
+│   │   │   ├── new/              # Launch new agent
+│   │   │   ├── agent/[id]/       # Agent detail view
+│   │   │   ├── account/          # Account management
+│   │   │   └── settings/         # User settings
+│   │   ├── (unauthenticated)/    # Public pages
+│   │   │   ├── login/            # Login page
+│   │   │   └── signup/           # Signup page
+│   │   └── (server)/api/         # API Routes
+│   ├── components/               # React Components
+│   ├── lib/                      # App-specific logic & hooks
+│   └── proxy.ts                  # Route protection middleware
 │
-├── 🔧 convex/                    # Convex Backend
-│   ├── schema.ts                 # Database schema
-│   ├── agents.ts                 # Agent queries
-│   ├── cursor.ts          # Agent mutations/actions
-│   ├── apiKeys.ts                # API key queries
-│   ├── apiKeysActions.ts         # API key mutations
-│   ├── auth.ts                   # Better Auth + Convex
-│   ├── repositories.ts           # Repository CRUD
-│   ├── branches.ts               # Branch CRUD
-│   ├── timeLogs.ts               # Time tracking
-│   ├── models.ts                 # AI models
-│   └── openAI.ts              # AI actions (summarize, TTS)
+├── 📦 packages/
+│   ├── db/                       # Convex Backend
+│   │   └── convex/               # Convex functions
+│   │       ├── schema.ts         # Database schema
+│   │       ├── agents.ts         # Agent queries
+│   │       ├── cursor.ts         # Agent mutations/actions
+│   │       ├── apiKeys.ts        # API key queries
+│   │       ├── auth.ts           # Better Auth + Convex
+│   │       └── ...               # Other Convex functions
+│   ├── validators/               # Shared Zod schemas
+│   ├── encryption/               # AES-256-GCM encryption
+│   ├── helpers/                  # Shared utilities
+│   └── tests/                    # Shared test configuration
 │
-├── 🎨 components/                # React Components
-│   ├── ui/                       # Base UI primitives
-│   ├── forms/                    # Form components
-│   └── ai/                       # AI-related components
+├── 🔧 scripts/
+│   └── dev.ts                    # Unified dev server script
 │
-├── 📚 lib/                       # Core Logic
-│   ├── hooks/                    # React hooks
-│   ├── schemas/                  # Zod validation schemas
-│   ├── db/encryption.ts          # AES-256-GCM encryption
-│   ├── better-auth/              # Better Auth config
-│   └── types.ts                  # TypeScript types
-│
-└── 🛡️ proxy.ts                   # Route protection middleware
+└── package.json                  # Workspace configuration
 ```
+
+### Monorepo Workspaces
+
+| Workspace | Purpose |
+|-----------|---------|
+| `apps/web` | Next.js 16 web application |
+| `packages/db` | Convex backend (schema, functions, actions) |
+| `packages/validators` | Shared Zod validation schemas |
+| `packages/encryption` | AES-256-GCM encryption utilities |
+| `packages/helpers` | Shared utilities (formatting, mock data) |
+| `packages/tests` | Shared Vitest configuration and tests |
 
 ### Key Files
 
 | File | Purpose |
 |------|---------|
-| `convex/schema.ts` | Convex database schema |
-| `convex/auth.ts` | Better Auth + Convex integration |
-| `lib/db/encryption.ts` | Encrypts/decrypts API keys |
-| `proxy.ts` | Middleware for route protection |
+| `packages/db/convex/schema.ts` | Convex database schema |
+| `packages/db/convex/auth.ts` | Better Auth + Convex integration |
+| `packages/encryption/src/encryption.ts` | Encrypts/decrypts API keys |
+| `apps/web/proxy.ts` | Middleware for route protection |
+| `scripts/dev.ts` | Unified dev server script |
 
 ## 🔒 Security
 
@@ -361,19 +374,38 @@ if [ "$VERCEL_ENV" = "production" ]; then bunx convex deploy --cmd 'bun run buil
 **Issue**: `Module not found` errors during build
 ```bash
 # Solution: Clear cache and reinstall
-rm -rf node_modules .next
+rm -rf node_modules apps/web/node_modules packages/*/node_modules .next
 bun install
 bun run build
 ```
 
-#### Convex Issues
+#### Convex "Could not find Convex client" Error
+
+**Issue**: `useQuery` throws "Could not find Convex client! Must be used under ConvexProvider"
+
+**Cause**: Duplicate `convex` package installations in the monorepo create separate React contexts.
+
+```bash
+# Check for duplicate installations
+find . -path "*/node_modules/convex/package.json" -not -path "*/node_modules/*/node_modules/*"
+
+# If you see multiple paths (e.g., ./node_modules/convex AND ./apps/web/node_modules/convex):
+# 1. Remove convex from apps/web/package.json
+# 2. Delete the duplicate and reinstall
+rm -rf apps/web/node_modules/convex
+bun install
+```
+
+**Prevention**: Only `packages/db` should declare `convex` as a dependency. `apps/web` uses the hoisted version.
+
+#### Convex Deployment Issues
 
 **Issue**: Convex deployment errors
 ```bash
 # Solution: Re-authenticate with Convex
 bunx convex logout
 bunx convex login
-bunx convex dev
+cd packages/db && bunx convex dev
 ```
 
 #### Authentication Issues

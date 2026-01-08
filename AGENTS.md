@@ -2,22 +2,62 @@
 
 Cursor Agent Manager is a web app with Progressive Web App (PWA) support. It is powered by Bun, Next.js 16 (with modern features like `cacheComponents` and the `proxy.ts` file which replaces `middleware.ts`), React 19, Biome, Better Auth, Convex, TailwindCSS and Base UI. It's purpose is to enable developers to manage their managing Cursor AI background agents on the go, particularly on their mobile phone as a PWA. The app provides a simulation mode (with mock data) for people to trial, or live mode (connected to the Cursor API).
 
+## Monorepo Structure
+
+This project is organized as a **Bun monorepo** with workspaces:
+
+```
+cursor-agents-manager/
+├── apps/
+│   └── web/                 # Next.js 16 web application
+├── packages/
+│   ├── db/                  # Convex backend (schema, functions, actions)
+│   ├── validators/          # Shared Zod validation schemas
+│   ├── encryption/          # AES-256-GCM encryption utilities
+│   ├── helpers/             # Shared utilities (formatting, mock data)
+│   └── tests/               # Shared test configuration and tests using Vitest
+├── scripts/
+│   └── dev.ts               # Unified dev server script
+└── package.json             # Root workspace configuration
+```
+
+**Workspace Configuration** (`package.json`):
+```json
+{
+  "workspaces": ["apps/*", "packages/*"]
+}
+```
+
+### ⚠️ Critical: Convex Package Consistency
+
+**IMPORTANT**: The `convex` package must be consistent across the monorepo. Having multiple versions installed will cause React context issues where `useQuery` cannot find the `ConvexProvider`.
+
+**Rules**:
+1. **Only `packages/db`** should declare `convex` as a dependency
+2. **`apps/web`** should NOT have `convex` in its `package.json` - it uses the hoisted version from root
+3. If you see "Could not find Convex client" errors, check for duplicate `convex` installations:
+   ```bash
+   find . -path "*/node_modules/convex/package.json" -not -path "*/node_modules/*/node_modules/*"
+   ```
+4. If duplicates exist, remove `convex` from `apps/web/package.json` and run `bun install`
+
 ## Development Commands
 
 **Package Manager**: This project uses **Bun** (not npm/pnpm/yarn). See `.cursor/rules/use-bun-instead-of-node-vite-npm-pnpm.mdc` for details.
 
 ```bash
-# Install dependencies
+# Install dependencies (from root)
 bun install
 
-# Development server
+# Development server (starts both Next.js and Convex dev servers)
 bun run dev
+
+# Or run individually:
+bun run dev:web    # Next.js only
+bun run dev:db     # Convex only
 
 # Production build
 bun run build
-
-# Start production server
-bun run start
 
 # Lint - USE THIS to check for errors
 bun run lint
@@ -33,6 +73,20 @@ bun run test
 # Watch mode for tests
 bun run test --watch
 ```
+
+### How `bun run dev` Works
+
+The unified dev command (`scripts/dev.ts`) spawns both servers in parallel:
+
+```typescript
+// Spawns Next.js dev server
+spawn(["bun", "run", "--filter=web", "dev"])
+
+// Spawns Convex dev server from packages/db
+spawn(["bunx", "convex", "dev"], { cwd: "packages/db" })
+```
+
+This ensures both the frontend and Convex backend are running together.
 
 ## Code Formatting (CRITICAL)
 
@@ -80,10 +134,10 @@ This command will:
 
 ### Route Groups (Next.js App Router)
 
-The app uses Next.js route groups to organize pages by authentication state:
+The app uses Next.js route groups to organize pages by authentication state. All app code lives in `apps/web/`:
 
 ```
-app/
+apps/web/app/
 ├── (authenticated)/              # Pages requiring login
 │   ├── layout.tsx                # Shared layout with nav
 │   ├── _components/              # Route-group-level shared components
