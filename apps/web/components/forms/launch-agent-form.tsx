@@ -238,7 +238,7 @@ export function LaunchAgentForm() {
           timeTracking.stop()
         }
 
-        router.push("/")
+        router.push("/agents")
       } catch (err) {
         setError(
           err instanceof Error ? err : new Error("Failed to launch agent")

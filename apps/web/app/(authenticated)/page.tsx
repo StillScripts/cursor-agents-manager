@@ -1,16 +1,17 @@
 import type { Metadata } from "next"
-import { Suspense } from "react"
-import { AgentsTable } from "@/app/(authenticated)/_components/agents-table"
 
 export const metadata: Metadata = {
-  title: "Your Agents",
-  description: "Monitor and manage your Cursor background agents on the go",
+  title: "Home",
+  description: "Cursor Agent Manager",
 }
 
 export default async function HomePage() {
   return (
-    <Suspense fallback={null}>
-      <AgentsTable />
-    </Suspense>
+    <div className="flex-1 flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold mb-4">Hello, World!</h1>
+        <p className="text-muted-foreground">Welcome to Cursor Agent Manager</p>
+      </div>
+    </div>
   )
 }

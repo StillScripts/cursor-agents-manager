@@ -137,7 +137,7 @@ export function AgentDetail({
 
   const handleDelete = async () => {
     await deleteAgent.mutateAsync(agentId)
-    router.push("/")
+    router.push("/agents")
   }
 
   const handleSendFollowUp = async () => {
