@@ -30,8 +30,6 @@ import { useBranches } from "@/lib/hooks/use-branches"
 import { useModels } from "@/lib/hooks/use-models"
 import { useOpenAIKey } from "@/lib/hooks/use-openai-key"
 import { useRepositories } from "@/lib/hooks/use-repositories"
-import { useSaveTimeLog } from "@/lib/hooks/use-time-logs"
-import { useTimeTracking } from "@/lib/hooks/use-time-tracking"
 
 const RepositorySelectField = ({ field }: { field: any }) => {
   const { repositories, isLoading, hasRepositories } = useRepositories()
@@ -165,14 +163,10 @@ const ModelSelectField = ({ field }: { field: any }) => {
 export function LaunchAgentForm() {
   const router = useRouter()
   const launchAgentAction = useAction(api.cursor.launchAgent)
-  const { saveTimeLog } = useSaveTimeLog()
   const { hasOpenAIKey } = useOpenAIKey()
 
   // Error state
   const [error, setError] = useState<Error | null>(null)
-
-  // Time tracking for task creation
-  const timeTracking = useTimeTracking()
 
   // Default values for form reset
   const defaultFormValues: LaunchAgentFormData = {
@@ -203,40 +197,18 @@ export function LaunchAgentForm() {
       setError(null)
 
       try {
-        // Capture start time before launching
-        const startTime = timeTracking.startsAt
-
         // Launch the agent via Convex action
-        const result = await launchAgentAction({
+        await launchAgentAction({
           prompt: value.prompt,
           source: value.source,
           model: value.model,
           target: value.target,
         })
 
-        // Save time log with the agent ID from the response
-        if (result?.id && startTime) {
-          try {
-            await saveTimeLog({
-              agentId: result.id,
-              activityType: "task_creation",
-              startTime,
-            })
-          } catch (saveError) {
-            console.error("Failed to save time log:", saveError)
-            // Don't block navigation if time log save fails
-          }
-        }
-
         // Reset form to default values before navigation
         // This ensures that when the user navigates back (especially in PWA),
         // the form is clean and doesn't show previous submission data
         form.reset(defaultFormValues)
-
-        // Stop time tracking if it's still running
-        if (timeTracking.isTracking) {
-          timeTracking.stop()
-        }
 
         router.push("/")
       } catch (err) {
@@ -283,15 +255,6 @@ export function LaunchAgentForm() {
                           description="Describe the task you want the agent to perform (10-5000 characters)"
                           placeholder="Add a README.md file with installation instructions..."
                           className="min-h-[120px]"
-                          onFocus={() => {
-                            // Start tracking when user focuses on the textarea
-                            if (!timeTracking.isTracking) {
-                              timeTracking.start()
-                            }
-                          }}
-                          onChange={(e) => {
-                            field.handleChange(e.target.value)
-                          }}
                         />
                       ) : (
                         <field.ControlledTextarea
@@ -300,15 +263,6 @@ export function LaunchAgentForm() {
                           description="Describe the task you want the agent to perform (10-5000 characters)"
                           placeholder="Add a README.md file with installation instructions..."
                           className="min-h-[120px]"
-                          onFocus={() => {
-                            // Start tracking when user focuses on the textarea
-                            if (!timeTracking.isTracking) {
-                              timeTracking.start()
-                            }
-                          }}
-                          onChange={(e) => {
-                            field.handleChange(e.target.value)
-                          }}
                         />
                       )
                     }

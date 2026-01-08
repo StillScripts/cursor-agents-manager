@@ -96,15 +96,7 @@ export const saveTimeLog = mutation({
     taskId: v.id("tasks"),
     startTime: v.number(),
     endTime: v.number(),
-    activityType: v.optional(
-      v.union(
-        v.literal("development"),
-        v.literal("testing"),
-        v.literal("review"),
-        v.literal("meeting"),
-        v.literal("other")
-      )
-    ),
+    activityType: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const authUser = await getAuthenticatedUser(ctx)

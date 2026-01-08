@@ -9,7 +9,7 @@ import { useStableQuery } from "@/lib/hooks/use-stable-query"
 export type TimeLog = {
   _id: Id<"timeLogs">
   taskId: Id<"tasks">
-  activityType?: "development" | "testing" | "review" | "meeting" | "other"
+  activityType?: string
   startTime: number
   endTime: number
   createdAt: number

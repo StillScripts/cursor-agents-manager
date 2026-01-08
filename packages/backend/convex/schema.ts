@@ -73,15 +73,7 @@ export default defineSchema({
   timeLogs: defineTable({
     userId: v.string(),
     taskId: v.id("tasks"),
-    activityType: v.optional(
-      v.union(
-        v.literal("development"),
-        v.literal("testing"),
-        v.literal("review"),
-        v.literal("meeting"),
-        v.literal("other")
-      )
-    ),
+    activityType: v.optional(v.string()),
     startTime: v.number(),
     endTime: v.number(),
     createdAt: v.number(),
