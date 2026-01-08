@@ -7,6 +7,7 @@ import {
   Eye,
   EyeOff,
   Key,
+  type LucideIcon,
   Mic,
   NotebookPen,
   Sparkles,
@@ -33,32 +34,98 @@ interface ApiKeyStatus {
   maskedKey: string | null
 }
 
+interface FeatureItemProps {
+  icon: LucideIcon
+  title: string
+  description: string
+}
+
+const FeatureItem = ({ icon: Icon, title, description }: FeatureItemProps) => (
+  <div className="flex items-start gap-3 p-3 bg-background/50 rounded-lg border border-border/50">
+    <Icon className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+    <div>
+      <h4 className="font-semibold text-sm mb-1">{title}</h4>
+      <p className="text-sm text-muted-foreground">{description}</p>
+    </div>
+  </div>
+)
+
+const features = [
+  {
+    icon: Brain,
+    title: "AI Conversation Summaries",
+    description:
+      "Generate intelligent summaries of your agent conversations, making it easy to understand what happened at a glance.",
+  },
+  {
+    icon: Volume2,
+    title: "Text-to-Speech for Summaries",
+    description:
+      "Listen to conversation summaries on the go. Perfect for reviewing agent work while multitasking.",
+  },
+  {
+    icon: Mic,
+    title: "Voice Input for Tasks",
+    description:
+      "Speak your task descriptions instead of typing. Use voice transcription to quickly create agent tasks.",
+  },
+  {
+    icon: NotebookPen,
+    title: "AI Prompt Improvement",
+    description:
+      "Let AI enhance your task descriptions for better clarity and results. Get suggestions to improve your prompts.",
+  },
+] as const
+
+interface OpenAIKeyEditorProps {
+  className?: string
+  isEditing: boolean
+  onSave: (apiKey: string) => Promise<void>
+  onCancel: () => void
+}
+
 const OpenAIKeyEditor = ({
   className,
   isEditing,
-  showKey,
-  newApiKey,
-  isSaving,
-  setNewApiKey,
-  handleSave,
-  handleCancel,
-  setShowKey,
-  error,
-}: {
-  className?: string
-  isEditing: boolean
-  showKey: boolean
-  newApiKey: string
-  setNewApiKey: (key: string) => void
-  handleSave: () => void
-  handleCancel: () => void
-  isSaving: boolean
-  setShowKey: (show: boolean) => void
-  error: string
-}) => {
+  onSave,
+  onCancel,
+}: OpenAIKeyEditorProps) => {
+  const [showKey, setShowKey] = useState(false)
+  const [newApiKey, setNewApiKey] = useState("")
+  const [error, setError] = useState("")
+  const [isSaving, setIsSaving] = useState(false)
+
+  const handleSave = async () => {
+    if (!newApiKey.trim() || newApiKey.trim().length < 10) {
+      setError("Please enter a valid OpenAI API key (at least 10 characters)")
+      return
+    }
+    setError("")
+    setIsSaving(true)
+    try {
+      await onSave(newApiKey.trim())
+      setNewApiKey("")
+      setShowKey(false)
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to save OpenAI API key"
+      )
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleCancel = () => {
+    setNewApiKey("")
+    setShowKey(false)
+    setError("")
+    onCancel()
+  }
+
   if (!isEditing) {
     return null
   }
+
   return (
     <div className={cn("space-y-3", className)}>
       <div className="space-y-2">
@@ -112,13 +179,16 @@ const OpenAIKeyEditor = ({
   )
 }
 
+const AddKeyButton = ({ onClick }: { onClick: () => void }) => (
+  <Button onClick={onClick} className="w-full">
+    <Key className="h-4 w-4 mr-2" />
+    Add OpenAI API Key
+  </Button>
+)
+
 export function OpenAIApiKeyManager() {
   const [isEditing, setIsEditing] = useState(false)
-  const [newApiKey, setNewApiKey] = useState("")
-  const [showKey, setShowKey] = useState(false)
-  const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [apiKeyStatus, setApiKeyStatus] = useState<ApiKeyStatus>({
     hasKey: false,
@@ -147,26 +217,10 @@ export function OpenAIApiKeyManager() {
     fetchStatus()
   }, [fetchStatus])
 
-  const handleSave = async () => {
-    if (!newApiKey.trim() || newApiKey.trim().length < 10) {
-      setError("Please enter a valid OpenAI API key (at least 10 characters)")
-      return
-    }
-    setError("")
-    setIsSaving(true)
-    try {
-      await saveOpenaiApiKey({ apiKey: newApiKey.trim() })
-      await fetchStatus()
-      setIsEditing(false)
-      setNewApiKey("")
-      setShowKey(false)
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to save OpenAI API key"
-      )
-    } finally {
-      setIsSaving(false)
-    }
+  const handleSave = async (apiKey: string) => {
+    await saveOpenaiApiKey({ apiKey })
+    await fetchStatus()
+    setIsEditing(false)
   }
 
   const handleDelete = async () => {
@@ -183,9 +237,6 @@ export function OpenAIApiKeyManager() {
 
   const handleCancel = () => {
     setIsEditing(false)
-    setNewApiKey("")
-    setShowKey(false)
-    setError("")
   }
 
   if (isLoading) {
@@ -218,73 +269,17 @@ export function OpenAIApiKeyManager() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
-            <div className="flex items-start gap-3 p-3 bg-background/50 rounded-lg border border-border/50">
-              <Brain className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-              <div>
-                <h4 className="font-semibold text-sm mb-1">
-                  AI Conversation Summaries
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  Generate intelligent summaries of your agent conversations,
-                  making it easy to understand what happened at a glance.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 p-3 bg-background/50 rounded-lg border border-border/50">
-              <Volume2 className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-              <div>
-                <h4 className="font-semibold text-sm mb-1">
-                  Text-to-Speech for Summaries
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  Listen to conversation summaries on the go. Perfect for
-                  reviewing agent work while multitasking.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 p-3 bg-background/50 rounded-lg border border-border/50">
-              <Mic className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-              <div>
-                <h4 className="font-semibold text-sm mb-1">
-                  Voice Input for Tasks
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  Speak your task descriptions instead of typing. Use voice
-                  transcription to quickly create agent tasks.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 p-3 bg-background/50 rounded-lg border border-border/50">
-              <NotebookPen className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-              <div>
-                <h4 className="font-semibold text-sm mb-1">
-                  AI Prompt Improvement
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  Let AI enhance your task descriptions for better clarity and
-                  results. Get suggestions to improve your prompts.
-                </p>
-              </div>
-            </div>
+            {features.map((feature) => (
+              <FeatureItem key={feature.title} {...feature} />
+            ))}
           </div>
 
-          {!isEditing && (
-            <Button onClick={() => setIsEditing(true)} className="w-full">
-              <Key className="h-4 w-4 mr-2" />
-              Add OpenAI API Key
-            </Button>
-          )}
+          {!isEditing && <AddKeyButton onClick={() => setIsEditing(true)} />}
           <OpenAIKeyEditor
             className="rounded-lg bg-background/50 p-4"
             isEditing={isEditing}
-            showKey={showKey}
-            newApiKey={newApiKey}
-            setNewApiKey={setNewApiKey}
-            handleSave={handleSave}
-            handleCancel={handleCancel}
-            isSaving={isSaving}
-            setShowKey={setShowKey}
-            error={error}
+            onSave={handleSave}
+            onCancel={handleCancel}
           />
         </CardContent>
       </Card>
@@ -332,22 +327,13 @@ export function OpenAIApiKeyManager() {
         )}
 
         {!isEditing && !apiKeyStatus.hasKey && (
-          <Button onClick={() => setIsEditing(true)} className="w-full">
-            <Key className="h-4 w-4 mr-2" />
-            Add OpenAI API Key
-          </Button>
+          <AddKeyButton onClick={() => setIsEditing(true)} />
         )}
 
         <OpenAIKeyEditor
           isEditing={isEditing}
-          showKey={showKey}
-          newApiKey={newApiKey}
-          setNewApiKey={setNewApiKey}
-          handleSave={handleSave}
-          handleCancel={handleCancel}
-          isSaving={isSaving}
-          setShowKey={setShowKey}
-          error={error}
+          onSave={handleSave}
+          onCancel={handleCancel}
         />
       </CardContent>
     </Card>

@@ -308,12 +308,6 @@ export function AgentDetail({
                   )}
                 </div>
 
-                {agent.summary && (
-                  <p className="text-sm text-muted-foreground pt-3 border-t border-border">
-                    {agent.summary}
-                  </p>
-                )}
-
                 {/* AI-Generated Summary */}
                 {aiSummary && showSummary && (
                   <div className="pt-3 border-t border-border">
