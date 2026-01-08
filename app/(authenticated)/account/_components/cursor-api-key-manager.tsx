@@ -21,7 +21,7 @@ interface ApiKeyStatus {
   maskedKey: string | null
 }
 
-export function ApiKeyManager() {
+export function CursorApiKeyManager() {
   const [isEditing, setIsEditing] = useState(false)
   const [newApiKey, setNewApiKey] = useState("")
   const [showKey, setShowKey] = useState(false)
@@ -151,7 +151,7 @@ export function ApiKeyManager() {
         {!isEditing && !apiKeyStatus.hasKey && (
           <Button onClick={() => setIsEditing(true)} className="w-full">
             <Key className="h-4 w-4 mr-2" />
-            Add API Key
+            Add Cursor API Key
           </Button>
         )}
 
