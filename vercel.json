@@ -1,4 +1,4 @@
 {
   "installCommand": "bun install",
-  "buildCommand": "if [ \"$VERCEL_ENV\" = \"production\" ]; then (cd ../../packages/backend && bunx convex deploy --cmd 'bun run build'); else bun run build; fi"
+  "buildCommand": "if [ \"$VERCEL_ENV\" = \"production\" ]; then (cd ../../packages/backend && bunx convex deploy --cmd 'cd ../.. && bun run build'); else bun run build; fi"
 }
