@@ -267,16 +267,20 @@ export const getAgentsByTaskId = query({
       return []
     }
 
-    // Get all agents for this task, ordered by updatedAt descending
+    // Get all agents for this task
     const agents = await ctx.db
       .query("agents")
       .withIndex("by_task", (q) => q.eq("taskId", args.taskId))
       .filter((q) => q.eq(q.field("deletedAt"), undefined))
-      .order("desc")
       .collect()
 
     // Filter to only include agents belonging to the authenticated user
-    return agents.filter((agent) => agent.userId === authUser.userId)
+    const userAgents = agents.filter(
+      (agent) => agent.userId === authUser.userId
+    )
+
+    // Sort by updatedAt descending (most recently updated first)
+    return userAgents.sort((a, b) => b.updatedAt - a.updatedAt)
   },
 })
 

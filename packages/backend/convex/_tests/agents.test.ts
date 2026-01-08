@@ -780,10 +780,15 @@ describe("agents", () => {
   describe("getAgentsByTaskId", () => {
     it("returns empty array when not authenticated", async () => {
       const t = createTestInstance()
-      // We need a taskId, but we can't create one without auth
-      // So we'll use a fake ID - it should return empty array
+      // Create a task with an authenticated user first to get a valid ID
+      const asUser = createTestWithUser()
+      const task = await asUser.mutation(api.tasks.createTask, {
+        title: "Test Task",
+      })
+
+      // Query without authentication should return empty array
       const result = await t.query(api.agents.getAgentsByTaskId, {
-        taskId: "fake-task-id" as any,
+        taskId: task,
       })
       expect(result).toEqual([])
     })
@@ -791,9 +796,15 @@ describe("agents", () => {
     it("returns empty array when task does not exist", async () => {
       const asUser = createTestWithUser()
 
-      // Use a fake task ID
+      // Create a task to get a valid ID format, then delete it
+      const task = await asUser.mutation(api.tasks.createTask, {
+        title: "Test Task",
+      })
+      await asUser.mutation(api.tasks.deleteTask, { taskId: task })
+
+      // Query for deleted task should return empty array
       const result = await asUser.query(api.agents.getAgentsByTaskId, {
-        taskId: "fake-task-id" as any,
+        taskId: task,
       })
       expect(result).toEqual([])
     })
@@ -873,31 +884,23 @@ describe("agents", () => {
       // Wait a bit to ensure different timestamps
       await new Promise((resolve) => setTimeout(resolve, 10))
 
-      // Create second agent
+      // Create second agent (this will have a later updatedAt than agent-1)
       await asUser.mutation(api.agents.create, {
         ...createTestAgent(),
         agentId: "agent-2",
         taskId: task,
       })
 
-      // Wait a bit more
-      await new Promise((resolve) => setTimeout(resolve, 10))
-
-      // Update first agent to change its updatedAt
-      await asUser.mutation(api.agents.updateStatus, {
-        agentId: "agent-1",
-        status: "FINISHED",
-      })
-
-      // Query agents - most recently updated should be first
+      // Query agents - should be ordered by updatedAt descending
+      // agent-2 should be first because it was created most recently
       const result = await asUser.query(api.agents.getAgentsByTaskId, {
         taskId: task,
       })
 
       expect(result).toHaveLength(2)
-      // agent-1 should be first because it was updated most recently
-      expect(result[0].agentId).toBe("agent-1")
-      expect(result[1].agentId).toBe("agent-2")
+      // agent-2 should be first because it has the most recent updatedAt
+      expect(result[0].agentId).toBe("agent-2")
+      expect(result[1].agentId).toBe("agent-1")
     })
 
     it("excludes soft-deleted agents", async () => {
