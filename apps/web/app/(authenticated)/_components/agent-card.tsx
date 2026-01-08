@@ -1,9 +1,9 @@
 "use client"
 
+import { formatRelativeTime } from "helpers"
 import { ChevronRight, GitBranch } from "lucide-react"
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
-import { formatRelativeTime } from "@/lib/formatting"
 import type { Agent } from "@/lib/types"
 import { StatusBadge } from "./status-badge"
 

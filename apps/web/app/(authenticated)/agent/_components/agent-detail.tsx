@@ -1,5 +1,6 @@
 "use client"
 
+import { formatDurationMs, formatRelativeTime } from "helpers"
 import {
   Bot,
   Clock,
@@ -46,7 +47,6 @@ import { Spinner } from "@/components/ui/spinner"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { filterMessagesForDisplay } from "@/lib/conversation-utils"
-import { formatDurationMs, formatRelativeTime } from "@/lib/formatting"
 import {
   useAgent,
   useAgentConversation,

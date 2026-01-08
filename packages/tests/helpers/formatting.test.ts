@@ -1,4 +1,3 @@
-import { beforeAll, describe, expect, it } from "vitest"
 import {
   formatActivityType,
   formatDate,
@@ -8,7 +7,8 @@ import {
   formatRelativeTime,
   formatTime,
   parseGitHubUrl,
-} from "@/lib/formatting"
+} from "helpers"
+import { beforeAll, describe, expect, it } from "vitest"
 
 // Set timezone to UTC before any tests run
 beforeAll(() => {

@@ -1,4 +1,4 @@
-import type { Agent, AgentConversation, AgentMessage } from "./types"
+import type { Agent, AgentConversation, AgentMessage } from "validators"
 
 function generateMockAgents(): Agent[] {
   const statuses: Agent["status"][] = [
@@ -81,7 +81,7 @@ function generateMockAgents(): Agent[] {
       },
       target: {
         url: `https://cursor.com/agents?id=bc_sim${String(i + 1).padStart(3, "0")}`,
-        branchName: `cursor/${task.toLowerCase().replace(/\s+/g, "-")}-${1000 + i}`,
+        branchName: `cursor/${task?.toLowerCase().replace(/\s+/g, "-")}-${1000 + i}`,
         prUrl:
           status === "FINISHED"
             ? `https://github.com/${repo}/pull/${40 + i}`

@@ -178,9 +178,12 @@ export function parseGitHubUrl(
     const parts = parsed.pathname.split("/").filter(Boolean)
     if (parts.length < 2) return null
 
+    const repoName = parts[1]
+    if (!repoName) return null
+
     return {
       url: url.trim(),
-      name: parts[1].replace(/\.git$/, ""), // Remove .git suffix if present
+      name: repoName.replace(/\.git$/, ""), // Remove .git suffix if present
     }
   } catch {
     return null

@@ -1,16 +1,16 @@
 "use client"
 
-import { Clock, FileText } from "lucide-react"
-import Link from "next/link"
-import { PageHeader } from "@/app/(authenticated)/_components/page-header"
-import { Card, CardContent } from "@/components/ui/card"
-import { SkeletonCard } from "@/components/ui/skeleton-card"
 import {
   formatActivityType,
   formatDateTime,
   formatDurationBetween,
   formatDurationMs,
-} from "@/lib/formatting"
+} from "helpers"
+import { Clock, FileText } from "lucide-react"
+import Link from "next/link"
+import { PageHeader } from "@/app/(authenticated)/_components/page-header"
+import { Card, CardContent } from "@/components/ui/card"
+import { SkeletonCard } from "@/components/ui/skeleton-card"
 import { useAgent } from "@/lib/hooks/use-agents"
 import { type TimeLog, useAllTimeLogs } from "@/lib/hooks/use-time-logs"
 
