@@ -1,5 +1,6 @@
 "use client"
 
+import { formatDuration } from "helpers"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import {
   Calendar,
@@ -21,7 +22,6 @@ import {
   timeEntriesAtom,
   viewAtom,
 } from "@/lib/atoms"
-import { formatDuration } from "@/lib/formatting"
 
 function formatEntryDateTime(timestamp: number): string {
   const date = new Date(timestamp)

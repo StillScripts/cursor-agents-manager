@@ -1,9 +1,9 @@
 "use client"
 
+import { formatDuration, formatTime } from "helpers"
 import { useAtomValue } from "jotai"
 import { Clock } from "lucide-react"
 import { todayEntriesAtom } from "@/lib/atoms"
-import { formatDuration, formatTime } from "@/lib/formatting"
 
 export function TodayEntries() {
   const entries = useAtomValue(todayEntriesAtom)
@@ -29,7 +29,7 @@ export function TodayEntries() {
             </div>
             <div className="flex items-center gap-3 text-muted-foreground ml-4">
               <span className="text-xs">
-                {formatTime(entry.startTime.toString())}
+                {formatTime(new Date(entry.startTime))}
               </span>
               <span className="font-mono text-foreground">
                 {formatDuration(entry.duration)}

@@ -1,5 +1,6 @@
 "use client"
 
+import { formatDuration } from "helpers"
 import { useAtom, useAtomValue } from "jotai"
 import { Clock, Play, Square } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -13,7 +14,6 @@ import {
   timeEntriesAtom,
   todayTotalAtom,
 } from "@/lib/atoms"
-import { formatDuration } from "@/lib/formatting"
 
 export function TimerDisplay() {
   const [activeTimer, setActiveTimer] = useAtom(activeTimerAtom)
