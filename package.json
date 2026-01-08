@@ -14,7 +14,7 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
-    "test": "bun run --filter=web test",
+    "test": "bun run --filter=web test && bun run --filter=test test",
     "test:watch": "bun run --filter=web test:watch"
   },
   "devDependencies": {

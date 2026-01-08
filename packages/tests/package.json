@@ -1,0 +1,16 @@
+{
+  "name": "test",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "convex-test": "^0.0.41",
+    "typescript": "^5",
+    "vitest": "^4.0.16"
+  }
+}
