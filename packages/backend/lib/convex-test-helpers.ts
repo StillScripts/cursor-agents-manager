@@ -13,6 +13,7 @@ const modules = {
   "./branches.ts": () => import("../convex/branches"),
   "./repositories.ts": () => import("../convex/repositories"),
   "./timeLogs.ts": () => import("../convex/timeLogs"),
+  "./tasks.ts": () => import("../convex/tasks"),
   "./auth.ts": () => import("../convex/auth"),
   "./apiKeys.ts": () => import("../convex/apiKeys"),
   "./apiKeysActions.ts": () => import("../convex/apiKeysActions"),

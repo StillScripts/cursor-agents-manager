@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query"
 import { useAction } from "convex/react"
 import { useEffect, useState } from "react"
 import { api } from "@/convex/_generated/api"
+import type { Id } from "@/convex/_generated/dataModel"
 import { useStableQuery } from "@/lib/hooks/use-stable-query"
 import type { Agent, AgentConversation, LaunchAgentRequest } from "@/lib/types"
 
@@ -211,4 +212,11 @@ export function useSendFollowUp() {
       return await sendFollowUp({ agentId: id, message })
     },
   })
+}
+
+export function useAgentsByTaskId(taskId: Id<"tasks"> | null) {
+  return useStableQuery(
+    api.agents.getAgentsByTaskId,
+    taskId ? { taskId } : "skip"
+  )
 }

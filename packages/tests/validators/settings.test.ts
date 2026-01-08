@@ -76,7 +76,7 @@ describe("branchSchema", () => {
   it("accepts branch names with special characters", () => {
     const branches = [
       { name: "feature/my-feature" },
-      { name: "release/v1.0.0" },
+      { name: "release/v0.1.0" },
       { name: "hotfix/bug-123" },
     ]
     for (const branch of branches) {
