@@ -27,10 +27,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { api } from "@/convex/_generated/api"
-<<<<<<< HEAD:app/(authenticated)/account/_components/openai-api-key-manager.tsx
 import { cn } from "@/lib/utils"
-=======
->>>>>>> fb65ca960b3b12920fac685f8082573aadacacc8:apps/web/app/(authenticated)/account/_components/openai-api-key-manager.tsx
 
 interface ApiKeyStatus {
   hasKey: boolean
