@@ -1,22 +1,22 @@
 import { convexTest } from "convex-test"
 import { vi } from "vitest"
-import * as authModule from "../convex/auth"
-import schema from "../convex/schema"
+import * as authModule from "@/convex/auth"
+import schema from "@/convex/schema"
 
 // Manually import modules for Bun compatibility
 // Include _generated files so convex-test can find the modules root
 // Paths should match what import.meta.glob would produce from the convex directory
 const modules = {
-  "./_generated/api.ts": () => import("../convex/_generated/api"),
-  "./_generated/server.ts": () => import("../convex/_generated/server"),
-  "./agents.ts": () => import("../convex/agents"),
-  "./branches.ts": () => import("../convex/branches"),
-  "./repositories.ts": () => import("../convex/repositories"),
-  "./timeLogs.ts": () => import("../convex/timeLogs"),
-  "./auth.ts": () => import("../convex/auth"),
-  "./apiKeys.ts": () => import("../convex/apiKeys"),
-  "./apiKeysActions.ts": () => import("../convex/apiKeysActions"),
-  "./openAI.ts": () => import("../convex/openAI"),
+  "./_generated/api.ts": () => import("@/convex/_generated/api"),
+  "./_generated/server.ts": () => import("@/convex/_generated/server"),
+  "./agents.ts": () => import("@/convex/agents"),
+  "./branches.ts": () => import("@/convex/branches"),
+  "./repositories.ts": () => import("@/convex/repositories"),
+  "./timeLogs.ts": () => import("@/convex/timeLogs"),
+  "./auth.ts": () => import("@/convex/auth"),
+  "./apiKeys.ts": () => import("@/convex/apiKeys"),
+  "./apiKeysActions.ts": () => import("@/convex/apiKeysActions"),
+  "./openAI.ts": () => import("@/convex/openAI"),
   // Add more modules as needed
 }
 
