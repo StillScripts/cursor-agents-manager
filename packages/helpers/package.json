@@ -1,0 +1,16 @@
+{
+  "name": "helpers",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "date-fns": "4.1.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5",
+    "validators": "workspace:*"
+  }
+}
