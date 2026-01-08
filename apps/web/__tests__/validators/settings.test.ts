@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest"
 import {
   branchesRequestSchema,
   branchSchema,
@@ -6,7 +5,8 @@ import {
   repositorySchema,
   settingsFormSchema,
   validateSettingsForm,
-} from "@/lib/validators/settings"
+} from "validators/settings"
+import { describe, expect, it } from "vitest"
 
 // Test fixtures
 const validRepository = {

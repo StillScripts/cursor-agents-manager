@@ -1,16 +1,13 @@
 "use client"
 
 import { Plus, Trash2 } from "lucide-react"
+import { type BranchFormData, branchesRequestSchema } from "validators/settings"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FieldDescription, FieldGroup, FieldSet } from "@/components/ui/field"
 import { SkeletonCard } from "@/components/ui/skeleton-card"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 import { type Branch, useBranches } from "@/lib/hooks/use-branches"
-import {
-  type BranchFormData,
-  branchesRequestSchema,
-} from "@/lib/validators/settings"
 
 type BranchesFormData = {
   branches: BranchFormData[]

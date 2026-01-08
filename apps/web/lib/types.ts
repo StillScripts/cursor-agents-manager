@@ -1,43 +1,32 @@
-export type AgentStatus =
-  | "RUNNING"
-  | "FINISHED"
-  | "ERROR"
-  | "CREATING"
-  | "EXPIRED"
+/**
+ * Re-export all API types from validators package
+ * This ensures a single source of truth for types derived from Zod schemas
+ */
 
-export interface Agent {
-  id: string
-  name: string
-  status: AgentStatus
-  source: {
-    repository: string
-    ref?: string
-  }
-  target: {
-    url: string
-    branchName?: string
-    prUrl?: string
-    autoCreatePr: boolean
-  }
-  createdAt: string
-  summary?: string
-  audioSummary?: string // Base64 encoded audio data
-}
+import type { Agent } from "validators"
 
-export interface AgentMessage {
-  id: string
-  type: "user_message" | "assistant_message" | "tool_call" | "tool_result"
-  text?: string
-  toolName?: string
-  toolInput?: Record<string, unknown>
-  toolResult?: string
-}
+// Agent types
+export type {
+  Agent,
+  AgentConversation,
+  AgentMessage,
+  AgentStatus,
+} from "validators"
 
-export interface AgentConversation {
-  id: string
-  messages: AgentMessage[]
-}
+// Launch agent types
+export type {
+  LaunchAgentFormData,
+  LaunchAgentRequest,
+  LaunchAgentResponse,
+  Model,
+  Prompt,
+  PromptImage,
+  Source,
+  Target,
+  Webhook,
+} from "validators/cursor/launch-agent"
 
+// Response types (frontend-specific)
 export interface ListAgentsResponse {
   agents: Agent[]
   nextCursor?: string
@@ -50,16 +39,3 @@ export interface PaginatedAgentsResponse {
   hasMore?: boolean // Indicates if there might be more agents (for live mode)
   simulation: boolean
 }
-
-// Re-export types from the schema for backwards compatibility
-export type {
-  LaunchAgentFormData,
-  LaunchAgentRequest,
-  LaunchAgentResponse,
-  Model,
-  Prompt,
-  PromptImage,
-  Source,
-  Target,
-  Webhook,
-} from "@/lib/validators/cursor/launch-agent"

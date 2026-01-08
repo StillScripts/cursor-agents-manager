@@ -2,6 +2,10 @@
 
 import { GitBranch, Link, Plus, Trash2 } from "lucide-react"
 import { useState } from "react"
+import {
+  type RepositoryFormData,
+  repositoriesRequestSchema,
+} from "validators/settings"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FieldDescription, FieldGroup, FieldSet } from "@/components/ui/field"
@@ -10,10 +14,6 @@ import { SkeletonCard } from "@/components/ui/skeleton-card"
 import { parseGitHubUrl } from "@/lib/formatting"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 import { type Repository, useRepositories } from "@/lib/hooks/use-repositories"
-import {
-  type RepositoryFormData,
-  repositoriesRequestSchema,
-} from "@/lib/validators/settings"
 
 type RepositoriesFormData = {
   repositories: RepositoryFormData[]

@@ -1,11 +1,11 @@
-import { describe, expect, it } from "vitest"
 import {
   type AgentStatus,
   agentStatusSchema,
   webhookEventSchema,
   webhookHeadersSchema,
   webhookPayloadSchema,
-} from "@/lib/validators/cursor/webhook"
+} from "validators/cursor/webhook"
+import { describe, expect, it } from "vitest"
 
 // Test fixtures
 const validWebhookHeaders = {

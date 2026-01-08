@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useState } from "react"
+import { type SignInFormData, signInFormSchema } from "validators/auth"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Card,
@@ -14,7 +15,6 @@ import {
 import { FieldGroup } from "@/components/ui/field"
 import { signIn } from "@/lib/better-auth/auth-client"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
-import { type SignInFormData, signInFormSchema } from "@/lib/validators/auth"
 
 function LoginFormContent() {
   const [error, setError] = useState("")

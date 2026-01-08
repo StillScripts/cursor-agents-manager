@@ -1,10 +1,10 @@
-import { describe, expect, it } from "vitest"
 import {
   type SignInFormData,
   type SignUpFormData,
   signInFormSchema,
   signUpFormSchema,
-} from "@/lib/validators/auth"
+} from "validators/auth"
+import { describe, expect, it } from "vitest"
 
 // Test fixtures
 const validSignUpData = {

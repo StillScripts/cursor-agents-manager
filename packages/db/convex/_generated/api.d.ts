@@ -18,6 +18,7 @@ import type * as http from "../http.js";
 import type * as openAI from "../openAI.js";
 import type * as repositories from "../repositories.js";
 import type * as timeLogs from "../timeLogs.js";
+import type * as types from "../types.js";
 import type * as webhookActions from "../webhookActions.js";
 
 import type {
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   openAI: typeof openAI;
   repositories: typeof repositories;
   timeLogs: typeof timeLogs;
+  types: typeof types;
   webhookActions: typeof webhookActions;
 }>;
 

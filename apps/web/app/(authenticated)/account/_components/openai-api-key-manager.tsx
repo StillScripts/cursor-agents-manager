@@ -15,7 +15,6 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { api } from "@/convex/_generated/api"
-import { useOpenAIKey } from "@/lib/hooks/use-openai-key"
 
 interface ApiKeyStatus {
   hasKey: boolean

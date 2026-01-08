@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest"
 import {
   formDataToApiRequest,
   type LaunchAgentFormData,
@@ -7,7 +6,8 @@ import {
   promptSchema,
   sourceSchema,
   webhookSchema,
-} from "@/lib/validators/cursor/launch-agent"
+} from "validators/cursor/launch-agent"
+import { describe, expect, it } from "vitest"
 
 // Test fixtures
 const validSource = {

@@ -5,6 +5,11 @@ import { AlertCircle, ExternalLink, Rocket, Settings } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import {
+  type LaunchAgentFormData,
+  launchAgentFormSchema,
+  type Model,
+} from "validators/cursor/launch-agent"
 import { PageHeader } from "@/app/(authenticated)/_components/page-header"
 import {
   extractErrorMessage,
@@ -27,11 +32,6 @@ import { useOpenAIKey } from "@/lib/hooks/use-openai-key"
 import { useRepositories } from "@/lib/hooks/use-repositories"
 import { useSaveTimeLog } from "@/lib/hooks/use-time-logs"
 import { useTimeTracking } from "@/lib/hooks/use-time-tracking"
-import {
-  type LaunchAgentFormData,
-  launchAgentFormSchema,
-  type Model,
-} from "@/lib/validators/cursor/launch-agent"
 
 const RepositorySelectField = ({ field }: { field: any }) => {
   const { repositories, isLoading, hasRepositories } = useRepositories()

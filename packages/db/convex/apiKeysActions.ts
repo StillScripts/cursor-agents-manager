@@ -1,7 +1,7 @@
 "use node"
 
 import { v } from "convex/values"
-import { decryptData, encryptData, maskApiKey } from "../lib/encryption"
+import { decryptData, encryptData, maskApiKey } from "encryption"
 import { api, internal } from "./_generated/api"
 import { action } from "./_generated/server"
 

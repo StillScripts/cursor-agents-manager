@@ -3,10 +3,12 @@
 import { createOpenAI } from "@ai-sdk/openai"
 import { generateText } from "ai"
 import { v } from "convex/values"
+import { decryptData } from "encryption"
 import OpenAI from "openai"
-import { extractUserMessagesAndLastAssistant } from "../lib/conversation-utils"
-import { decryptData } from "../lib/encryption"
-import type { AgentConversation } from "../lib/types"
+import {
+  type AgentConversation,
+  extractUserMessagesAndLastAssistant,
+} from "validators"
 import { api, internal } from "./_generated/api"
 import { action } from "./_generated/server"
 

@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { type SignUpFormData, signUpFormSchema } from "validators/auth"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Card,
@@ -14,7 +15,6 @@ import {
 import { FieldGroup } from "@/components/ui/field"
 import { signUp } from "@/lib/better-auth/auth-client"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
-import { type SignUpFormData, signUpFormSchema } from "@/lib/validators/auth"
 
 export function SignupForm() {
   const [error, setError] = useState("")
