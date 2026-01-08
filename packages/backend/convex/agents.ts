@@ -92,6 +92,7 @@ export const batchUpsert = mutation({
         summary: v.optional(v.string()),
         providerData: v.optional(v.any()),
         createdAt: v.optional(v.string()),
+        taskId: v.optional(v.id("tasks")),
       })
     ),
   },
@@ -124,6 +125,7 @@ export const batchUpsert = mutation({
           model?: string
           summary?: string
           providerData?: any
+          taskId?: typeof agent.taskId
           updatedAt: number
           syncStatus: "synced"
           syncError?: undefined
@@ -140,6 +142,7 @@ export const batchUpsert = mutation({
           model: agent.model,
           summary: agent.summary,
           providerData: agent.providerData,
+          taskId: agent.taskId,
           updatedAt: now,
           syncStatus: "synced",
           syncError: undefined,
@@ -173,6 +176,7 @@ export const batchUpsert = mutation({
           model: agent.model,
           summary: agent.summary,
           providerData: agent.providerData,
+          taskId: agent.taskId,
           updatedAt: now,
           syncStatus: "synced",
         })
@@ -244,6 +248,38 @@ export const getById = query({
   },
 })
 
+/**
+ * Get all agents for a specific task, ordered by updatedAt descending
+ */
+export const getAgentsByTaskId = query({
+  args: {
+    taskId: v.id("tasks"),
+  },
+  handler: async (ctx, args) => {
+    const authUser = await getAuthenticatedUser(ctx).catch(() => null)
+    if (!authUser) {
+      return []
+    }
+
+    // Verify the task belongs to the user
+    const task = await ctx.db.get(args.taskId)
+    if (!task || task.userId !== authUser.userId) {
+      return []
+    }
+
+    // Get all agents for this task, ordered by updatedAt descending
+    const agents = await ctx.db
+      .query("agents")
+      .withIndex("by_task", (q) => q.eq("taskId", args.taskId))
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .order("desc")
+      .collect()
+
+    // Filter to only include agents belonging to the authenticated user
+    return agents.filter((agent) => agent.userId === authUser.userId)
+  },
+})
+
 export const create = mutation({
   args: {
     agentId: v.string(),
@@ -265,6 +301,7 @@ export const create = mutation({
     model: v.optional(v.string()),
     summary: v.optional(v.string()),
     providerData: v.optional(v.any()),
+    taskId: v.optional(v.id("tasks")),
   },
   handler: async (ctx, args) => {
     const authUser = await getAuthenticatedUser(ctx)
@@ -292,6 +329,7 @@ export const create = mutation({
         model?: string
         summary?: string
         providerData?: any
+        taskId?: typeof args.taskId
         updatedAt: number
         syncStatus: "synced"
         syncError?: undefined
@@ -308,6 +346,7 @@ export const create = mutation({
         model: args.model,
         summary: args.summary,
         providerData: args.providerData,
+        taskId: args.taskId,
         updatedAt: now,
         syncStatus: "synced",
         syncError: undefined,
@@ -340,6 +379,7 @@ export const create = mutation({
       model: args.model,
       summary: args.summary,
       providerData: args.providerData,
+      taskId: args.taskId,
       updatedAt: now,
       syncStatus: "synced",
     })

@@ -712,4 +712,226 @@ describe("agents", () => {
       expect(agent?.provider).toBe("claude-code")
     })
   })
+
+  describe("taskId support", () => {
+    it("creates agent with taskId", async () => {
+      const asUser = createTestWithUser()
+
+      // Create a task first
+      const task = await asUser.mutation(api.tasks.createTask, {
+        title: "Test Task",
+        description: "Test Description",
+      })
+
+      const result = await asUser.mutation(api.agents.create, {
+        ...createTestAgent(),
+        taskId: task,
+      })
+
+      expect(result).toMatchObject({
+        agentId: "test-agent-123",
+      })
+
+      const agent = await asUser.query(api.agents.getById, {
+        agentId: "test-agent-123",
+      })
+      expect(agent?.taskId).toBe(task)
+    })
+
+    it("creates agent without taskId", async () => {
+      const asUser = createTestWithUser()
+
+      const result = await asUser.mutation(api.agents.create, createTestAgent())
+
+      expect(result).toMatchObject({
+        agentId: "test-agent-123",
+      })
+
+      const agent = await asUser.query(api.agents.getById, {
+        agentId: "test-agent-123",
+      })
+      expect(agent?.taskId).toBeUndefined()
+    })
+
+    it("updates agent taskId when creating with same agentId", async () => {
+      const asUser = createTestWithUser()
+
+      // Create initial agent without taskId
+      await asUser.mutation(api.agents.create, createTestAgent())
+
+      // Create a task
+      const task = await asUser.mutation(api.tasks.createTask, {
+        title: "Test Task",
+      })
+
+      // Create again with same agentId but with taskId
+      await asUser.mutation(api.agents.create, {
+        ...createTestAgent(),
+        taskId: task,
+      })
+
+      const agent = await asUser.query(api.agents.getById, {
+        agentId: "test-agent-123",
+      })
+      expect(agent?.taskId).toBe(task)
+    })
+  })
+
+  describe("getAgentsByTaskId", () => {
+    it("returns empty array when not authenticated", async () => {
+      const t = createTestInstance()
+      // We need a taskId, but we can't create one without auth
+      // So we'll use a fake ID - it should return empty array
+      const result = await t.query(api.agents.getAgentsByTaskId, {
+        taskId: "fake-task-id" as any,
+      })
+      expect(result).toEqual([])
+    })
+
+    it("returns empty array when task does not exist", async () => {
+      const asUser = createTestWithUser()
+
+      // Use a fake task ID
+      const result = await asUser.query(api.agents.getAgentsByTaskId, {
+        taskId: "fake-task-id" as any,
+      })
+      expect(result).toEqual([])
+    })
+
+    it("returns empty array when task belongs to different user", async () => {
+      const [asUser1, asUser2] = createTestUsers([
+        { name: "User 1" },
+        { name: "User 2" },
+      ])
+
+      // User 1 creates a task
+      const task = await asUser1.mutation(api.tasks.createTask, {
+        title: "User 1 Task",
+      })
+
+      // User 2 should not see agents for User 1's task
+      const result = await asUser2.query(api.agents.getAgentsByTaskId, {
+        taskId: task,
+      })
+      expect(result).toEqual([])
+    })
+
+    it("returns agents for a specific task", async () => {
+      const asUser = createTestWithUser()
+
+      // Create a task
+      const task = await asUser.mutation(api.tasks.createTask, {
+        title: "Test Task",
+      })
+
+      // Create agents with and without taskId
+      await asUser.mutation(api.agents.create, {
+        ...createTestAgent(),
+        agentId: "agent-with-task",
+        taskId: task,
+      })
+      await asUser.mutation(api.agents.create, {
+        ...createTestAgent(),
+        agentId: "agent-without-task",
+      })
+
+      // Create another task and agent
+      const task2 = await asUser.mutation(api.tasks.createTask, {
+        title: "Test Task 2",
+      })
+      await asUser.mutation(api.agents.create, {
+        ...createTestAgent(),
+        agentId: "agent-with-task2",
+        taskId: task2,
+      })
+
+      // Query agents for first task
+      const result = await asUser.query(api.agents.getAgentsByTaskId, {
+        taskId: task,
+      })
+
+      expect(result).toHaveLength(1)
+      expect(result[0].agentId).toBe("agent-with-task")
+      expect(result[0].taskId).toBe(task)
+    })
+
+    it("returns agents ordered by updatedAt descending", async () => {
+      const asUser = createTestWithUser()
+
+      // Create a task
+      const task = await asUser.mutation(api.tasks.createTask, {
+        title: "Test Task",
+      })
+
+      // Create first agent
+      await asUser.mutation(api.agents.create, {
+        ...createTestAgent(),
+        agentId: "agent-1",
+        taskId: task,
+      })
+
+      // Wait a bit to ensure different timestamps
+      await new Promise((resolve) => setTimeout(resolve, 10))
+
+      // Create second agent
+      await asUser.mutation(api.agents.create, {
+        ...createTestAgent(),
+        agentId: "agent-2",
+        taskId: task,
+      })
+
+      // Wait a bit more
+      await new Promise((resolve) => setTimeout(resolve, 10))
+
+      // Update first agent to change its updatedAt
+      await asUser.mutation(api.agents.updateStatus, {
+        agentId: "agent-1",
+        status: "FINISHED",
+      })
+
+      // Query agents - most recently updated should be first
+      const result = await asUser.query(api.agents.getAgentsByTaskId, {
+        taskId: task,
+      })
+
+      expect(result).toHaveLength(2)
+      // agent-1 should be first because it was updated most recently
+      expect(result[0].agentId).toBe("agent-1")
+      expect(result[1].agentId).toBe("agent-2")
+    })
+
+    it("excludes soft-deleted agents", async () => {
+      const asUser = createTestWithUser()
+
+      // Create a task
+      const task = await asUser.mutation(api.tasks.createTask, {
+        title: "Test Task",
+      })
+
+      // Create agents
+      await asUser.mutation(api.agents.create, {
+        ...createTestAgent(),
+        agentId: "agent-1",
+        taskId: task,
+      })
+      await asUser.mutation(api.agents.create, {
+        ...createTestAgent(),
+        agentId: "agent-2",
+        taskId: task,
+      })
+
+      // Soft delete one agent
+      await asUser.mutation(api.agents.softDelete, {
+        agentId: "agent-1",
+      })
+
+      // Query agents - should only return non-deleted agent
+      const result = await asUser.query(api.agents.getAgentsByTaskId, {
+        taskId: task,
+      })
+
+      expect(result).toHaveLength(1)
+      expect(result[0].agentId).toBe("agent-2")
+    })
+  })
 })

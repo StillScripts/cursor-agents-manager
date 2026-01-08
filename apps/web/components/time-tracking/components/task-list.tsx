@@ -8,8 +8,10 @@ import {
   ChevronUp,
   Clock,
   PlayCircle,
+  Rocket,
   Trash2,
 } from "lucide-react"
+import Link from "next/link"
 import type React from "react"
 import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -30,6 +32,7 @@ import {
   taskInputAtom,
   viewAtom,
 } from "@/lib/atoms"
+import { useAgentsByTaskId } from "@/lib/hooks/use-agents"
 import { useTasks } from "@/lib/hooks/use-tasks"
 import { useAllTimeLogs, useDeleteTimeLog } from "@/lib/hooks/use-time-logs"
 
@@ -58,6 +61,43 @@ function formatEntryDateTime(timestamp: number): string {
     })
     return `${dayStr} at ${timeStr}`
   }
+}
+
+function TaskAgentsList({ taskId }: { taskId: Id<"tasks"> }) {
+  const agents = useAgentsByTaskId(taskId)
+
+  if (agents === undefined) {
+    return null // Loading state
+  }
+
+  if (agents.length === 0) {
+    return null // Don't show anything if no agents
+  }
+
+  return (
+    <div className="border-t border-border/30">
+      <div className="px-4 py-2 bg-secondary/30">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          Associated Agents
+        </p>
+      </div>
+      {agents.map((agent) => (
+        <Link
+          key={agent._id}
+          href={`/agent/${agent.agentId}`}
+          className="group/agent flex items-center gap-3 px-4 py-3 border-b border-border/30 last:border-b-0 hover:bg-secondary/30 transition-colors"
+        >
+          <Rocket className="w-4 h-4 text-muted-foreground/60 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-foreground truncate">{agent.name}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {agent.status}
+            </p>
+          </div>
+        </Link>
+      ))}
+    </div>
+  )
 }
 
 export function TaskList() {
@@ -292,6 +332,7 @@ export function TaskList() {
                       </div>
                     </div>
                   ))}
+                  <TaskAgentsList taskId={task._id} />
                 </div>
               )}
             </div>

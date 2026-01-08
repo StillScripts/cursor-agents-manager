@@ -8,6 +8,9 @@ export default defineSchema({
     userId: v.string(),
     provider: v.union(v.literal("cursor"), v.literal("claude-code")),
 
+    // Link to a task if the user has associated it with a task
+    taskId: v.optional(v.id("tasks")),
+
     // Agent metadata
     name: v.string(),
     status: v.union(
@@ -40,7 +43,8 @@ export default defineSchema({
     .index("by_user_agent", ["userId", "agentId"])
     .index("by_user_status", ["userId", "status"])
     .index("by_updated_at", ["updatedAt"])
-    .index("by_agent_id", ["agentId"]),
+    .index("by_agent_id", ["agentId"])
+    .index("by_task", ["taskId"]),
 
   apiKeys: defineTable({
     userId: v.string(),

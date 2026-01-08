@@ -1,6 +1,7 @@
 "use client"
 
 import { useAction } from "convex/react"
+import { useAtomValue } from "jotai"
 import { AlertCircle, ExternalLink, Rocket, Settings } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -25,11 +26,14 @@ import {
 } from "@/components/ui/field"
 import { ImageUpload } from "@/components/ui/image-upload"
 import { api } from "@/convex/_generated/api"
+import type { Id } from "@/convex/_generated/dataModel"
+import { activeTimerAtom } from "@/lib/atoms"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 import { useBranches } from "@/lib/hooks/use-branches"
 import { useModels } from "@/lib/hooks/use-models"
 import { useOpenAIKey } from "@/lib/hooks/use-openai-key"
 import { useRepositories } from "@/lib/hooks/use-repositories"
+import { useTasks } from "@/lib/hooks/use-tasks"
 
 const RepositorySelectField = ({ field }: { field: any }) => {
   const { repositories, isLoading, hasRepositories } = useRepositories()
@@ -160,16 +164,70 @@ const ModelSelectField = ({ field }: { field: any }) => {
   )
 }
 
+const TaskSelectField = ({ field }: { field: any }) => {
+  const { tasks, isLoading, hasTasks } = useTasks()
+
+  if (isLoading) {
+    return <FieldSkeleton label="Task (Optional)" variant="select" />
+  }
+
+  if (!hasTasks) {
+    return null // Don't show the field if user has no tasks
+  }
+
+  const options = [
+    { value: "", label: "None" },
+    ...(tasks?.map((task) => ({
+      value: task._id,
+      label: task.title,
+    })) || []),
+  ]
+
+  return (
+    <field.ControlledSelect
+      field={field}
+      label="Task (Optional)"
+      description="Associate this agent with a task for better organization"
+      placeholder="Select task..."
+      options={options}
+      onValueChange={(value: string) => {
+        const taskIdValue: Id<"tasks"> | undefined =
+          value === "" || value === null ? undefined : (value as Id<"tasks">)
+        field.handleChange(taskIdValue)
+      }}
+    />
+  )
+}
+
 export function LaunchAgentForm() {
   const router = useRouter()
   const launchAgentAction = useAction(api.cursor.launchAgent)
   const { hasOpenAIKey } = useOpenAIKey()
+  const activeTimer = useAtomValue(activeTimerAtom)
+  const { tasks } = useTasks()
 
   // Error state
   const [error, setError] = useState<Error | null>(null)
 
+  // Find matching task for active timer
+  const getDefaultTaskId = (): Id<"tasks"> | undefined => {
+    if (!activeTimer || !tasks) return undefined
+
+    // First try to match by taskId if available
+    if (activeTimer.taskId) {
+      const taskById = tasks.find(
+        (t) => t._id === (activeTimer.taskId as Id<"tasks">)
+      )
+      if (taskById) return taskById._id
+    }
+
+    // Otherwise match by title
+    const taskByTitle = tasks.find((t) => t.title === activeTimer.title)
+    return taskByTitle?._id
+  }
+
   // Default values for form reset
-  const defaultFormValues: LaunchAgentFormData = {
+  const defaultFormValues: LaunchAgentFormData & { taskId?: Id<"tasks"> } = {
     prompt: {
       text: "",
       images: [],
@@ -185,10 +243,11 @@ export function LaunchAgentForm() {
       skipReviewerRequest: false,
       branchName: "",
     },
+    taskId: getDefaultTaskId(),
   }
 
   // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
-  const form = useAppForm<LaunchAgentFormData>({
+  const form = useAppForm<LaunchAgentFormData & { taskId?: Id<"tasks"> }>({
     defaultValues: defaultFormValues,
     validators: {
       onSubmit: launchAgentFormSchema,
@@ -203,6 +262,7 @@ export function LaunchAgentForm() {
           source: value.source,
           model: value.model,
           target: value.target,
+          taskId: value.taskId,
         })
 
         // Reset form to default values before navigation
@@ -299,6 +359,9 @@ export function LaunchAgentForm() {
                   </form.AppField>
                   <form.AppField name="model">
                     {(field) => <ModelSelectField field={field} />}
+                  </form.AppField>
+                  <form.AppField name="taskId">
+                    {(field) => <TaskSelectField field={field} />}
                   </form.AppField>
                 </FieldGroup>
               </FieldSet>

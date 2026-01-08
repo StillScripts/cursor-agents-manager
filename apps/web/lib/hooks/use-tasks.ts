@@ -20,6 +20,7 @@ export function useTasks() {
   return {
     tasks,
     isLoading: tasks === undefined,
+    hasTasks: (tasks?.length ?? 0) > 0,
     createTask: (data: { title: string; description?: string }) =>
       createTask(data),
     deleteTask: (taskId: Id<"tasks">) => deleteTask({ taskId }),
