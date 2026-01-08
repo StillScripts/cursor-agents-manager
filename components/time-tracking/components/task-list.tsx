@@ -116,13 +116,13 @@ export function TaskList() {
               key={task.title}
               className="rounded-lg bg-secondary/50 overflow-hidden"
             >
-              {/* Task Header */}
-              <button
-                type="button"
-                className="group w-full flex items-center justify-between p-4 hover:bg-secondary transition-colors cursor-pointer text-left"
-                onClick={() => toggleExpanded(task.title)}
-              >
-                <div className="flex-1 min-w-0">
+              <div className="group flex items-center gap-2 p-4">
+                <button
+                  type="button"
+                  onClick={() => toggleExpanded(task.title)}
+                  className="flex-1 min-w-0 text-left hover:bg-secondary/50 rounded p-2 -m-2 transition-colors cursor-pointer"
+                  aria-expanded={isExpanded}
+                >
                   <p className="font-medium text-foreground truncate">
                     {task.title}
                   </p>
@@ -142,15 +142,12 @@ export function TaskList() {
                       {task.entries.length === 1 ? "entry" : "entries"}
                     </span>
                   </div>
-                </div>
+                </button>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDelete(task.title)
-                    }}
+                    onClick={() => handleDelete(task.title)}
                     className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -158,25 +155,28 @@ export function TaskList() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleContinue(task)
-                    }}
+                    onClick={() => handleContinue(task)}
                     disabled={activeTimer !== null}
                     className="text-primary hover:text-primary hover:bg-primary/10 disabled:opacity-30"
                   >
                     <PlayCircle className="w-4 h-4 mr-1" />
                     Continue
                   </Button>
-                  <div className="text-muted-foreground">
+                  <button
+                    type="button"
+                    onClick={() => toggleExpanded(task.title)}
+                    className="text-muted-foreground hover:text-foreground transition-colors p-1 -m-1 rounded hover:bg-secondary/50"
+                    aria-expanded={isExpanded}
+                    aria-label={isExpanded ? "Collapse task" : "Expand task"}
+                  >
                     {isExpanded ? (
                       <ChevronUp className="w-5 h-5" />
                     ) : (
                       <ChevronDown className="w-5 h-5" />
                     )}
-                  </div>
+                  </button>
                 </div>
-              </button>
+              </div>
 
               {isExpanded && (
                 <div className="border-t border-border/50 bg-background/50">
