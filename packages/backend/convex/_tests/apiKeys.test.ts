@@ -269,9 +269,7 @@ describe("apiKeys", () => {
     it("throws error when not authenticated", async () => {
       const t = createTestInstance()
 
-      await expect(
-        t.mutation(api.apiKeys.deleteCursorApiKey)
-      ).rejects.toThrow()
+      await expect(t.mutation(api.apiKeys.deleteCursorApiKey)).rejects.toThrow()
     })
   })
 
@@ -307,9 +305,7 @@ describe("apiKeys", () => {
     it("throws error when not authenticated", async () => {
       const t = createTestInstance()
 
-      await expect(
-        t.mutation(api.apiKeys.deleteOpenaiApiKey)
-      ).rejects.toThrow()
+      await expect(t.mutation(api.apiKeys.deleteOpenaiApiKey)).rejects.toThrow()
     })
   })
 

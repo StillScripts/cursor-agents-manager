@@ -273,9 +273,12 @@ describe("tasks", () => {
       })
 
       // Verify time logs exist
-      const timeLogsBefore = await asUser.query(api.timeLogs.getTimeLogsByTask, {
-        taskId,
-      })
+      const timeLogsBefore = await asUser.query(
+        api.timeLogs.getTimeLogsByTask,
+        {
+          taskId,
+        }
+      )
       expect(timeLogsBefore).toHaveLength(2)
 
       // Delete the task

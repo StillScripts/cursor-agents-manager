@@ -289,7 +289,6 @@ describe("timeLogs", () => {
         title: "Test Task",
       })
 
-      const now = Date.now()
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       const todayStart = today.getTime()
