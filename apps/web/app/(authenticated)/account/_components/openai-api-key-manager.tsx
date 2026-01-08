@@ -252,7 +252,7 @@ export function OpenAIApiKeyManager() {
     )
   }
 
-  if (apiKeyStatus.hasKey) {
+  if (!apiKeyStatus.hasKey) {
     return (
       <Card className="bg-linear-to-br from-primary/5 to-primary/0 border-primary/20">
         <CardHeader>
