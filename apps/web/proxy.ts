@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { isAuthenticated } from "@/lib/better-auth/auth-server"
 
-const publicRoutes = ["/login", "/signup"]
+const publicRoutes = ["/login", "/signup", "/"]
 const authRoutes = ["/login", "/signup"]
 
 export async function proxy(request: NextRequest) {
@@ -31,7 +31,7 @@ export async function proxy(request: NextRequest) {
 
   // Redirect authenticated users away from auth pages
   if (authenticated && authRoutes.includes(pathname)) {
-    return NextResponse.redirect(new URL("/", request.url))
+    return NextResponse.redirect(new URL("/agents", request.url))
   }
 
   return NextResponse.next()
