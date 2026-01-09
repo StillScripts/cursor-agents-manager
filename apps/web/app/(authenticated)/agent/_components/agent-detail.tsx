@@ -293,7 +293,7 @@ export function AgentDetail({
                 )}
 
                 {/* Summary Action Buttons */}
-                {conversation && conversation.messages.length > 0 && (
+                {true && (
                   <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-border">
                     {hasOpenAIKey && (
                       <>

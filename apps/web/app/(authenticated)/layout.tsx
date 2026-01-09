@@ -1,6 +1,18 @@
+import type { Metadata } from "next"
 import { type ReactNode, Suspense } from "react"
 import { BottomNav } from "@/app/(authenticated)/_components/bottom-nav"
 import { DesktopHeader } from "@/app/(authenticated)/_components/desktop-header"
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
+}
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (

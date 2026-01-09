@@ -13,19 +13,13 @@ function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              className="h-5 w-5 text-primary-foreground"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M12 2L2 7l10 5 10-5-10-5z" />
-              <path d="M2 17l10 5 10-5" />
-              <path d="M2 12l10 5 10-5" />
-            </svg>
-          </div>
+          <Image
+            src="/android-chrome-512x512.png"
+            alt="Cursor Agents Manager"
+            width={48}
+            height={48}
+            className="h-12 w-12 rounded-full"
+          />
           <span className="font-semibold text-foreground">
             Cursor Agents Manager
           </span>
@@ -86,7 +80,7 @@ function HeroSection() {
         <div className="absolute right-1/4 bottom-1/4 h-96 w-96 animate-pulse rounded-full bg-primary/5 blur-3xl [animation-delay:1s]" />
 
         {/* Grid pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1a1a1a_1px,transparent_1px),linear-gradient(to_bottom,#1a1a1a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1a1a1a_1px,transparent_1px),linear-gradient(to_bottom,#1a1a1a_1px,transparent_1px)] bg-size-[4rem_4rem] mask-[radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
       </div>
 
       <div className="container mx-auto">
@@ -258,17 +252,17 @@ function FeaturesSection() {
               </div>
 
               {/* Hover line effect */}
-              <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-gradient-to-r from-primary to-emerald-400 transition-all duration-300 group-hover:w-full" />
+              <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-linear-to-r from-primary to-emerald-400 transition-all duration-300 group-hover:w-full" />
             </div>
           ))}
         </div>
 
         <div className="mx-auto mt-12 flex max-w-md items-center justify-center gap-4">
-          <div className="h-px flex-1 bg-gradient-to-r from-transparent to-primary/50" />
+          <div className="h-px flex-1 bg-linear-to-r from-transparent to-primary/50" />
           <span className="text-xs text-muted-foreground">
             More features coming soon
           </span>
-          <div className="h-px flex-1 bg-gradient-to-l from-transparent to-primary/50" />
+          <div className="h-px flex-1 bg-linear-to-l from-transparent to-primary/50" />
         </div>
       </div>
     </section>
@@ -396,19 +390,19 @@ function ScreenshotsSection() {
       title: "Your Agents Dashboard",
       description:
         "See all your running and completed agents at a glance with real-time status updates.",
-      src: "/images/screenshot-202026-01-08-20at-2010.png",
+      src: "/images/agents-dashboard.png",
     },
     {
       title: "Launch Agent",
       description:
         "Describe tasks with text or voice input. Attach images and select your target repository.",
-      src: "/images/screenshot-202026-01-08-20at-2010.png",
+      src: "/images/launch-agent.png",
     },
     {
       title: "AI-Powered Features",
       description:
         "Unlock summaries, text-to-speech, voice input, and AI prompt improvement with your API key.",
-      src: "/images/screenshot-202026-01-08-20at-2010.png",
+      src: "/images/ai-enhancements.png",
     },
   ]
 
@@ -428,15 +422,15 @@ function ScreenshotsSection() {
           </p>
         </div>
 
-        <div className="mx-auto mt-16 grid max-w-6xl gap-8 md:grid-cols-3">
+        <div className="mx-auto mt-16 grid gap-8 md:grid-cols-3">
           {screenshots.map((screenshot) => (
             <div key={screenshot.title} className="group flex flex-col">
               <div className="relative mb-4 overflow-hidden rounded-xl border border-border/50 bg-background transition-all group-hover:border-primary/50">
                 <Image
                   src={screenshot.src || "/placeholder.svg"}
                   alt={screenshot.title}
-                  width={600}
-                  height={400}
+                  width={1255}
+                  height={475}
                   className="w-full object-cover"
                 />
               </div>
