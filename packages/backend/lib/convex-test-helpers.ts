@@ -21,6 +21,7 @@ const modules = {
   "./http.ts": () => import("../convex/http"),
   "./cursor.ts": () => import("../convex/cursor"),
   "./webhookActions.ts": () => import("../convex/webhookActions"),
+  "./rateLimiting.ts": () => import("../convex/rateLimiting"),
 }
 
 /**
