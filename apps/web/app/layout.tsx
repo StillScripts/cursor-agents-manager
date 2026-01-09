@@ -48,14 +48,6 @@ export const metadata: Metadata = {
       },
     ],
   },
-  robots: {
-    index: false,
-    follow: false,
-    googleBot: {
-      index: false,
-      follow: false,
-    },
-  },
 }
 
 export const viewport: Viewport = {
@@ -115,7 +107,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className="antialiased font-sans overflow-hidden md:overflow-visible"
+        className="antialiased font-sans md:overflow-visible"
         suppressHydrationWarning
       >
         <Suspense fallback={null}>

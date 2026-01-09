@@ -14,8 +14,8 @@ export function DesktopHeader() {
         <nav className="flex items-center gap-6">
           {navItems.map((item) => {
             const isActive =
-              item.href === "/"
-                ? pathname === "/" || pathname.startsWith("/agent")
+              item.href === "/agents"
+                ? pathname === "/agents" || pathname.startsWith("/agent")
                 : pathname === item.href
             return (
               <Link

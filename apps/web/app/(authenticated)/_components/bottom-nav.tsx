@@ -13,8 +13,8 @@ export function BottomNav() {
       <div className="max-w-md mx-auto flex items-center justify-around h-16">
         {navItems.map((item) => {
           const isActive =
-            item.href === "/"
-              ? pathname === "/" || pathname.startsWith("/agent")
+            item.href === "/agents"
+              ? pathname === "/agents" || pathname.startsWith("/agent")
               : pathname === item.href
           return (
             <Link

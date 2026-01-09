@@ -123,7 +123,7 @@ export function AgentDetail({
 
   const handleDelete = async () => {
     await deleteAgent.mutateAsync(agentId)
-    router.push("/")
+    router.push("/agents")
   }
 
   const handleSendFollowUp = async () => {
@@ -293,7 +293,7 @@ export function AgentDetail({
                 )}
 
                 {/* Summary Action Buttons */}
-                {conversation && conversation.messages.length > 0 && (
+                {true && (
                   <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-border">
                     {hasOpenAIKey && (
                       <>

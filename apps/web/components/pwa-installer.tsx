@@ -57,7 +57,9 @@ export function PWAInstaller() {
     setDeferredPrompt(null)
   }
 
-  if (isInstalled || !showInstallButton) {
+  const temporarilyHide = true
+
+  if (isInstalled || !showInstallButton || temporarilyHide) {
     return null
   }
 
