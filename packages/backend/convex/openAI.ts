@@ -11,10 +11,7 @@ import {
 } from "validators"
 import { api, internal } from "./_generated/api"
 import { action } from "./_generated/server"
-import {
-  checkRateLimit,
-  openAIRateLimiters,
-} from "./rateLimiting"
+import { checkRateLimit, openAIRateLimiters } from "./rateLimiting"
 
 /**
  * Summarize a conversation using OpenAI

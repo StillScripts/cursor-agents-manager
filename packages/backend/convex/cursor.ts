@@ -11,10 +11,7 @@ import type {
 } from "validators"
 import { api, components, internal } from "./_generated/api"
 import { action, internalAction } from "./_generated/server"
-import {
-  checkRateLimit,
-  cursorRateLimiters,
-} from "./rateLimiting"
+import { checkRateLimit, cursorRateLimiters } from "./rateLimiting"
 
 const CURSOR_API_URL = "https://api.cursor.com/v0/agents"
 const CURSOR_MODELS_API_URL = "https://api.cursor.com/v0/models"
