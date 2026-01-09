@@ -41,7 +41,19 @@
       "name": "Agents",
       "short_name": "Agents",
       "description": "View all agents",
-      "url": "/",
+      "url": "/agents",
+      "icons": [
+        {
+          "src": "/android-chrome-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Manage Tasks",
+      "short_name": "Tasks",
+      "description": "Handle time-tracking and task management",
+      "url": "/tasks",
       "icons": [
         {
           "src": "/android-chrome-192x192.png",
