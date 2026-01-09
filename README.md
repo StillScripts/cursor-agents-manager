@@ -38,18 +38,18 @@ A mobile-first Next.js application for managing Cursor background agents from an
 
 3. **Configure environment variables**
    
-   **Step 3a: Create Next.js environment file**
+   **Step 3a: Create environment file at monorepo root**
    ```bash
-   cp apps/web/.env.example apps/web/.env.local
+   cp .env.example .env.local
    ```
    
    **Step 3b: Generate and set encryption secret**
    ```bash
    openssl rand -base64 32
    ```
-   Edit `apps/web/.env.local` and set `ENCRYPTION_SECRET` to the generated value.
+   Edit `.env.local` (at the monorepo root) and set `ENCRYPTION_SECRET` to the generated value.
    
-   > **Note**: The Convex variables (`CONVEX_DEPLOYMENT`, `NEXT_PUBLIC_CONVEX_URL`, `NEXT_PUBLIC_CONVEX_SITE_URL`) will be automatically generated when you run `bun run dev` in the next step. Convex CLI will prompt you to create a project and add these values.
+   > **Note**: You only need to set `ENCRYPTION_SECRET` manually. The other 3 variables (`CONVEX_DEPLOYMENT`, `NEXT_PUBLIC_CONVEX_URL`, `NEXT_PUBLIC_CONVEX_SITE_URL`) will be automatically generated when you run `bun run dev` in the next step. Convex CLI will prompt you to create a project and add these values.
    
    See [Environment Variables](#-environment-variables) for complete details.
 
@@ -60,19 +60,22 @@ A mobile-first Next.js application for managing Cursor background agents from an
    
    This command starts both the Next.js dev server and Convex dev server together. On first run, Convex will:
    - Prompt you to create a Convex project (if you haven't already)
-   - Generate and add the Convex environment variables to your `apps/web/.env.local` file
+   - Generate and add the Convex environment variables to your `.env.local` file (at monorepo root)
    - Create `packages/backend/.env.local` with `CONVEX_DEPLOYMENT`
 
 5. **Configure Convex Dashboard environment variables**
    
-   After Convex creates your project, go to your [Convex Dashboard](https://dashboard.convex.dev) → Settings → Environment Variables and add:
+   After Convex creates your project, go to your [Convex Dashboard](https://dashboard.convex.dev) → Settings → Environment Variables and configure variables for your **dev** deployment:
    
+   **Required:**
    - `SITE_URL` = `http://localhost:3000` (for development)
-   - `ENCRYPTION_SECRET` = same value as in `apps/web/.env.local`
+   - `ENCRYPTION_SECRET` = same value as in `.env.local` (at monorepo root)
    
-   Optional (for webhook support):
+   **Optional (for webhook support):**
    - `CURSOR_WEBHOOK_URL` = `https://your-deployment.convex.site/webhooks/cursor`
    - `CURSOR_WEBHOOK_SECRET` = generate with `openssl rand -hex 32`
+   
+   > **Note**: For production, you'll need to set these same variables in your production deployment's environment variables, but with `SITE_URL` set to your production URL (e.g., `https://your-app.com`).
 
 🎉 **Open [http://localhost:3000](http://localhost:3000)** and create your account!
 
@@ -96,26 +99,31 @@ A mobile-first Next.js application for managing Cursor background agents from an
 
 Environment variables are organized into three categories based on where they're used:
 
-### 1. Next.js App Variables (`apps/web/.env.local`)
+### 1. Local Development (`.env.local` at monorepo root)
 
-These variables are used by the Next.js application running locally.
+These 4 variables are all you need for local development. The `.env.local` file should be created at the **monorepo root** (same directory as `package.json`).
 
 **Setup:**
 ```bash
-cp apps/web/.env.example apps/web/.env.local
+cp .env.example .env.local
 ```
 
-**Required Variables:**
+**The 4 Required Variables:**
 
 ```bash
-# Convex Configuration (Auto-generated)
-# These are automatically generated when you run `bun run dev` for the first time.
-# Convex CLI will prompt you to create a project and add these values.
+# 1. Convex Deployment (Auto-generated)
+# Automatically generated when you run `bun run dev` for the first time
 CONVEX_DEPLOYMENT=dev:your-deployment-name
+
+# 2. Convex URL (Auto-generated)
+# Automatically generated when you run `bun run dev` for the first time
 NEXT_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
+
+# 3. Convex Site URL (Auto-generated)
+# Automatically generated when you run `bun run dev` for the first time
 NEXT_PUBLIC_CONVEX_SITE_URL=https://your-deployment.convex.site
 
-# Encryption Secret (Manual - Required)
+# 4. Encryption Secret (Manual - Required)
 # Generate with: openssl rand -base64 32
 # IMPORTANT: This same value must also be set in Convex Dashboard
 ENCRYPTION_SECRET=your-encryption-secret-min-32-chars
@@ -123,7 +131,8 @@ ENCRYPTION_SECRET=your-encryption-secret-min-32-chars
 
 > **Note**: When you run `bun run dev` for the first time, Convex CLI will automatically:
 > - Create `packages/backend/.env.local` with `CONVEX_DEPLOYMENT`
-> - Add the Convex variables to your `apps/web/.env.local` file
+> - Add the 3 Convex variables (items 1-3 above) to your `.env.local` file (at monorepo root)
+> - You only need to manually set `ENCRYPTION_SECRET` (item 4)
 
 ### 2. Convex CLI Variables (`packages/backend/.env.local`)
 
@@ -136,22 +145,38 @@ These variables are used by the Convex CLI when running `bunx convex dev`.
 CONVEX_DEPLOYMENT=dev:your-deployment-name
 ```
 
-This tells the Convex CLI which deployment to use. It's automatically synced with the value in `apps/web/.env.local`.
+This tells the Convex CLI which deployment to use. It's automatically synced with the value in `.env.local` (at monorepo root).
 
 ### 3. Convex Dashboard Environment Variables
 
 These variables are used by Convex functions running in the Convex cloud (not locally). Set them in your Convex Dashboard: **Settings → Environment Variables**
 
-| Variable | Purpose | Required |
-|----------|---------|----------|
-| `SITE_URL` | Your app URL for Better Auth (e.g., `http://localhost:3000` for dev, `https://your-app.com` for production) | ✅ Yes |
-| `ENCRYPTION_SECRET` | Secret for encrypting API keys. **Must match** the value in `apps/web/.env.local` | ✅ Yes |
-| `CURSOR_WEBHOOK_URL` | Your Convex webhook endpoint (e.g., `https://your-deployment.convex.site/webhooks/cursor`) | ⚠️ Optional |
-| `CURSOR_WEBHOOK_SECRET` | Secret for webhook signature verification (generate with `openssl rand -hex 32`) | ⚠️ Optional |
+You need to configure these for **both your dev and production deployments** (with different `SITE_URL` values).
+
+#### Required Variables
+
+| Variable | Purpose | Dev Value | Prod Value |
+|----------|---------|-----------|------------|
+| `SITE_URL` | Your app URL for Better Auth | `http://localhost:3000` | `https://your-app.com` |
+| `ENCRYPTION_SECRET` | Secret for encrypting API keys. **Must match** the value in `.env.local` (at monorepo root) | Same as local | Same as local |
+
+#### Optional Variables (for webhook support)
+
+| Variable | Purpose | How to Get |
+|----------|---------|------------|
+| `CURSOR_WEBHOOK_URL` | Your Convex webhook endpoint | `https://your-deployment.convex.site/webhooks/cursor` |
+| `CURSOR_WEBHOOK_SECRET` | Secret for webhook signature verification | Generate with `openssl rand -hex 32` |
 
 **Where to find your Convex site URL:**
-- Check `NEXT_PUBLIC_CONVEX_SITE_URL` in your `apps/web/.env.local` file
+- Check `NEXT_PUBLIC_CONVEX_SITE_URL` in your `.env.local` file (at monorepo root)
 - Or find it in your Convex Dashboard under your deployment settings
+
+**Setting Variables in Convex Dashboard:**
+1. Go to [Convex Dashboard](https://dashboard.convex.dev)
+2. Select your deployment (dev or production)
+3. Navigate to **Settings → Environment Variables**
+4. Add the required variables for that deployment
+5. Repeat for your production deployment with production `SITE_URL`
 
 ### Generating Secrets
 
@@ -167,13 +192,28 @@ openssl rand -hex 32
 
 ### Quick Setup Summary
 
-1. **Create `apps/web/.env.local`** with `ENCRYPTION_SECRET` (generate with `openssl rand -base64 32`)
-2. **Run `bun run dev`** - Convex CLI will auto-generate the Convex variables
-3. **Set Convex Dashboard variables** - Go to Convex Dashboard → Settings → Environment Variables:
-   - `SITE_URL` = `http://localhost:3000` (for dev)
-   - `ENCRYPTION_SECRET` = same value as in `apps/web/.env.local`
-   - `CURSOR_WEBHOOK_URL` = `https://your-deployment.convex.site/webhooks/cursor` (optional)
-   - `CURSOR_WEBHOOK_SECRET` = generate with `openssl rand -hex 32` (optional)
+**Local Development:**
+1. **Create `.env.local` at monorepo root** with `ENCRYPTION_SECRET` (generate with `openssl rand -base64 32`)
+2. **Run `bun run dev`** from monorepo root - Convex CLI will auto-generate the 3 Convex variables
+3. You now have all 4 variables needed for local development ✅
+
+**Convex Dashboard (Dev Deployment):**
+1. Go to [Convex Dashboard](https://dashboard.convex.dev) → Select your dev deployment → Settings → Environment Variables
+2. Add required variables:
+   - `SITE_URL` = `http://localhost:3000`
+   - `ENCRYPTION_SECRET` = same value as in `.env.local` (at monorepo root)
+3. Add optional variables (for webhook support):
+   - `CURSOR_WEBHOOK_URL` = `https://your-deployment.convex.site/webhooks/cursor`
+   - `CURSOR_WEBHOOK_SECRET` = generate with `openssl rand -hex 32`
+
+**Convex Dashboard (Production Deployment):**
+1. Go to [Convex Dashboard](https://dashboard.convex.dev) → Select your production deployment → Settings → Environment Variables
+2. Add required variables:
+   - `SITE_URL` = `https://your-app.com` (your production URL)
+   - `ENCRYPTION_SECRET` = same value as in `.env.local` (at monorepo root)
+3. Add optional variables (for webhook support):
+   - `CURSOR_WEBHOOK_URL` = `https://your-production-deployment.convex.site/webhooks/cursor`
+   - `CURSOR_WEBHOOK_SECRET` = same value as dev (or generate a new one)
 
 > **⚠️ Important**: Never commit `.env.local` files to version control. They're already in `.gitignore`.
 
