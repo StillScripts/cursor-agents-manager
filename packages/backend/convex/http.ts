@@ -120,7 +120,7 @@ http.route({
       }
 
       // Update agent from webhook payload
-      await ctx.runMutation(internal.agents.updateFromWebhook, {
+      const updateResult = await ctx.runMutation(internal.agents.updateFromWebhook, {
         agentId: payload.id,
         status: payload.status,
         name: payload.name,
@@ -136,6 +136,20 @@ http.route({
       console.log(
         `[Webhook] Updated agent ${payload.id} to status ${payload.status}`
       )
+
+      // Send push notification if agent was updated successfully
+      if (updateResult.success && updateResult.userId && updateResult.agentName) {
+        try {
+          await ctx.runAction(internal.pushNotifications.sendAgentUpdateNotification, {
+            userId: updateResult.userId,
+            agentId: payload.id,
+            agentName: updateResult.agentName,
+          })
+        } catch (pushError) {
+          // Log error but don't fail the webhook
+          console.error("[Webhook] Error sending push notification:", pushError)
+        }
+      }
 
       return new Response(
         JSON.stringify({ success: true, agentId: payload.id }),
