@@ -583,6 +583,14 @@ export const updateFromWebhook = internalMutation({
 
     await ctx.db.patch(agent._id, updates)
 
-    return { success: true, agentId: args.agentId }
+    // Return agent info for push notifications
+    const updatedName = args.name !== undefined ? args.name : agent.name
+
+    return {
+      success: true,
+      agentId: args.agentId,
+      userId: agent.userId,
+      agentName: updatedName,
+    }
   },
 })

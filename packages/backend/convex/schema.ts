@@ -86,4 +86,17 @@ export default defineSchema({
     .index("by_task", ["taskId"])
     .index("by_user_task", ["userId", "taskId"])
     .index("by_user_created", ["userId", "createdAt"]),
+
+  pushSubscriptions: defineTable({
+    userId: v.string(),
+    endpoint: v.string(),
+    keys: v.object({
+      p256dh: v.string(),
+      auth: v.string(),
+    }),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_endpoint", ["endpoint"]),
 })

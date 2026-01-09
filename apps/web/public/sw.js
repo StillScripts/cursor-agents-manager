@@ -1,5 +1,5 @@
 // Service Worker for Cursor Agent Manager PWA
-// Version: 2.0.0 - Network First strategy for fresh content
+// Version: 2.1.0 - Network First strategy + Push Notifications
 
 const CACHE_NAME = "cursor-agent-manager-v2"
 const RUNTIME_CACHE = "cursor-agent-manager-runtime-v2"
@@ -140,6 +140,75 @@ self.addEventListener("fetch", (event) => {
           })
         })
     })
+  )
+})
+
+// Push event - handle push notifications
+self.addEventListener("push", (event) => {
+  let notificationData = {
+    title: "Agent Update",
+    body: "An agent has been updated.",
+    icon: "/android-chrome-192x192.png",
+    badge: "/favicon-32x32.png",
+    tag: "agent-update",
+    data: {},
+  }
+
+  // Parse push data if available
+  if (event.data) {
+    try {
+      const data = event.data.json()
+      if (data.agentName) {
+        notificationData.title = "Agent Update"
+        notificationData.body = `${data.agentName} has been updated.`
+        notificationData.tag = `agent-update-${data.agentId || Date.now()}`
+        notificationData.data = {
+          agentId: data.agentId,
+          url: data.url || "/",
+        }
+      }
+    } catch (error) {
+      console.error("[Service Worker] Error parsing push data:", error)
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(notificationData.title, {
+      body: notificationData.body,
+      icon: notificationData.icon,
+      badge: notificationData.badge,
+      tag: notificationData.tag,
+      data: notificationData.data,
+      requireInteraction: false,
+      silent: false,
+    })
+  )
+})
+
+// Notification click event - open the app
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close()
+
+  const urlToOpen = event.notification.data?.url || "/"
+
+  event.waitUntil(
+    clients
+      .matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      })
+      .then((clientList) => {
+        // Check if there's already a window/tab open with the target URL
+        for (const client of clientList) {
+          if (client.url === urlToOpen && "focus" in client) {
+            return client.focus()
+          }
+        }
+        // If no window is open, open a new one
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen)
+        }
+      })
   )
 })
 
