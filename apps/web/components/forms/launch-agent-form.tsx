@@ -315,6 +315,10 @@ export function LaunchAgentForm() {
                           description="Describe the task you want the agent to perform (10-5000 characters)"
                           placeholder="Add a README.md file with installation instructions..."
                           className="min-h-[120px]"
+                          onBranchNameRecommended={(branchName) => {
+                            // Auto-populate the recommended branch name
+                            form.setFieldValue("target.branchName", branchName)
+                          }}
                         />
                       ) : (
                         <field.ControlledTextarea

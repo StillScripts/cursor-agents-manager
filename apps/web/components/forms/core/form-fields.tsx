@@ -163,6 +163,7 @@ export const ControlledTextareaWithVoice = ({
   label,
   description,
   className,
+  onBranchNameRecommended,
   ...props
 }: FieldProps & ComponentProps<typeof TextareaWithVoice>) => {
   const fieldProps = getFieldProps(field, description, label)
@@ -179,6 +180,7 @@ export const ControlledTextareaWithVoice = ({
         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
           field.handleChange(e.currentTarget.value || undefined)
         }}
+        onBranchNameRecommended={onBranchNameRecommended}
         aria-invalid={fieldProps.isInvalid}
       />
       {description && <FieldDescription>{description}</FieldDescription>}
