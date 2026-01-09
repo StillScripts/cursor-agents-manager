@@ -270,7 +270,7 @@ export function LaunchAgentForm() {
         // the form is clean and doesn't show previous submission data
         form.reset(defaultFormValues)
 
-        router.push("/")
+        router.push("/agents")
       } catch (err) {
         setError(
           err instanceof Error ? err : new Error("Failed to launch agent")

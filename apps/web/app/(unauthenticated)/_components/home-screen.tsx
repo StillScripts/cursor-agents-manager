@@ -4,11 +4,12 @@ import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { GithubIcon as Github } from "@/components/ui/icons"
+import { useSession } from "@/lib/hooks/use-session"
 
 // ============================================================================
 // HEADER COMPONENT
 // ============================================================================
-function Header() {
+function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -47,31 +48,39 @@ function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <Link
-            href="https://github.com/StillScripts/cursor-agents-manager"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button variant="ghost" size="icon">
-              <Github className="h-5 w-5" />
-              <span className="sr-only">GitHub</span>
-            </Button>
-          </Link>
-          <Link
-            href="/signup"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hidden sm:inline-flex"
-          >
-            <Button>Get Started</Button>
-          </Link>
+          {isAuthenticated ? (
+            <Link href="/agents" className="hidden sm:inline-flex">
+              <Button>Go to Agents</Button>
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="https://github.com/StillScripts/cursor-agents-manager"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button variant="ghost" size="icon">
+                  <Github className="h-5 w-5" />
+                  <span className="sr-only">GitHub</span>
+                </Button>
+              </Link>
+              <Link
+                href="/signup"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden sm:inline-flex"
+              >
+                <Button>Get Started</Button>
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>
   )
 }
 
-function HeroSection() {
+function HeroSection({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <section className="relative overflow-hidden px-4 pb-12 pt-24 md:pb-20 md:pt-32">
       <div className="absolute inset-0 -z-10">
@@ -110,28 +119,39 @@ function HeroSection() {
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link
-              href="https://github.com/StillScripts/cursor-agents-manager"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button size="lg" className="gap-2">
-                <Github className="h-5 w-5" />
-                View on GitHub
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button
-                size="lg"
-                variant="outline"
-                className="gap-2 bg-transparent"
+          {isAuthenticated ? (
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Link href="/agents">
+                <Button size="lg" className="gap-2">
+                  Go to Agents
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Link
+                href="https://github.com/StillScripts/cursor-agents-manager"
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                See How It Works
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
+                <Button size="lg" className="gap-2">
+                  <Github className="h-5 w-5" />
+                  View on GitHub
+                </Button>
+              </Link>
+              <Link href="/signup">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="gap-2 bg-transparent"
+                >
+                  See How It Works
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          )}
 
           <Image
             src="/images/app-screenshot.png"
@@ -451,7 +471,11 @@ function ScreenshotsSection() {
 // ============================================================================
 // CTA SECTION COMPONENT
 // ============================================================================
-function CtaSection() {
+function CtaSection({ isAuthenticated }: { isAuthenticated: boolean }) {
+  if (isAuthenticated) {
+    return null // Don't show CTA section for logged-in users
+  }
+
   return (
     <section className="px-4 py-20 md:py-28">
       <div className="container mx-auto">
@@ -535,15 +559,18 @@ function Footer() {
 // MAIN HOMEPAGE SCREEN COMPONENT
 // ============================================================================
 export function HomepageScreen() {
+  const { user, isLoading } = useSession()
+  const isAuthenticated = !isLoading && !!user
+
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header isAuthenticated={isAuthenticated} />
       <main>
-        <HeroSection />
+        <HeroSection isAuthenticated={isAuthenticated} />
         <FeaturesSection />
         <HowItWorksSection />
         <ScreenshotsSection />
-        <CtaSection />
+        <CtaSection isAuthenticated={isAuthenticated} />
       </main>
       <Footer />
     </div>
