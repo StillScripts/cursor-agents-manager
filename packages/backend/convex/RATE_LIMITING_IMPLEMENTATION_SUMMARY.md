@@ -17,21 +17,21 @@ Rate limiting has been successfully implemented for all Cursor and OpenAI endpoi
 ### 3. Rate Limiter Configuration (`rateLimiting.ts`)
 Created a new file with:
 - **Cursor API rate limiters** (9 endpoints):
-  - `launchAgent`: 10 RPM
-  - `getAgents`: 30 RPM
-  - `getAgentById`: 30 RPM
-  - `getConversation`: 60 RPM
-  - `getConversationWithCursor`: 60 RPM
-  - `sendFollowUp`: 20 RPM
-  - `stopAgent`: 20 RPM
-  - `deleteAgent`: 10 RPM
-  - `getModels`: 30 RPM
+  - `launchAgent`: 5 RPM
+  - `getAgents`: 20 RPM
+  - `getAgentById`: 20 RPM
+  - `getConversation`: 30 RPM
+  - `getConversationWithCursor`: 30 RPM
+  - `sendFollowUp`: 10 RPM
+  - `stopAgent`: 5 RPM
+  - `deleteAgent`: 3 RPM
+  - `getModels`: 10 RPM
 
 - **OpenAI API rate limiters** (4 endpoints):
-  - `summarizeConversation`: 15 RPM
-  - `transcribeAudio`: 30 RPM
-  - `textToSpeech`: 30 RPM
-  - `improvePrompt`: 30 RPM
+  - `summarizeConversation`: 3 RPM
+  - `transcribeAudio`: 10 RPM
+  - `textToSpeech`: 10 RPM
+  - `improvePrompt`: 10 RPM
 
 - **Helper function** `checkRateLimit()` that:
   - Takes action context, rate limiter config, and userId
@@ -71,13 +71,13 @@ Rate limiting applied to all 4 OpenAI API actions:
 ### Rate Limit Rationale
 
 **Cursor Endpoints:**
-- **Launch/Delete (10 RPM)**: Most expensive operations, creating/deleting agents
-- **Modify Operations (20 RPM)**: Stop agent, send follow-up - modify agent state
-- **Read Operations (30-60 RPM)**: Get agents, conversations - reading data, less expensive
+- **Launch/Delete (3-5 RPM)**: Expensive operations, but realistic power users won't launch/delete 10+ agents per minute
+- **Modify Operations (5-10 RPM)**: Stop agent, send follow-up - modify agent state, but users don't do this constantly
+- **Read Operations (20-30 RPM)**: Get agents, conversations - reading data, allows for active monitoring and auto-refresh
 
 **OpenAI Endpoints:**
-- **Summarize (15 RPM)**: Most expensive, uses GPT-4 with long conversations
-- **Other Operations (30 RPM)**: Transcribe, TTS, improve prompt - moderate cost
+- **Summarize (3 RPM)**: Most expensive, but users typically generate 1-2 summaries per conversation, not 15 per minute
+- **Other Operations (10 RPM)**: Transcribe, TTS, improve prompt - moderate cost, but realistic usage is much lower than 30 per minute
 
 ## Error Handling
 

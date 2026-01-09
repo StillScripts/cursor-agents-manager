@@ -21,30 +21,30 @@ Rate limiter instances are defined in `rateLimiting.ts` with per-user rate limit
 
 ### Cursor API Endpoints
 
-Rate limits for Cursor API endpoints are set conservatively to prevent abuse while allowing reasonable usage:
+Rate limits for Cursor API endpoints are based on realistic power user usage patterns:
 
 | Endpoint | Rate Limit (RPM) | Rationale |
 |----------|------------------|-----------|
-| `launchAgent` | 10 | Expensive operation that creates new agents |
-| `getAgents` | 30 | Listing operations, less expensive |
-| `getAgentById` | 30 | Single agent fetch |
-| `getConversation` | 60 | Reading conversation data |
-| `getConversationWithCursor` | 60 | Reading conversation data with pagination |
-| `sendFollowUp` | 20 | Modifying agent state |
-| `stopAgent` | 20 | Modifying agent state |
-| `deleteAgent` | 10 | Destructive operation |
-| `getModels` | 30 | Cached, but still needs rate limiting |
+| `launchAgent` | 5 | Power users might launch 2-3 agents quickly, but not 10+ per minute |
+| `getAgents` | 20 | Refreshing agent list, reasonable for active monitoring |
+| `getAgentById` | 20 | Viewing individual agent details |
+| `getConversation` | 30 | Refreshing conversation view, auto-refresh scenarios |
+| `getConversationWithCursor` | 30 | Reading conversation data with pagination |
+| `sendFollowUp` | 10 | Sending follow-up messages to agents |
+| `stopAgent` | 5 | Stopping running agents |
+| `deleteAgent` | 3 | Destructive operation, should be rare |
+| `getModels` | 10 | Checking available models, usually cached |
 
 ### OpenAI API Endpoints
 
-Rate limits for OpenAI API endpoints are set conservatively to prevent abuse while allowing reasonable usage:
+Rate limits for OpenAI API endpoints are based on realistic power user usage patterns:
 
 | Endpoint | Rate Limit (RPM) | Rationale |
 |----------|------------------|-----------|
-| `summarizeConversation` | 15 | Expensive GPT-4 operation |
-| `transcribeAudio` | 30 | Whisper API, moderate cost |
-| `textToSpeech` | 30 | TTS API, moderate cost |
-| `improvePrompt` | 30 | GPT-4 operation, but shorter prompts |
+| `summarizeConversation` | 3 | Users typically generate 1-2 summaries per conversation, maybe 3-5 per hour |
+| `transcribeAudio` | 10 | Users might transcribe a few audio clips, but not 30 per minute |
+| `textToSpeech` | 10 | Similar to transcribe, generating audio for summaries |
+| `improvePrompt` | 10 | Users might improve prompts a few times, but not constantly |
 
 ## Usage Pattern
 
@@ -104,7 +104,7 @@ export const cursorRateLimiters = {
 
 1. **Per-User Rate Limiting**: Rate limits are applied per user (using `userId` in the rate limit key) to ensure fair usage across all users.
 
-2. **Conservative Limits**: Rate limits are set stricter than average usage patterns to prevent abuse while still allowing power users reasonable access.
+2. **Realistic Power User Limits**: Rate limits are based on realistic power user usage patterns - what a human could actually do, not theoretical maximums. This prevents abuse while allowing genuine power users to work efficiently.
 
 3. **Rate Limiting Applies to All Modes**: Rate limiting is applied even in simulation mode to prevent abuse of the endpoint itself, not just external API calls.
 
