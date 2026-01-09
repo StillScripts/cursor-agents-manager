@@ -1,6 +1,6 @@
 "use client"
 
-import { useQuery } from "convex/react"
+import { useAction, useQuery } from "convex/react"
 import { Bot } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { AgentCard } from "@/app/(authenticated)/_components/agent-card"
@@ -14,10 +14,12 @@ import type { Agent } from "@/lib/types"
 export function AgentsTable() {
   const [limit, setLimit] = useState(10)
   const hasLoadedOnce = useRef(false)
+  const hasSyncedOnce = useRef(false)
 
   // Use both useQuery (for loading state) and useStableQuery (for stable data)
   const rawQueryResult = useQuery(api.agents.listByUser, { limit })
   const dbResult = useStableQuery(api.agents.listByUser, { limit })
+  const syncAgents = useAction(api.cursor.getAgents)
 
   // Track if we've ever received a successful query result
   useEffect(() => {
@@ -25,6 +27,21 @@ export function AgentsTable() {
       hasLoadedOnce.current = true
     }
   }, [rawQueryResult])
+
+  // If no agents in DB, sync from Cursor API
+  useEffect(() => {
+    if (
+      hasLoadedOnce.current &&
+      rawQueryResult !== undefined &&
+      rawQueryResult.agents.length === 0 &&
+      !hasSyncedOnce.current
+    ) {
+      hasSyncedOnce.current = true
+      syncAgents({ limit }).catch((err) => {
+        console.error("Failed to sync agents from Cursor:", err)
+      })
+    }
+  }, [rawQueryResult, syncAgents, limit])
 
   // Transform database result to Agent format
   const agents: Agent[] =

@@ -238,16 +238,23 @@ export const getAgents = action({
       const cursorAgents: Agent[] = data.agents || []
       const hasMore = !!data.nextCursor
 
+      // Sort agents by createdAt descending (newest first) to match query ordering
+      const sortedAgents = [...cursorAgents].sort((a, b) => {
+        const aTime = new Date(a.createdAt).getTime()
+        const bTime = new Date(b.createdAt).getTime()
+        return bTime - aTime // Descending order
+      })
+
       // Sync fetched agents to database
-      if (cursorAgents.length > 0) {
+      if (sortedAgents.length > 0) {
         await ctx.runMutation(api.agents.batchUpsert, {
-          agents: cursorAgents.map(cursorAgentToDbFormat),
+          agents: sortedAgents.map(cursorAgentToDbFormat),
         })
       }
 
       return {
-        agents: cursorAgents,
-        total: cursorAgents.length,
+        agents: sortedAgents,
+        total: sortedAgents.length,
         hasMore,
         simulation: false,
       }
@@ -997,9 +1004,7 @@ export const getConversationWithCursor = action({
 
     // Live mode - call Cursor API with pagination support
     try {
-      const url = new URL(
-        `${CURSOR_API_URL}/${args.agentId}/conversation`
-      )
+      const url = new URL(`${CURSOR_API_URL}/${args.agentId}/conversation`)
 
       // Add cursor parameter if provided
       if (args.cursor) {
@@ -1026,14 +1031,11 @@ export const getConversationWithCursor = action({
         }
 
         const errorText = await response.text()
-        console.error(
-          "[Convex getConversationWithCursor] Cursor API error:",
-          {
-            status: response.status,
-            statusText: response.statusText,
-            body: errorText,
-          }
-        )
+        console.error("[Convex getConversationWithCursor] Cursor API error:", {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+        })
         throw new Error(`Cursor API error: ${response.status} - ${errorText}`)
       }
 
@@ -1043,21 +1045,21 @@ export const getConversationWithCursor = action({
       // If the response has a messages array directly, it's the conversation
       // If it has a conversation object, extract it
       let conversation: AgentConversation | null = null
-      let nextCursor: string | undefined = undefined
+      let nextCursor: string | undefined
 
       if (data.conversation) {
         conversation = data.conversation
         nextCursor = data.nextCursor
-      } else if (data.messages) {
-        // Response is the conversation itself
+      } else if (data.id && data.messages) {
+        // Response is already in AgentConversation format
+        conversation = data
+        nextCursor = data.nextCursor
+      } else if (data.messages && !data.id) {
+        // Response is the conversation itself (messages array without id)
         conversation = {
           id: args.agentId,
           messages: data.messages,
         }
-        nextCursor = data.nextCursor
-      } else if (data.id && data.messages) {
-        // Response is already in AgentConversation format
-        conversation = data
         nextCursor = data.nextCursor
       }
 
