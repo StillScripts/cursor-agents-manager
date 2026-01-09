@@ -36,26 +36,32 @@ A mobile-first Next.js application for managing Cursor background agents from an
    bun install
    ```
 
-3. **Setup Convex**
-   ```bash
-   cd packages/backend
-   bunx convex dev
-   ```
-   This will prompt you to create a Convex project and generate your environment variables.
-
-4. **Configure environment variables**
+3. **Configure environment variables**
    
-   Copy the example file and fill in your values:
+   Copy the example file:
    ```bash
-   cp .env.example .env.local
+   cp apps/web/.env.example apps/web/.env.local
    ```
    
-   See [Environment Variables](#-environment-variables) for details.
+   Generate your encryption secret and add it to `apps/web/.env.local`:
+   ```bash
+   openssl rand -base64 32
+   ```
+   
+   Edit `apps/web/.env.local` and set `ENCRYPTION_SECRET` to the generated value.
+   
+   > **Note**: The Convex variables (`CONVEX_DEPLOYMENT`, `NEXT_PUBLIC_CONVEX_URL`, `NEXT_PUBLIC_CONVEX_SITE_URL`) will be automatically generated when you run `bun run dev` for the first time. Convex will prompt you to create a project and add these values to your `.env.local` file.
+   
+   See [Environment Variables](#-environment-variables) for complete details.
 
-5. **Start development server**
+4. **Start development server**
    ```bash
    bun run dev
    ```
+   
+   This command starts both the Next.js dev server and Convex dev server together. On first run, Convex will:
+   - Prompt you to create a Convex project (if you haven't already)
+   - Generate and add the Convex environment variables to your `.env.local` file
 
 🎉 **Open [http://localhost:3000](http://localhost:3000)** and create your account!
 
@@ -79,20 +85,29 @@ A mobile-first Next.js application for managing Cursor background agents from an
 
 ### Local Environment (`.env.local`)
 
+Copy the example file and fill in your values:
+
+```bash
+cp apps/web/.env.example apps/web/.env.local
+```
+
 Your `.env.local` should contain:
 
 ```bash
-# Convex
-# Get these from: bunx convex dev (auto-generated)
+# Convex Configuration
+# These are auto-generated when you run `bun run dev` for the first time
 CONVEX_DEPLOYMENT=dev:your-deployment-name
 NEXT_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
 NEXT_PUBLIC_CONVEX_SITE_URL=https://your-deployment.convex.site
 
-# Encryption
+# Encryption Secret
 # Used for encrypting API keys stored in Convex
 # Generate with: openssl rand -base64 32
+# This same value must also be set in your Convex dashboard
 ENCRYPTION_SECRET=your-encryption-secret-min-32-chars
 ```
+
+> **Note**: The Convex variables (`CONVEX_DEPLOYMENT`, `NEXT_PUBLIC_CONVEX_URL`, `NEXT_PUBLIC_CONVEX_SITE_URL`) are automatically generated when you first run `bun run dev` and Convex prompts you to create a project.
 
 ### Convex Dashboard Environment Variables
 
