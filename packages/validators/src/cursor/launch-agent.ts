@@ -183,7 +183,10 @@ export const launchAgentFormSchema = launchAgentRequestSchema.extend({
         "Branch name can only contain letters, numbers, hyphens, underscores, and forward slashes"
       ),
   }),
-  taskId: z.string().optional().describe("Optional task ID to associate with this agent"),
+  taskId: z
+    .string()
+    .optional()
+    .describe("Optional task ID to associate with this agent"),
 })
 
 export type LaunchAgentFormData = z.infer<typeof launchAgentFormSchema>

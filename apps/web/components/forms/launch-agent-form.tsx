@@ -5,7 +5,7 @@ import { useAtomValue } from "jotai"
 import { AlertCircle, ExternalLink, Rocket, Settings } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import {
   type LaunchAgentFormData,
   launchAgentFormSchema,
@@ -18,23 +18,12 @@ import {
 } from "@/components/forms/core/form-fields"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
-  Field,
-  FieldContent,
   FieldDescription,
-  FieldError,
   FieldGroup,
-  FieldLabel,
   FieldLegend,
   FieldSeparator,
   FieldSet,
 } from "@/components/ui/field"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { ImageUpload } from "@/components/ui/image-upload"
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
@@ -186,73 +175,27 @@ const TaskSelectField = ({ field }: { field: any }) => {
     return null // Don't show the field if user has no tasks
   }
 
-  const options = useMemo(
-    () => [
-      { value: "", label: "None" },
-      ...(tasks?.map((task) => ({
-        value: String(task._id),
-        label: task.title,
-      })) || []),
-    ],
-    [tasks]
-  )
-
-  // Convert field value (Id<"tasks">) to string for Select component
-  // This ensures the value matches exactly with option values so SelectValue can display the label
-  const currentValue = useMemo(
-    () => (field.state.value ? String(field.state.value) : ""),
-    [field.state.value]
-  )
-
-  const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
-  const hasValue = Boolean(currentValue)
+  const taskOptions = [
+    { value: "", label: "None" },
+    ...(tasks?.map((task) => ({
+      value: task.title,
+      label: task.title,
+    })) || []),
+  ]
 
   return (
-    <Field data-invalid={isInvalid}>
-      <FieldLabel htmlFor={field.name}>Task (Optional)</FieldLabel>
-      <Select
-        value={currentValue || null}
-        onValueChange={(value: string) => {
-          const taskIdValue: Id<"tasks"> | undefined =
-            value === "" || value === null ? undefined : (value as Id<"tasks">)
-          field.handleChange(taskIdValue)
-          field.handleBlur()
-        }}
-      >
-        <SelectTrigger id={field.name} aria-invalid={isInvalid}>
-          {hasValue ? (
-            <SelectValue />
-          ) : (
-            <span className="text-muted-foreground">Select task...</span>
-          )}
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <FieldDescription>
-        Associate this agent with a task for better organization
-      </FieldDescription>
-      {isInvalid && (
-        <FieldError
-          errors={field.state.meta.errors.map((e) => {
-            const message =
-              typeof e === "string"
-                ? e
-                : e instanceof Error
-                  ? e.message
-                  : typeof e === "object" && e && "message" in e
-                    ? String(e.message)
-                    : "Validation error"
-            return message ? { message } : undefined
-          })}
-        />
-      )}
-    </Field>
+    <field.ControlledSelect
+      field={field}
+      label="Task (Optional)"
+      description="Associate this agent with a task you are working on"
+      placeholder="Select a task..."
+      options={taskOptions}
+      onValueChange={(value: string) => {
+        const taskIdValue: Id<"tasks"> | undefined =
+          value === "" || value === null ? undefined : (value as Id<"tasks">)
+        field.handleChange(taskIdValue)
+      }}
+    />
   )
 }
 
@@ -313,13 +256,14 @@ export function LaunchAgentForm() {
       setError(null)
 
       try {
+        const actualTaskId = tasks?.find((t) => t.title === value.taskId)?._id
         // Launch the agent via Convex action
         await launchAgentAction({
           prompt: value.prompt,
           source: value.source,
           model: value.model,
           target: value.target,
-          taskId: value.taskId,
+          taskId: actualTaskId,
         })
 
         // Reset form to default values before navigation
