@@ -60,6 +60,9 @@ const modelsCache = new ActionCache(components.actionCache, {
  * Convert a Cursor API agent to the format for our database
  */
 function cursorAgentToDbFormat(agent: Agent) {
+  // Use createdAt from Cursor API as updatedAt timestamp (milliseconds)
+  const updatedAt = new Date(agent.createdAt).getTime()
+
   return {
     agentId: agent.id,
     provider: "cursor" as const,
@@ -75,6 +78,7 @@ function cursorAgentToDbFormat(agent: Agent) {
     summary: agent.summary,
     providerData: { createdAt: agent.createdAt },
     createdAt: agent.createdAt,
+    updatedAt,
   }
 }
 
@@ -238,23 +242,16 @@ export const getAgents = action({
       const cursorAgents: Agent[] = data.agents || []
       const hasMore = !!data.nextCursor
 
-      // Sort agents by createdAt descending (newest first) to match query ordering
-      const sortedAgents = [...cursorAgents].sort((a, b) => {
-        const aTime = new Date(a.createdAt).getTime()
-        const bTime = new Date(b.createdAt).getTime()
-        return bTime - aTime // Descending order
-      })
-
-      // Sync fetched agents to database
-      if (sortedAgents.length > 0) {
+      // Sync fetched agents to database (updatedAt will be set from Cursor API createdAt)
+      if (cursorAgents.length > 0) {
         await ctx.runMutation(api.agents.batchUpsert, {
-          agents: sortedAgents.map(cursorAgentToDbFormat),
+          agents: cursorAgents.map(cursorAgentToDbFormat),
         })
       }
 
       return {
-        agents: sortedAgents,
-        total: sortedAgents.length,
+        agents: cursorAgents,
+        total: cursorAgents.length,
         hasMore,
         simulation: false,
       }
