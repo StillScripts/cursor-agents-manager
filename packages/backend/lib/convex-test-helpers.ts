@@ -2,8 +2,6 @@ import { convexTest } from "convex-test"
 import { vi } from "vitest"
 import * as authModule from "../convex/auth"
 import schema from "../convex/schema"
-import actionCache from "@convex-dev/action-cache/convex.config"
-import rateLimiter from "@convex-dev/rate-limiter/convex.config"
 
 // Manually import modules for Bun compatibility
 // Include _generated files so convex-test can find the modules root
@@ -23,7 +21,6 @@ const modules = {
   "./http.ts": () => import("../convex/http"),
   "./cursor.ts": () => import("../convex/cursor"),
   "./webhookActions.ts": () => import("../convex/webhookActions"),
-  "./rateLimiting.ts": () => import("../convex/rateLimiting"),
 }
 
 /**
@@ -40,10 +37,6 @@ const modules = {
  */
 export function createTestInstance() {
   const t = convexTest(schema, modules)
-
-  // Register components needed for tests
-  t.registerComponent("actionCache", actionCache)
-  t.registerComponent("rateLimiter", rateLimiter)
 
   // Mock getAuthenticatedUser to use the identity from convex-test
   // This bypasses Better Auth's database lookup
