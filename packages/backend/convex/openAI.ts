@@ -292,6 +292,7 @@ export const textToSpeech = action({
 
 /**
  * Improve a task description/prompt to make it clearer and more effective for an AI agent
+ * Also recommends a branch name based on the task type (feature/slug or hotfix/slug)
  */
 export const improvePrompt = action({
   args: {
@@ -327,9 +328,9 @@ export const improvePrompt = action({
     }
 
     try {
-      // Generate improved prompt using AI SDK
+      // Generate improved prompt and branch name using AI SDK
       const openaiProvider = createOpenAI({ apiKey: openaiApiKey })
-      const { text: improvedText } = await generateText({
+      const { text: response } = await generateText({
         model: openaiProvider("gpt-4o-mini"),
         prompt: `You are helping to improve task descriptions for AI coding agents. The user has provided a task description that they want to make clearer and more effective.
 
@@ -339,14 +340,56 @@ Your goal is to:
 3. Add context that would help an AI agent understand the goal better
 4. Maintain the original intent and tone
 5. Keep it concise but comprehensive
+6. Recommend a branch name based on the task type
+
+For the branch name:
+- If this is a new feature or enhancement, use format: feature/slug (e.g., feature/add-user-authentication)
+- If this is a bug fix, use format: hotfix/slug (e.g., hotfix/fix-login-error)
+- Create a short, descriptive slug (lowercase, use hyphens instead of spaces)
+- The slug should be 2-4 words that summarize the task
 
 Original task description:
 ${args.text}
 
-Improved task description:`,
+Respond in the following format:
+IMPROVED_DESCRIPTION:
+[Your improved task description here]
+
+BRANCH_NAME:
+[feature/slug or hotfix/slug]`,
       })
 
-      return { text: improvedText.trim() }
+      // Parse the response to extract improved text and branch name
+      // Try to match the structured format first
+      const improvedTextMatch = response.match(
+        /IMPROVED_DESCRIPTION:\s*([\s\S]+?)(?=\nBRANCH_NAME:|$)/
+      )
+      const branchNameMatch = response.match(/BRANCH_NAME:\s*(.+?)(?:\n|$)/)
+
+      let improvedText: string
+      let branchName: string | undefined
+
+      if (improvedTextMatch) {
+        // Structured format found
+        improvedText = improvedTextMatch[1].trim()
+        branchName = branchNameMatch
+          ? branchNameMatch[1].trim() || undefined
+          : undefined
+      } else {
+        // Fallback: use entire response as improved text
+        improvedText = response.trim()
+        branchName = undefined
+      }
+
+      // Validate branch name format (should start with feature/ or hotfix/)
+      if (branchName && !/^(feature|hotfix)\//.test(branchName)) {
+        branchName = undefined
+      }
+
+      return {
+        text: improvedText,
+        branchName: branchName || undefined,
+      }
     } catch (error) {
       console.error("[Convex improvePrompt] Error:", error)
       if (error instanceof OpenAI.APIError) {

@@ -74,7 +74,10 @@ export function useImprovePrompt() {
   return useMutation({
     mutationFn: async (text: string) => {
       const result = await improvePromptAction({ text })
-      return result.text
+      return {
+        text: result.text,
+        branchName: result.branchName,
+      }
     },
   })
 }

@@ -171,8 +171,8 @@ export const launchAgentFormSchema = launchAgentRequestSchema.extend({
       }, "Must be a valid GitHub repository URL (e.g., https://github.com/owner/repo)"),
     ref: z
       .string()
-      .min(1, "Base branch is required")
-      .max(100, "Branch name is too long"),
+      .max(100, "Branch name is too long")
+      .optional(),
   }),
   target: targetSchema.extend({
     branchName: z
