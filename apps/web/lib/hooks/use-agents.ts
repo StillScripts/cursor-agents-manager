@@ -223,9 +223,7 @@ export function useAgentConversationWithCursor(
       } catch (err) {
         if (!cancelled) {
           setError(
-            err instanceof Error
-              ? err.message
-              : "Failed to fetch conversation"
+            err instanceof Error ? err.message : "Failed to fetch conversation"
           )
           setConversationData(null)
         }
