@@ -11,6 +11,10 @@ import {
 } from "validators"
 import { api, internal } from "./_generated/api"
 import { action } from "./_generated/server"
+import {
+  checkRateLimit,
+  openAIRateLimiters,
+} from "./rateLimiting"
 
 /**
  * Summarize a conversation using OpenAI
@@ -22,6 +26,13 @@ export const summarizeConversation = action({
   handler: async (ctx, args) => {
     const authUser = await ctx.runQuery(
       internal.auth.getAuthenticatedUserInternal
+    )
+
+    // Check rate limit before calling OpenAI API
+    await checkRateLimit(
+      ctx,
+      openAIRateLimiters.summarizeConversation,
+      authUser.userId
     )
 
     // Get OpenAI API key
@@ -147,6 +158,13 @@ export const transcribeAudio = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
+    // Check rate limit before calling OpenAI API
+    await checkRateLimit(
+      ctx,
+      openAIRateLimiters.transcribeAudio,
+      authUser.userId
+    )
+
     // Get OpenAI API key
     const record = await ctx.runQuery(
       internal.apiKeys.getApiKeysRecordInternal,
@@ -237,6 +255,9 @@ export const textToSpeech = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
+    // Check rate limit before calling OpenAI API
+    await checkRateLimit(ctx, openAIRateLimiters.textToSpeech, authUser.userId)
+
     // Get OpenAI API key
     const record = await ctx.runQuery(
       internal.apiKeys.getApiKeysRecordInternal,
@@ -301,6 +322,9 @@ export const improvePrompt = action({
     const authUser = await ctx.runQuery(
       internal.auth.getAuthenticatedUserInternal
     )
+
+    // Check rate limit before calling OpenAI API
+    await checkRateLimit(ctx, openAIRateLimiters.improvePrompt, authUser.userId)
 
     // Get OpenAI API key
     const record = await ctx.runQuery(
