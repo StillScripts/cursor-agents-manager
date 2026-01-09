@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google"
 import type React from "react"
 import { Suspense } from "react"
 import "./globals.css"
+import { Analytics } from "@vercel/analytics/next"
 import { Providers } from "@/components/providers"
 import { PWAInstaller } from "@/components/pwa-installer"
 import { PWARegister } from "@/components/pwa-register"
@@ -115,6 +116,7 @@ export default function RootLayout({
             {children}
             <PWARegister />
             <PWAInstaller />
+            <Analytics />
           </Providers>
         </Suspense>
       </body>

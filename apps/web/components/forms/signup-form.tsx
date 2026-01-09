@@ -39,7 +39,7 @@ export function SignupForm() {
           email: value.email,
           password: value.password,
           name: value.name,
-          callbackURL: "/",
+          callbackURL: "/agents",
         })
 
         if (result.error) {
@@ -47,8 +47,8 @@ export function SignupForm() {
           return
         }
 
-        // Successfully signed up, redirect to home
-        router.push("/")
+        // Successfully signed up, redirect to agents page
+        router.push("/agents")
         router.refresh()
       } catch (_err) {
         setError("An unexpected error occurred")
