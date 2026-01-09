@@ -178,14 +178,28 @@ const TaskSelectField = ({ field }: { field: any }) => {
   const options = [
     { value: "", label: "None" },
     ...(tasks?.map((task) => ({
-      value: task._id,
+      value: String(task._id),
       label: task.title,
     })) || []),
   ]
 
+  // Convert field value (Id<"tasks">) to string for Select component
+  // This ensures SelectValue can properly match the value with options and display the label
+  const fieldValueAsString = field.state.value ? String(field.state.value) : ""
+
+  // Create a field-like object with string value for the Select component
+  // while preserving all field methods and state
+  const fieldWithStringValue = {
+    ...field,
+    state: {
+      ...field.state,
+      value: fieldValueAsString,
+    },
+  }
+
   return (
     <field.ControlledSelect
-      field={field}
+      field={fieldWithStringValue}
       label="Task (Optional)"
       description="Associate this agent with a task for better organization"
       placeholder="Select task..."
