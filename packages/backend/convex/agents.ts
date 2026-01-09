@@ -34,9 +34,12 @@ export const listByUser = query({
     const agents = await ctx.db
       .query("agents")
       .withIndex("by_user", (q) => q.eq("userId", authUser.userId))
-      .order("desc")
       .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .order("desc")
       .take(limit + 1) // Take one extra to check if there are more
+
+    // Sort by updatedAt descending (newest first)
+    agents.sort((a, b) => b.updatedAt - a.updatedAt)
 
     const hasMore = agents.length > limit
     const agentsToReturn = hasMore ? agents.slice(0, limit) : agents
@@ -92,6 +95,7 @@ export const batchUpsert = mutation({
         summary: v.optional(v.string()),
         providerData: v.optional(v.any()),
         createdAt: v.optional(v.string()),
+        updatedAt: v.optional(v.number()),
         taskId: v.optional(v.id("tasks")),
       })
     ),
@@ -143,7 +147,7 @@ export const batchUpsert = mutation({
           summary: agent.summary,
           providerData: agent.providerData,
           taskId: agent.taskId,
-          updatedAt: now,
+          updatedAt: agent.updatedAt ?? now,
           syncStatus: "synced",
           syncError: undefined,
         }
@@ -177,7 +181,7 @@ export const batchUpsert = mutation({
           summary: agent.summary,
           providerData: agent.providerData,
           taskId: agent.taskId,
-          updatedAt: now,
+          updatedAt: agent.updatedAt ?? now,
           syncStatus: "synced",
         })
         results.push({ _id: id, agentId: agent.agentId, updated: false })
