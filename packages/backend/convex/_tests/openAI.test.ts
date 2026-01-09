@@ -194,7 +194,8 @@ feature/add-user-authentication`
       const asUser = createTestWithUser()
       await setupApiKey(asUser)
 
-      const mockResponse = "This is an improved version without structured format"
+      const mockResponse =
+        "This is an improved version without structured format"
       getMockGenerateText().mockResolvedValue({
         text: mockResponse,
       } as any)

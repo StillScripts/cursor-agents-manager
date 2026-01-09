@@ -227,9 +227,7 @@ export function TextareaWithVoice({
                 (typeof value === "string" && !value.trim())
               }
               title={
-                isImproving
-                  ? "Improving prompt..."
-                  : "Improve prompt with AI"
+                isImproving ? "Improving prompt..." : "Improve prompt with AI"
               }
             >
               {isImproving ? (
