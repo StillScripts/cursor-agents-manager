@@ -2,18 +2,14 @@
 
 import { formatRelativeTime } from "helpers"
 import {
-  Bot,
   ExternalLink,
   Eye,
   EyeOff,
   GitBranch,
-  Send,
   Sparkles,
   StopCircle,
   Trash2,
-  User,
   Volume2,
-  Wrench,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
@@ -22,7 +18,8 @@ import remarkGfm from "remark-gfm"
 import { PageHeader } from "@/app/(authenticated)/_components/page-header"
 import { SimulationBanner } from "@/app/(authenticated)/_components/simulation-banner"
 import { StatusBadge } from "@/app/(authenticated)/_components/status-badge"
-import { TextareaWithVoice } from "@/components/ai/textarea-with-voice"
+import { ConversationSection } from "@/app/(authenticated)/agent/_components/conversation-section"
+import { FollowUpMessageInput } from "@/app/(authenticated)/agent/_components/follow-up-message-input"
 import {
   Accordion,
   AccordionContent,
@@ -42,48 +39,29 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
-import { Switch } from "@/components/ui/switch"
-import { Textarea } from "@/components/ui/textarea"
-import { filterMessagesForDisplay } from "@/lib/conversation-utils"
-import {
-  useAgent,
-  useAgentConversation,
-  useDeleteAgent,
-  useSendFollowUp,
-  useStopAgent,
-} from "@/lib/hooks/use-agents"
+import { useAgent, useDeleteAgent, useStopAgent } from "@/lib/hooks/use-agents"
 import { useSummarizeConversation, useTextToSpeech } from "@/lib/hooks/use-ai"
 import { useOpenAIKey } from "@/lib/hooks/use-openai-key"
-import type { Agent, AgentConversation } from "@/lib/types"
-import { cn } from "@/lib/utils"
-
-interface AgentDetailProps {
-  agentId: string
-  initialAgent?: (Agent & { simulation: boolean }) | null
-  initialConversation?: (AgentConversation & { simulation: boolean }) | null
-}
+import type { Agent } from "@/lib/types"
 
 export function AgentDetail({
   agentId,
   initialAgent,
-  initialConversation,
-}: AgentDetailProps) {
+}: {
+  agentId: string
+  initialAgent?: (Agent & { simulation: boolean }) | null
+}) {
   const router = useRouter()
-  const [followUpMessage, setFollowUpMessage] = useState("")
   const [openItems, setOpenItems] = useState<string[]>(["summary"])
   const [aiSummary, setAiSummary] = useState<string | null>(null)
   const [showSummary, setShowSummary] = useState(false)
-  const [showThinkingProcess, setShowThinkingProcess] = useState(false)
 
   const { data: agent, isLoading: agentLoading } = useAgent(
     agentId,
     initialAgent
   )
-  const { data: conversation, isLoading: conversationLoading } =
-    useAgentConversation(agentId, initialConversation)
   const stopAgent = useStopAgent()
   const deleteAgent = useDeleteAgent()
-  const sendFollowUp = useSendFollowUp()
   const summarizeConversation = useSummarizeConversation()
   const textToSpeech = useTextToSpeech()
   const { hasOpenAIKey } = useOpenAIKey()
@@ -124,13 +102,6 @@ export function AgentDetail({
   const handleDelete = async () => {
     await deleteAgent.mutateAsync(agentId)
     router.push("/agents")
-  }
-
-  const handleSendFollowUp = async () => {
-    if (!followUpMessage.trim()) return
-
-    await sendFollowUp.mutateAsync({ id: agentId, message: followUpMessage })
-    setFollowUpMessage("")
   }
 
   const handleSummarize = async () => {
@@ -194,10 +165,6 @@ export function AgentDetail({
 
   const repoName = agent.source.repository.split("/").slice(-2).join("/")
   const canStop = agent.status === "RUNNING" || agent.status === "CREATING"
-  const canSendFollowUp =
-    agent.status === "RUNNING" ||
-    agent.status === "FINISHED" ||
-    agent.status === "ERROR"
 
   return (
     <>
@@ -404,156 +371,10 @@ export function AgentDetail({
             </AccordionContent>
           </AccordionItem>
 
-          {/* Conversation Accordion */}
-          <AccordionItem
-            value="conversation"
-            className="border border-border rounded-xl overflow-hidden"
-          >
-            <AccordionTrigger className="px-4 py-3 bg-card hover:no-underline">
-              <span className="font-semibold text-foreground">
-                Conversation
-              </span>
-            </AccordionTrigger>
-            <AccordionContent className="bg-card">
-              <div className="px-4 pb-4">
-                {!initialConversation && conversationLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Spinner className="h-6 w-6 text-primary" />
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {/* Show Thinking Process Toggle */}
-                    <div className="flex items-center justify-between pb-2 border-b border-border">
-                      <label
-                        htmlFor="show-thinking-toggle"
-                        className="text-sm font-medium text-foreground cursor-pointer"
-                      >
-                        Show Thinking Process
-                      </label>
-                      <Switch
-                        id="show-thinking-toggle"
-                        checked={showThinkingProcess}
-                        onCheckedChange={setShowThinkingProcess}
-                      />
-                    </div>
-                    {filterMessagesForDisplay(
-                      conversation?.messages || [],
-                      showThinkingProcess
-                    ).map((message) => (
-                      <div
-                        key={message.id}
-                        className={cn(
-                          "p-3 rounded-xl text-sm",
-                          message.type === "user_message"
-                            ? "bg-primary/15 ml-8"
-                            : message.type === "tool_call" ||
-                                message.type === "tool_result"
-                              ? "bg-muted border border-border"
-                              : "bg-muted border border-border mr-8"
-                        )}
-                      >
-                        <div className="flex items-center gap-2 mb-1.5">
-                          {message.type === "user_message" ? (
-                            <User className="h-3.5 w-3.5 text-primary" />
-                          ) : message.type === "tool_call" ||
-                            message.type === "tool_result" ? (
-                            <Wrench className="h-3.5 w-3.5 text-muted-foreground" />
-                          ) : (
-                            <Bot className="h-3.5 w-3.5 text-muted-foreground" />
-                          )}
-                          <span className="text-xs font-medium text-muted-foreground">
-                            {message.type === "user_message"
-                              ? "You"
-                              : message.type === "tool_call"
-                                ? `Tool: ${message.toolName}`
-                                : message.type === "tool_result"
-                                  ? "Result"
-                                  : "Agent"}
-                          </span>
-                        </div>
-                        {message.type === "assistant_message" ? (
-                          <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-code:text-foreground prose-pre:bg-muted prose-pre:text-foreground prose-a:text-primary prose-blockquote:text-muted-foreground prose-ul:text-foreground prose-ol:text-foreground prose-li:text-foreground prose-h1:text-foreground prose-h2:text-foreground prose-h3:text-foreground prose-h4:text-foreground prose-h5:text-foreground prose-h6:text-foreground prose-hr:border-border prose-table:text-foreground prose-th:text-foreground prose-td:text-foreground">
-                            <ReactMarkdown
-                              remarkPlugins={[remarkGfm]}
-                              components={{
-                                a: ({ children, href }) => (
-                                  <a
-                                    href={href}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                  >
-                                    {children}
-                                  </a>
-                                ),
-                              }}
-                            >
-                              {message.text || "..."}
-                            </ReactMarkdown>
-                          </div>
-                        ) : (
-                          <p className="text-foreground whitespace-pre-wrap">
-                            {message.text || message.toolResult || "..."}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
+          <ConversationSection agentId={agentId} />
         </Accordion>
 
-        {/* Follow-up Message Section - Always visible below conversation */}
-        {canSendFollowUp && (
-          <div className="border border-border rounded-xl p-4 bg-card">
-            <div className="flex flex-col gap-3">
-              {hasOpenAIKey ? (
-                <TextareaWithVoice
-                  placeholder="Send a follow-up message to continue the task..."
-                  value={followUpMessage}
-                  onChange={(e) => setFollowUpMessage(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                      e.preventDefault()
-                      handleSendFollowUp()
-                    }
-                  }}
-                  className="min-h-[100px] resize-none"
-                />
-              ) : (
-                <Textarea
-                  placeholder="Send a follow-up message to continue the task..."
-                  value={followUpMessage}
-                  onChange={(e) => setFollowUpMessage(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                      e.preventDefault()
-                      handleSendFollowUp()
-                    }
-                  }}
-                  className="min-h-[100px] resize-none"
-                />
-              )}
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">
-                  Press ⌘+Enter or Ctrl+Enter to send
-                </span>
-                <Button
-                  onClick={handleSendFollowUp}
-                  disabled={!followUpMessage.trim() || sendFollowUp.isPending}
-                >
-                  {sendFollowUp.isPending ? (
-                    <Spinner className="h-4 w-4 mr-2" />
-                  ) : (
-                    <Send className="h-4 w-4 mr-2" />
-                  )}
-                  Send
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+        <FollowUpMessageInput agentId={agentId} />
       </div>
     </>
   )

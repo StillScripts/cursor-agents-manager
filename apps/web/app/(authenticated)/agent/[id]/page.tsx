@@ -18,11 +18,7 @@ export default async function AgentPage({ params }: PageProps) {
   // This avoids hitting the old Hono API routes
   return (
     <Suspense fallback={null}>
-      <AgentDetail
-        agentId={id}
-        initialAgent={null}
-        initialConversation={null}
-      />
+      <AgentDetail agentId={id} initialAgent={null} />
     </Suspense>
   )
 }
