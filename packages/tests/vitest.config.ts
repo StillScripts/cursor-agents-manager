@@ -3,8 +3,8 @@ import { defineConfig } from "vitest/config"
 export default defineConfig({
   test: {
     include: [
-      "./validators/**/*.test.ts",
-      "./helpers/**/*.test.ts",
+      "../validators/test/**/*.test.ts",
+      "../helpers/test/**/*.test.ts",
       "../backend/convex/_tests/**/*.test.ts",
     ],
     environment: "node",

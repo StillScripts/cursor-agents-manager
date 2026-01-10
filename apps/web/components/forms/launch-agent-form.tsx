@@ -175,10 +175,10 @@ const TaskSelectField = ({ field }: { field: any }) => {
     return null // Don't show the field if user has no tasks
   }
 
-  const options = [
+  const taskOptions = [
     { value: "", label: "None" },
     ...(tasks?.map((task) => ({
-      value: task._id,
+      value: task.title,
       label: task.title,
     })) || []),
   ]
@@ -187,13 +187,13 @@ const TaskSelectField = ({ field }: { field: any }) => {
     <field.ControlledSelect
       field={field}
       label="Task (Optional)"
-      description="Associate this agent with a task for better organization"
-      placeholder="Select task..."
-      options={options}
+      description="Associate this agent with a task you are working on"
+      placeholder="Select a task..."
+      options={taskOptions}
       onValueChange={(value: string) => {
-        const taskIdValue: Id<"tasks"> | undefined =
-          value === "" || value === null ? undefined : (value as Id<"tasks">)
-        field.handleChange(taskIdValue)
+        const taskTitleValue: string | undefined =
+          value === "" || value === null ? undefined : value
+        field.handleChange(taskTitleValue)
       }}
     />
   )
@@ -210,7 +210,7 @@ export function LaunchAgentForm() {
   const [error, setError] = useState<Error | null>(null)
 
   // Find matching task for active timer
-  const getDefaultTaskId = (): Id<"tasks"> | undefined => {
+  const getDefaultTaskTitle = (): string | undefined => {
     if (!activeTimer || !tasks) return undefined
 
     // First try to match by taskId if available
@@ -218,16 +218,16 @@ export function LaunchAgentForm() {
       const taskById = tasks.find(
         (t) => t._id === (activeTimer.taskId as Id<"tasks">)
       )
-      if (taskById) return taskById._id
+      if (taskById) return taskById.title
     }
 
     // Otherwise match by title
     const taskByTitle = tasks.find((t) => t.title === activeTimer.title)
-    return taskByTitle?._id
+    return taskByTitle?.title
   }
 
   // Default values for form reset
-  const defaultFormValues: LaunchAgentFormData & { taskId?: Id<"tasks"> } = {
+  const defaultFormValues: LaunchAgentFormData = {
     prompt: {
       text: "",
       images: [],
@@ -243,11 +243,11 @@ export function LaunchAgentForm() {
       skipReviewerRequest: false,
       branchName: "",
     },
-    taskId: getDefaultTaskId(),
+    taskId: getDefaultTaskTitle(),
   }
 
   // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
-  const form = useAppForm<LaunchAgentFormData & { taskId?: Id<"tasks"> }>({
+  const form = useAppForm<LaunchAgentFormData>({
     defaultValues: defaultFormValues,
     validators: {
       onSubmit: launchAgentFormSchema,
@@ -256,14 +256,36 @@ export function LaunchAgentForm() {
       setError(null)
 
       try {
-        // Launch the agent via Convex action
-        await launchAgentAction({
-          prompt: value.prompt,
-          source: value.source,
+        const actualTaskId = tasks?.find((t) => t.title === value.taskId)?._id
+
+        // Explicitly construct the payload to ensure all fields are included
+        const payload = {
+          prompt: {
+            text: value.prompt.text,
+            // Explicitly include images array (even if empty)
+            images: value.prompt.images || [],
+          },
+          source: {
+            repository: value.source.repository,
+            ref: value.source.ref,
+          },
           model: value.model,
-          target: value.target,
-          taskId: value.taskId,
-        })
+          target: value.target
+            ? {
+                autoCreatePr: value.target.autoCreatePr ?? false,
+                openAsCursorGithubApp:
+                  value.target.openAsCursorGithubApp ?? false,
+                skipReviewerRequest: value.target.skipReviewerRequest ?? false,
+                ...(value.target.branchName && {
+                  branchName: value.target.branchName,
+                }),
+              }
+            : undefined,
+          taskId: actualTaskId,
+        }
+
+        // Launch the agent via Convex action
+        await launchAgentAction(payload)
 
         // Reset form to default values before navigation
         // This ensures that when the user navigates back (especially in PWA),
@@ -315,6 +337,10 @@ export function LaunchAgentForm() {
                           description="Describe the task you want the agent to perform (10-5000 characters)"
                           placeholder="Add a README.md file with installation instructions..."
                           className="min-h-[120px]"
+                          onBranchNameRecommended={(branchName) => {
+                            // Auto-populate the recommended branch name
+                            form.setFieldValue("target.branchName", branchName)
+                          }}
                         />
                       ) : (
                         <field.ControlledTextarea
