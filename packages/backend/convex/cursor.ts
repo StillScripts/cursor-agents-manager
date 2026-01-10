@@ -515,9 +515,10 @@ export const launchAgent = action({
         prompt: {
           text: args.prompt.text,
           // Explicitly include images array if it exists and has items
-          ...(args.prompt.images && args.prompt.images.length > 0 && {
-            images: args.prompt.images,
-          }),
+          ...(args.prompt.images &&
+            args.prompt.images.length > 0 && {
+              images: args.prompt.images,
+            }),
         },
         source: args.source,
         ...(args.model && { model: args.model }),

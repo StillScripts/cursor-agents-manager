@@ -257,7 +257,7 @@ export function LaunchAgentForm() {
 
       try {
         const actualTaskId = tasks?.find((t) => t.title === value.taskId)?._id
-        
+
         // Explicitly construct the payload to ensure all fields are included
         const payload = {
           prompt: {
@@ -273,7 +273,8 @@ export function LaunchAgentForm() {
           target: value.target
             ? {
                 autoCreatePr: value.target.autoCreatePr ?? false,
-                openAsCursorGithubApp: value.target.openAsCursorGithubApp ?? false,
+                openAsCursorGithubApp:
+                  value.target.openAsCursorGithubApp ?? false,
                 skipReviewerRequest: value.target.skipReviewerRequest ?? false,
                 ...(value.target.branchName && {
                   branchName: value.target.branchName,
