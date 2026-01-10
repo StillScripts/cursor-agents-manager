@@ -23,6 +23,7 @@ const modules = {
   "./cursor.ts": () => import("../convex/cursor"),
   "./webhookActions.ts": () => import("../convex/webhookActions"),
   "./rateLimiting.ts": () => import("../convex/rateLimiting"),
+  "./users.ts": () => import("../convex/users"),
 }
 
 /**

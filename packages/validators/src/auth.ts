@@ -27,6 +27,17 @@ export const signInFormSchema = z.object({
   password: z.string().min(1, "Password is required"),
 })
 
+// Delete account confirmation schema
+export const deleteAccountSchema = z.object({
+  confirmation: z
+    .string()
+    .min(1, "Confirmation is required")
+    .refine((value) => value === "DELETE", {
+      message: 'You must type "DELETE" to confirm account deletion',
+    }),
+})
+
 // Type exports
 export type SignUpFormData = z.infer<typeof signUpFormSchema>
 export type SignInFormData = z.infer<typeof signInFormSchema>
+export type DeleteAccountFormData = z.infer<typeof deleteAccountSchema>

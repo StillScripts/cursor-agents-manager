@@ -16,8 +16,8 @@ export function SignOutButton() {
 
   return (
     <Button
-      variant="ghost"
-      className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+      variant="outline"
+      className="w-full justify-start text-foreground border-border bg-background hover:bg-muted"
       onClick={handleSignOut}
     >
       <LogOut className="h-5 w-5 mr-3" />
