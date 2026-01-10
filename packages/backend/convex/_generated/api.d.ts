@@ -24,6 +24,7 @@ import type * as syncAgents from "../syncAgents.js";
 import type * as tasks from "../tasks.js";
 import type * as timeLogs from "../timeLogs.js";
 import type * as types from "../types.js";
+import type * as users from "../users.js";
 import type * as webhookActions from "../webhookActions.js";
 
 import type {
@@ -49,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   tasks: typeof tasks;
   timeLogs: typeof timeLogs;
   types: typeof types;
+  users: typeof users;
   webhookActions: typeof webhookActions;
 }>;
 
