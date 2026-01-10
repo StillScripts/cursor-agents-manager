@@ -215,43 +215,43 @@ export function TaskList() {
           return (
             <div
               key={task._id}
-              className="rounded-lg bg-secondary/50 overflow-hidden"
+              className="rounded-lg bg-secondary/50 overflow-hidden w-full"
             >
-              <div className="group flex items-center gap-2 p-4">
+              <div className="group flex items-start gap-2 p-4 w-full">
                 <button
                   type="button"
                   onClick={() => toggleExpanded(task._id)}
                   className="flex-1 min-w-0 text-left rounded p-2 -m-2 transition-colors cursor-pointer"
                   aria-expanded={isExpanded}
                 >
-                  <p className="font-medium text-foreground truncate">
+                  <p className="font-medium text-foreground wrap-break-word">
                     {task.title}
                   </p>
                   {task.description && (
-                    <p className="text-sm text-muted-foreground truncate mt-0.5 whitespace-pre-wrap line-clamp-1">
+                    <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2 wrap-break-word">
                       {task.description}
                     </p>
                   )}
-                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1 font-medium text-primary">
+                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
+                    <span className="flex items-center gap-1 font-medium text-primary whitespace-nowrap">
                       <Clock className="w-3 h-3" />
                       {formatDuration(task.totalDuration)} total
                     </span>
                     <span>•</span>
-                    <span>
+                    <span className="whitespace-nowrap">
                       {task.entries.length}{" "}
                       {task.entries.length === 1 ? "entry" : "entries"}
                     </span>
                   </div>
                 </button>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 shrink-0">
                   <Dialog>
                     <DialogTrigger
                       render={
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-9 w-9 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -278,18 +278,18 @@ export function TaskList() {
                   </Dialog>
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size="icon"
                     onClick={() => handleContinue(task)}
                     disabled={activeTimer !== null}
-                    className="text-primary hover:text-primary hover:bg-primary/10 disabled:opacity-30"
+                    className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10 disabled:opacity-30"
+                    title="Continue"
                   >
-                    <PlayCircle className="w-4 h-4 mr-1" />
-                    Continue
+                    <PlayCircle className="w-4 h-4" />
                   </Button>
                   <button
                     type="button"
                     onClick={() => toggleExpanded(task._id)}
-                    className="text-muted-foreground hover:text-foreground transition-colors p-1 -m-1 rounded hover:bg-secondary/50"
+                    className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded hover:bg-secondary/50"
                     aria-expanded={isExpanded}
                     aria-label={isExpanded ? "Collapse task" : "Expand task"}
                   >
