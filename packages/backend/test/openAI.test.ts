@@ -89,8 +89,8 @@ import OpenAI from "openai"
 import {
   createTestInstance,
   createTestWithUser,
-} from "../../lib/convex-test-helpers"
-import { api } from "../_generated/api"
+} from "../lib/convex-test-helpers"
+import { api } from "../convex/_generated/api"
 
 // Helper getters for mock functions - access via globalThis
 const getMockTranscriptionsCreate = () =>

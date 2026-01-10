@@ -3,8 +3,8 @@ import {
   createTestInstance,
   createTestUsers,
   createTestWithUser,
-} from "../../lib/convex-test-helpers"
-import { api } from "../_generated/api"
+} from "../lib/convex-test-helpers"
+import { api } from "../convex/_generated/api"
 
 describe("apiKeys", () => {
   beforeEach(() => {
