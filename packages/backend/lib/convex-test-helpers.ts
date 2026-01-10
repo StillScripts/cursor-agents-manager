@@ -1,3 +1,4 @@
+import rateLimiterTest from "@convex-dev/rate-limiter/test"
 import { convexTest } from "convex-test"
 import { vi } from "vitest"
 import * as authModule from "../convex/auth"
@@ -21,6 +22,7 @@ const modules = {
   "./http.ts": () => import("../convex/http"),
   "./cursor.ts": () => import("../convex/cursor"),
   "./webhookActions.ts": () => import("../convex/webhookActions"),
+  "./rateLimiting.ts": () => import("../convex/rateLimiting"),
 }
 
 /**
@@ -37,6 +39,10 @@ const modules = {
  */
 export function createTestInstance() {
   const t = convexTest(schema, modules)
+
+  // Register rate limiter component (required for actions that use rate limiting)
+  // Use the test helper provided by @convex-dev/rate-limiter
+  rateLimiterTest.register(t)
 
   // Mock getAuthenticatedUser to use the identity from convex-test
   // This bypasses Better Auth's database lookup
