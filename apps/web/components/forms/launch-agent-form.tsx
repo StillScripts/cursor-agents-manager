@@ -210,7 +210,7 @@ export function LaunchAgentForm() {
   const [error, setError] = useState<Error | null>(null)
 
   // Find matching task for active timer
-  const getDefaultTaskId = (): Id<"tasks"> | undefined => {
+  const getDefaultTaskTitle = (): string | undefined => {
     if (!activeTimer || !tasks) return undefined
 
     // First try to match by taskId if available
@@ -218,16 +218,16 @@ export function LaunchAgentForm() {
       const taskById = tasks.find(
         (t) => t._id === (activeTimer.taskId as Id<"tasks">)
       )
-      if (taskById) return taskById._id
+      if (taskById) return taskById.title
     }
 
     // Otherwise match by title
     const taskByTitle = tasks.find((t) => t.title === activeTimer.title)
-    return taskByTitle?._id
+    return taskByTitle?.title
   }
 
   // Default values for form reset
-  const defaultFormValues: LaunchAgentFormData & { taskId?: Id<"tasks"> } = {
+  const defaultFormValues: LaunchAgentFormData = {
     prompt: {
       text: "",
       images: [],
@@ -243,11 +243,11 @@ export function LaunchAgentForm() {
       skipReviewerRequest: false,
       branchName: "",
     },
-    taskId: getDefaultTaskId(),
+    taskId: getDefaultTaskTitle(),
   }
 
   // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
-  const form = useAppForm<LaunchAgentFormData & { taskId?: Id<"tasks"> }>({
+  const form = useAppForm<LaunchAgentFormData>({
     defaultValues: defaultFormValues,
     validators: {
       onSubmit: launchAgentFormSchema,
