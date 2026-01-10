@@ -5,7 +5,7 @@ import { useAtomValue } from "jotai"
 import { AlertCircle, ExternalLink, Rocket, Settings } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import {
   type LaunchAgentFormData,
   launchAgentFormSchema,
@@ -209,8 +209,8 @@ export function LaunchAgentForm() {
   // Error state
   const [error, setError] = useState<Error | null>(null)
 
-  // Find matching task title for active timer
-  const getDefaultTaskTitle = (): string | undefined => {
+  // Find matching task for active timer
+  const getDefaultTaskId = (): string | undefined => {
     if (!activeTimer || !tasks) return undefined
 
     // First try to match by taskId if available
@@ -243,7 +243,7 @@ export function LaunchAgentForm() {
       skipReviewerRequest: false,
       branchName: "",
     },
-    taskId: getDefaultTaskTitle(),
+    taskId: getDefaultTaskId(),
   }
 
   // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
@@ -280,31 +280,6 @@ export function LaunchAgentForm() {
       }
     },
   })
-
-  // Update task field when active timer changes
-  useEffect(() => {
-    if (!activeTimer || !tasks) {
-      form.setFieldValue("taskId", undefined)
-      return
-    }
-
-    // First try to match by taskId if available
-    if (activeTimer.taskId) {
-      const taskById = tasks.find(
-        (t) => t._id === (activeTimer.taskId as Id<"tasks">)
-      )
-      if (taskById) {
-        form.setFieldValue("taskId", taskById.title)
-        return
-      }
-    }
-
-    // Otherwise match by title
-    const taskByTitle = tasks.find((t) => t.title === activeTimer.title)
-    if (taskByTitle) {
-      form.setFieldValue("taskId", taskByTitle.title)
-    }
-  }, [activeTimer, tasks, form])
 
   const errorMessage = error?.message ?? null
   const isGitHubAccessError = errorMessage?.includes(
