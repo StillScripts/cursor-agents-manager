@@ -257,14 +257,35 @@ export function LaunchAgentForm() {
 
       try {
         const actualTaskId = tasks?.find((t) => t.title === value.taskId)?._id
-        // Launch the agent via Convex action
-        await launchAgentAction({
-          prompt: value.prompt,
-          source: value.source,
+
+        // Explicitly construct the payload to ensure all fields are included
+        const payload = {
+          prompt: {
+            text: value.prompt.text,
+            // Explicitly include images array (even if empty)
+            images: value.prompt.images || [],
+          },
+          source: {
+            repository: value.source.repository,
+            ref: value.source.ref,
+          },
           model: value.model,
-          target: value.target,
+          target: value.target
+            ? {
+                autoCreatePr: value.target.autoCreatePr ?? false,
+                openAsCursorGithubApp:
+                  value.target.openAsCursorGithubApp ?? false,
+                skipReviewerRequest: value.target.skipReviewerRequest ?? false,
+                ...(value.target.branchName && {
+                  branchName: value.target.branchName,
+                }),
+              }
+            : undefined,
           taskId: actualTaskId,
-        })
+        }
+
+        // Launch the agent via Convex action
+        await launchAgentAction(payload)
 
         // Reset form to default values before navigation
         // This ensures that when the user navigates back (especially in PWA),

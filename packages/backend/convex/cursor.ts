@@ -510,9 +510,16 @@ export const launchAgent = action({
 
     // Live mode - call Cursor API
     try {
-      // Build request body
+      // Build request body - explicitly include all fields, especially images
       const requestBody: LaunchAgentRequest = {
-        prompt: args.prompt,
+        prompt: {
+          text: args.prompt.text,
+          // Explicitly include images array if it exists and has items
+          ...(args.prompt.images &&
+            args.prompt.images.length > 0 && {
+              images: args.prompt.images,
+            }),
+        },
         source: args.source,
         ...(args.model && { model: args.model }),
         ...(args.target && {
