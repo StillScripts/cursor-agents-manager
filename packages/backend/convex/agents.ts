@@ -233,7 +233,7 @@ export const getByAgentIdInternal = internalQuery({
 /**
  * Internal query to find agents created in the past day that are not finished
  * Used by the nightly sync job
- * 
+ *
  * Note: We use updatedAt to find recently created agents since new agents
  * have updatedAt set to their creation time. This also catches agents that
  * were recently updated, which is fine for syncing purposes.
@@ -246,7 +246,9 @@ export const getAgentsNeedingSync = internalQuery({
     // Get all agents updated/created in the past day using the index
     const allAgents = await ctx.db
       .query("agents")
-      .withIndex("by_updated_at", (q) => q.gte("updatedAt", args.sinceTimestamp))
+      .withIndex("by_updated_at", (q) =>
+        q.gte("updatedAt", args.sinceTimestamp)
+      )
       .collect()
 
     // Filter for agents that:
