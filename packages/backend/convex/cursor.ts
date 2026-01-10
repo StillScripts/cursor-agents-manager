@@ -923,6 +923,20 @@ export const getConversation = action({
 
       const conversation: AgentConversation = await response.json()
 
+      // Automatically sync conversation to Convex database
+      try {
+        await ctx.runMutation(internal.conversations.upsertConversation, {
+          userId: authUser.userId,
+          conversation,
+        })
+      } catch (error) {
+        // Log error but don't fail the request if sync fails
+        console.error(
+          "[Convex getConversation] Error syncing conversation:",
+          error
+        )
+      }
+
       return {
         conversation,
         simulation: false,
@@ -1058,6 +1072,22 @@ export const getConversationWithCursor = action({
           messages: data.messages,
         }
         nextCursor = data.nextCursor
+      }
+
+      // Automatically sync conversation to Convex database if we have a conversation
+      if (conversation) {
+        try {
+          await ctx.runMutation(internal.conversations.upsertConversation, {
+            userId: authUser.userId,
+            conversation,
+          })
+        } catch (error) {
+          // Log error but don't fail the request if sync fails
+          console.error(
+            "[Convex getConversationWithCursor] Error syncing conversation:",
+            error
+          )
+        }
       }
 
       return {

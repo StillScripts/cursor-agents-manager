@@ -86,4 +86,33 @@ export default defineSchema({
     .index("by_task", ["taskId"])
     .index("by_user_task", ["userId", "taskId"])
     .index("by_user_created", ["userId", "createdAt"]),
+
+  conversations: defineTable({
+    // External agent ID from Cursor (e.g., bc-109be4f0-c6b3-4112-8a2e-4ef48e65486d)
+    agentId: v.string(),
+    userId: v.string(),
+    // Conversation ID from Cursor API (usually same as agentId)
+    conversationId: v.string(),
+    // Array of messages matching Cursor API format
+    messages: v.array(
+      v.object({
+        id: v.string(),
+        type: v.union(
+          v.literal("user_message"),
+          v.literal("assistant_message"),
+          v.literal("tool_call"),
+          v.literal("tool_result")
+        ),
+        text: v.optional(v.string()),
+        toolName: v.optional(v.string()),
+        toolInput: v.optional(v.any()),
+        toolResult: v.optional(v.string()),
+      })
+    ),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_agent", ["agentId"])
+    .index("by_user_agent", ["userId", "agentId"])
+    .index("by_conversation", ["conversationId"]),
 })
