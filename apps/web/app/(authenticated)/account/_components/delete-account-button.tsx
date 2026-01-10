@@ -5,9 +5,10 @@ import { AlertTriangle, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import {
-  deleteAccountSchema,
   type DeleteAccountFormData,
+  deleteAccountSchema,
 } from "validators/auth"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,11 +20,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { api } from "@/convex/_generated/api"
-import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 import { signOut } from "@/lib/better-auth/auth-client"
+import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 
 export function DeleteAccountButton() {
   const router = useRouter()
@@ -31,6 +31,7 @@ export function DeleteAccountButton() {
   const [isOpen, setIsOpen] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
+  // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
   const form = useAppForm<DeleteAccountFormData>({
     defaultValues: {
       confirmation: "",
@@ -38,7 +39,7 @@ export function DeleteAccountButton() {
     validators: {
       onSubmit: deleteAccountSchema,
     },
-    onSubmit: async ({ value }) => {
+    onSubmit: async () => {
       setError(null)
 
       try {
