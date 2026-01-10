@@ -1,7 +1,4 @@
-import { RefreshCw } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { PageHeader } from "./page-header"
 
 export const AgentCardSkeleton = () => {
   return (
@@ -21,28 +18,13 @@ export const AgentCardSkeleton = () => {
 }
 
 export function AgentListSkeleton() {
-  const refreshButton = (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="h-8 w-8"
-      disabled
-      aria-label="Refresh agents"
-    >
-      <RefreshCw className="h-4 w-4 animate-spin" />
-    </Button>
-  )
-
   return (
-    <>
-      <PageHeader title="Your Agents" action={refreshButton} />
-      <div className="px-3 py-2">
-        <div className="flex flex-col gap-4 sm:gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <AgentCardSkeleton key={i} />
-          ))}
-        </div>
+    <div className="px-3 py-2">
+      <div className="flex flex-col gap-4 sm:gap-6">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <AgentCardSkeleton key={i} />
+        ))}
       </div>
-    </>
+    </div>
   )
 }

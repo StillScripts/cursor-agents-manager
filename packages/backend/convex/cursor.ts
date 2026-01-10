@@ -11,6 +11,7 @@ import type {
 } from "validators"
 import { api, components, internal } from "./_generated/api"
 import { action, internalAction } from "./_generated/server"
+import { checkRateLimit, cursorRateLimiters } from "./rateLimiting"
 
 const CURSOR_API_URL = "https://api.cursor.com/v0/agents"
 const CURSOR_MODELS_API_URL = "https://api.cursor.com/v0/models"
@@ -22,6 +23,36 @@ const SIMULATED_MODELS = [
   "gpt-4o-mini",
   "o1-preview",
 ]
+
+/**
+ * Internal action to get and decrypt Cursor API key for a user
+ * Returns null if no API key is configured or decryption fails
+ */
+export const getCursorApiKey = internalAction({
+  args: {
+    userId: v.string(),
+  },
+  handler: async (ctx, args): Promise<string | null> => {
+    // Get encrypted API key record
+    const record = await ctx.runQuery(
+      internal.apiKeys.getApiKeysRecordInternal,
+      {
+        userId: args.userId,
+      }
+    )
+
+    // Decrypt API key if it exists
+    if (record?.encryptedCursorApiKey) {
+      try {
+        return decryptData(record.encryptedCursorApiKey)
+      } catch {
+        return null
+      }
+    }
+
+    return null
+  },
+})
 
 /**
  * Internal action to fetch models from Cursor API
@@ -147,6 +178,9 @@ export const getAgents = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
+    // Check rate limit before making external API calls
+    await checkRateLimit(ctx, cursorRateLimiters.getAgents, authUser.userId)
+
     // Get agents from the database
     const dbAgents = await ctx.runQuery(internal.agents.listByUserInternal, {
       userId: authUser.userId,
@@ -163,23 +197,10 @@ export const getAgents = action({
       }
     }
 
-    // Get encrypted API key record
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
-      {
-        userId: authUser.userId,
-      }
-    )
-
-    // Decrypt API key if it exists
-    let apiKey: string | null = null
-    if (record?.encryptedCursorApiKey) {
-      try {
-        apiKey = decryptData(record.encryptedCursorApiKey)
-      } catch {
-        apiKey = null
-      }
-    }
+    // Get and decrypt API key
+    const apiKey = await ctx.runAction(internal.cursor.getCursorApiKey, {
+      userId: authUser.userId,
+    })
 
     const simulationMode = !apiKey
 
@@ -302,7 +323,7 @@ export const getAgentById = action({
       agentId: args.agentId,
     })
 
-    // If found in DB, return it
+    // If found in DB, return it (no rate limit check needed for cached data)
     if (dbAgent) {
       return {
         agent: dbAgentToApiFormat(dbAgent),
@@ -310,23 +331,12 @@ export const getAgentById = action({
       }
     }
 
-    // Get encrypted API key record
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
-      {
-        userId: authUser.userId,
-      }
-    )
+    // Get and decrypt API key
+    const apiKey = await ctx.runAction(internal.cursor.getCursorApiKey, {
+      userId: authUser.userId,
+    })
 
-    // Decrypt API key if it exists
-    let apiKey: string | null = null
-    if (record?.encryptedCursorApiKey) {
-      try {
-        apiKey = decryptData(record.encryptedCursorApiKey)
-      } catch {
-        apiKey = null
-      }
-    }
+    await checkRateLimit(ctx, cursorRateLimiters.getAgentById, authUser.userId)
 
     const simulationMode = !apiKey
 
@@ -450,23 +460,11 @@ export const launchAgent = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
-    // Get encrypted API key record
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
-      {
-        userId: authUser.userId,
-      }
-    )
+    const apiKey = await ctx.runAction(internal.cursor.getCursorApiKey, {
+      userId: authUser.userId,
+    })
 
-    // Decrypt API key if it exists
-    let apiKey: string | null = null
-    if (record?.encryptedCursorApiKey) {
-      try {
-        apiKey = decryptData(record.encryptedCursorApiKey)
-      } catch {
-        apiKey = null
-      }
-    }
+    await checkRateLimit(ctx, cursorRateLimiters.launchAgent, authUser.userId)
 
     // Check if we're in simulation mode (no API key)
     const simulationMode = !apiKey
@@ -510,9 +508,16 @@ export const launchAgent = action({
 
     // Live mode - call Cursor API
     try {
-      // Build request body
+      // Build request body - explicitly include all fields, especially images
       const requestBody: LaunchAgentRequest = {
-        prompt: args.prompt,
+        prompt: {
+          text: args.prompt.text,
+          // Explicitly include images array if it exists and has items
+          ...(args.prompt.images &&
+            args.prompt.images.length > 0 && {
+              images: args.prompt.images,
+            }),
+        },
         source: args.source,
         ...(args.model && { model: args.model }),
         ...(args.target && {
@@ -605,6 +610,9 @@ export const stopAgent = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
+    // Check rate limit before stopping agent
+    await checkRateLimit(ctx, cursorRateLimiters.stopAgent, authUser.userId)
+
     // Get agent from database
     const dbAgent = await ctx.runQuery(internal.agents.getByIdInternal, {
       userId: authUser.userId,
@@ -615,23 +623,10 @@ export const stopAgent = action({
       throw new Error("Agent not found")
     }
 
-    // Get encrypted API key record
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
-      {
-        userId: authUser.userId,
-      }
-    )
-
-    // Decrypt API key if it exists
-    let apiKey: string | null = null
-    if (record?.encryptedCursorApiKey) {
-      try {
-        apiKey = decryptData(record.encryptedCursorApiKey)
-      } catch {
-        apiKey = null
-      }
-    }
+    // Get and decrypt API key
+    const apiKey = await ctx.runAction(internal.cursor.getCursorApiKey, {
+      userId: authUser.userId,
+    })
 
     const simulationMode = !apiKey
 
@@ -684,6 +679,9 @@ export const deleteAgent = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
+    // Check rate limit before deleting agent
+    await checkRateLimit(ctx, cursorRateLimiters.deleteAgent, authUser.userId)
+
     // Get agent from database
     const dbAgent = await ctx.runQuery(internal.agents.getByIdInternal, {
       userId: authUser.userId,
@@ -694,23 +692,10 @@ export const deleteAgent = action({
       throw new Error("Agent not found")
     }
 
-    // Get encrypted API key record
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
-      {
-        userId: authUser.userId,
-      }
-    )
-
-    // Decrypt API key if it exists
-    let apiKey: string | null = null
-    if (record?.encryptedCursorApiKey) {
-      try {
-        apiKey = decryptData(record.encryptedCursorApiKey)
-      } catch {
-        apiKey = null
-      }
-    }
+    // Get and decrypt API key
+    const apiKey = await ctx.runAction(internal.cursor.getCursorApiKey, {
+      userId: authUser.userId,
+    })
 
     const simulationMode = !apiKey
 
@@ -757,10 +742,22 @@ export const sendFollowUp = action({
     agentId: v.string(),
     message: v.string(),
   },
-  handler: async (ctx, args) => {
-    const authUser = await ctx.runQuery(
+  handler: async (
+    ctx,
+    args
+  ): Promise<
+    {
+      success: boolean
+      simulation: boolean
+      message?: string
+    } & Record<string, unknown>
+  > => {
+    const authUser: { userId: string } = await ctx.runQuery(
       internal.auth.getAuthenticatedUserInternal
     )
+
+    // Check rate limit before sending follow-up
+    await checkRateLimit(ctx, cursorRateLimiters.sendFollowUp, authUser.userId)
 
     // Get agent from database
     const dbAgent = await ctx.runQuery(internal.agents.getByIdInternal, {
@@ -772,23 +769,13 @@ export const sendFollowUp = action({
       throw new Error("Agent not found")
     }
 
-    // Get encrypted API key record
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
+    // Get and decrypt API key
+    const apiKey: string | null = await ctx.runAction(
+      internal.cursor.getCursorApiKey,
       {
         userId: authUser.userId,
       }
     )
-
-    // Decrypt API key if it exists
-    let apiKey: string | null = null
-    if (record?.encryptedCursorApiKey) {
-      try {
-        apiKey = decryptData(record.encryptedCursorApiKey)
-      } catch {
-        apiKey = null
-      }
-    }
 
     const simulationMode = !apiKey
 
@@ -803,7 +790,7 @@ export const sendFollowUp = action({
 
     // Live mode - call Cursor API
     try {
-      const response = await fetch(
+      const response: Response = await fetch(
         `${CURSOR_API_URL}/${args.agentId}/followup`,
         {
           method: "POST",
@@ -822,7 +809,7 @@ export const sendFollowUp = action({
         throw new Error(`Cursor API error: ${response.status} - ${errorText}`)
       }
 
-      const data = await response.json()
+      const data: Record<string, unknown> = await response.json()
 
       // Refresh agent data in database
       await ctx.runAction(api.cursor.getAgentById, {
@@ -861,23 +848,16 @@ export const getConversation = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
-    // Get encrypted API key record
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
-      {
-        userId: authUser.userId,
-      }
-    )
+    // Get and decrypt API key
+    const apiKey = await ctx.runAction(internal.cursor.getCursorApiKey, {
+      userId: authUser.userId,
+    })
 
-    // Decrypt API key if it exists
-    let apiKey: string | null = null
-    if (record?.encryptedCursorApiKey) {
-      try {
-        apiKey = decryptData(record.encryptedCursorApiKey)
-      } catch {
-        apiKey = null
-      }
-    }
+    await checkRateLimit(
+      ctx,
+      cursorRateLimiters.getConversation,
+      authUser.userId
+    )
 
     const simulationMode = !apiKey
 
@@ -923,6 +903,20 @@ export const getConversation = action({
 
       const conversation: AgentConversation = await response.json()
 
+      // Automatically sync conversation to Convex database
+      try {
+        await ctx.runMutation(internal.conversations.upsertConversation, {
+          userId: authUser.userId,
+          conversation,
+        })
+      } catch (error) {
+        // Log error but don't fail the request if sync fails
+        console.error(
+          "[Convex getConversation] Error syncing conversation:",
+          error
+        )
+      }
+
       return {
         conversation,
         simulation: false,
@@ -962,23 +956,16 @@ export const getConversationWithCursor = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
-    // Get encrypted API key record
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
-      {
-        userId: authUser.userId,
-      }
-    )
+    // Get and decrypt API key
+    const apiKey = await ctx.runAction(internal.cursor.getCursorApiKey, {
+      userId: authUser.userId,
+    })
 
-    // Decrypt API key if it exists
-    let apiKey: string | null = null
-    if (record?.encryptedCursorApiKey) {
-      try {
-        apiKey = decryptData(record.encryptedCursorApiKey)
-      } catch {
-        apiKey = null
-      }
-    }
+    await checkRateLimit(
+      ctx,
+      cursorRateLimiters.getConversationWithCursor,
+      authUser.userId
+    )
 
     const simulationMode = !apiKey
 
@@ -1060,6 +1047,22 @@ export const getConversationWithCursor = action({
         nextCursor = data.nextCursor
       }
 
+      // Automatically sync conversation to Convex database if we have a conversation
+      if (conversation) {
+        try {
+          await ctx.runMutation(internal.conversations.upsertConversation, {
+            userId: authUser.userId,
+            conversation,
+          })
+        } catch (error) {
+          // Log error but don't fail the request if sync fails
+          console.error(
+            "[Convex getConversationWithCursor] Error syncing conversation:",
+            error
+          )
+        }
+      }
+
       return {
         conversation,
         nextCursor,
@@ -1073,6 +1076,81 @@ export const getConversationWithCursor = action({
       throw error instanceof Error
         ? error
         : new Error("Failed to fetch conversation")
+    }
+  },
+})
+
+/**
+ * Internal action to fetch and sync conversation from Cursor API
+ * Used by webhooks to update conversation when agent status changes
+ */
+export const syncConversationFromWebhook = internalAction({
+  args: {
+    userId: v.string(),
+    agentId: v.string(),
+  },
+  handler: async (ctx, args): Promise<{ success: boolean; error?: string }> => {
+    try {
+      // Get and decrypt API key
+      const apiKey = await ctx.runAction(internal.cursor.getCursorApiKey, {
+        userId: args.userId,
+      })
+
+      // If no API key, skip syncing (user might be in simulation mode)
+      if (!apiKey) {
+        return { success: false, error: "No API key configured" }
+      }
+
+      // Fetch conversation from Cursor API
+      const response = await fetch(
+        `${CURSOR_API_URL}/${args.agentId}/conversation`,
+        {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+        }
+      )
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          // Conversation doesn't exist yet, which is fine
+          return { success: true }
+        }
+
+        const errorText = await response.text()
+        console.error(
+          "[Convex syncConversationFromWebhook] Cursor API error:",
+          {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText,
+          }
+        )
+        return {
+          success: false,
+          error: `Cursor API error: ${response.status} - ${errorText}`,
+        }
+      }
+
+      const conversation: AgentConversation = await response.json()
+
+      // Update conversation in Convex database
+      await ctx.runMutation(internal.conversations.upsertConversation, {
+        userId: args.userId,
+        conversation,
+      })
+
+      return { success: true }
+    } catch (error) {
+      console.error(
+        "[Convex syncConversationFromWebhook] Error syncing conversation:",
+        error
+      )
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      }
     }
   },
 })
@@ -1093,23 +1171,11 @@ export const getModels = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
-    // Get encrypted API key record
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
-      {
-        userId: authUser.userId,
-      }
-    )
+    const apiKey = await ctx.runAction(internal.cursor.getCursorApiKey, {
+      userId: authUser.userId,
+    })
 
-    // Decrypt API key if it exists
-    let apiKey: string | null = null
-    if (record?.encryptedCursorApiKey) {
-      try {
-        apiKey = decryptData(record.encryptedCursorApiKey)
-      } catch {
-        apiKey = null
-      }
-    }
+    await checkRateLimit(ctx, cursorRateLimiters.getModels, authUser.userId)
 
     const simulationMode = !apiKey
 
