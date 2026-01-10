@@ -98,12 +98,11 @@ export function extractUserMessagesAndLastAssistant(
 
     // Find the last assistant_message in this turn (the summary)
     let lastAssistant: AgentMessage | null = null
-    for (let i = turn.length - 1; i >= 0; i--) {
-      if (turn[i].type === "assistant_message") {
-        lastAssistant = turn[i]
-        break
-      }
-    }
+    lastAssistant =
+      turn
+        .slice()
+        .reverse()
+        .find((msg) => msg.type === "assistant_message") ?? null
 
     // Add the last assistant message if found
     if (lastAssistant) {

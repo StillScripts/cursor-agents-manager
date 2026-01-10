@@ -13,6 +13,7 @@ import type * as apiKeys from "../apiKeys.js";
 import type * as apiKeysActions from "../apiKeysActions.js";
 import type * as auth from "../auth.js";
 import type * as branches from "../branches.js";
+import type * as conversations from "../conversations.js";
 import type * as cursor from "../cursor.js";
 import type * as http from "../http.js";
 import type * as openAI from "../openAI.js";
@@ -35,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   apiKeysActions: typeof apiKeysActions;
   auth: typeof auth;
   branches: typeof branches;
+  conversations: typeof conversations;
   cursor: typeof cursor;
   http: typeof http;
   openAI: typeof openAI;

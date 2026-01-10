@@ -137,6 +137,34 @@ http.route({
         `[Webhook] Updated agent ${payload.id} to status ${payload.status}`
       )
 
+      // Sync conversation from Cursor API
+      // This fetches the latest conversation data and updates the Convex DB
+      try {
+        const syncResult = await ctx.runAction(
+          internal.cursor.syncConversationFromWebhook,
+          {
+            userId: agent.userId,
+            agentId: payload.id,
+          }
+        )
+
+        if (syncResult.success) {
+          console.log(`[Webhook] Synced conversation for agent ${payload.id}`)
+        } else {
+          // Log error but don't fail the webhook (conversation sync is best-effort)
+          console.warn(
+            `[Webhook] Failed to sync conversation for agent ${payload.id}:`,
+            syncResult.error
+          )
+        }
+      } catch (error) {
+        // Log error but don't fail the webhook (conversation sync is best-effort)
+        console.warn(
+          `[Webhook] Error syncing conversation for agent ${payload.id}:`,
+          error
+        )
+      }
+
       return new Response(
         JSON.stringify({ success: true, agentId: payload.id }),
         { status: 200, headers: { "Content-Type": "application/json" } }

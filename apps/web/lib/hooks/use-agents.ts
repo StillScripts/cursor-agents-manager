@@ -1,12 +1,21 @@
 "use client"
 
 import { useMutation } from "@tanstack/react-query"
-import { useAction } from "convex/react"
+import {
+  useAction,
+  useMutation as useConvexMutation,
+  useQuery,
+} from "convex/react"
 import { useEffect, useState } from "react"
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
 import { useStableQuery } from "@/lib/hooks/use-stable-query"
-import type { Agent, AgentConversation, LaunchAgentRequest } from "@/lib/types"
+import type {
+  Agent,
+  AgentConversation,
+  AgentMessage,
+  LaunchAgentRequest,
+} from "@/lib/types"
 
 export const AGENTS_QUERY_KEY = ["agents"] as const
 
@@ -106,66 +115,33 @@ export function useAgent(
   }
 }
 
-export function useAgentConversation(
-  id: string,
-  initialData?: (AgentConversation & { simulation: boolean }) | null
-) {
-  const [conversationData, setConversationData] = useState<
-    (AgentConversation & { simulation: boolean }) | null
-  >(initialData ?? null)
-  const [isLoading, setIsLoading] = useState(!initialData)
-  const [error, setError] = useState<string | null>(null)
-
-  const getConversation = useAction(api.cursor.getConversation)
-
-  useEffect(() => {
-    if (!id) return
-
-    let cancelled = false
-
-    const fetchConversation = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
-        const result = await getConversation({ agentId: id })
-        if (!cancelled) {
-          if (result.conversation) {
-            setConversationData({
-              ...result.conversation,
-              simulation: result.simulation,
-            })
-          } else {
-            setConversationData(null)
-          }
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(
-            err instanceof Error ? err.message : "Failed to fetch conversation"
-          )
-          setConversationData(null)
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    // Only load once on mount/when id changes.
-    // Convex will handle resyncing the underlying data when it updates.
-    void fetchConversation()
-
-    return () => {
-      cancelled = true
-    }
-  }, [id, getConversation])
+export function useAgentConversation(id: string) {
+  const conversationData = useQuery(api.conversations.getByAgentId, {
+    agentId: id,
+  })
 
   return {
     data: conversationData,
-    isLoading,
-    error,
+    isLoading: !conversationData,
+    error: null,
   }
+}
+
+export function useAppendUserMessage() {
+  const appendUserMessage = useConvexMutation(
+    api.conversations.appendUserMessage
+  )
+  return useMutation({
+    mutationFn: async ({
+      agentId,
+      message,
+    }: {
+      agentId: string
+      message: string
+    }) => {
+      return await appendUserMessage({ agentId, message })
+    },
+  })
 }
 
 /**
@@ -267,7 +243,7 @@ export function useAgentConversationWithCursor(
           // Combine messages, avoiding duplicates
           const existingIds = new Set(prev.messages.map((m) => m.id))
           const newMessages = result.conversation!.messages.filter(
-            (m) => !existingIds.has(m.id)
+            (m: AgentMessage) => !existingIds.has(m.id)
           )
 
           return {
