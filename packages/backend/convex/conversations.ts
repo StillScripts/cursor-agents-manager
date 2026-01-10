@@ -1,5 +1,10 @@
 import { v } from "convex/values"
-import { internalMutation, internalQuery, query } from "./_generated/server"
+import {
+  internalMutation,
+  internalQuery,
+  mutation,
+  query,
+} from "./_generated/server"
 import { getAuthenticatedUser } from "./auth"
 
 /**
@@ -43,6 +48,49 @@ export const getByAgentIdInternal = internalQuery({
       .first()
 
     return conversation
+  },
+})
+
+/**
+ * Public mutation to append a user message to an existing conversation
+ */
+export const appendUserMessage = mutation({
+  args: {
+    agentId: v.string(),
+    message: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const authUser = await getAuthenticatedUser(ctx)
+
+    // Find the existing conversation
+    const existing = await ctx.db
+      .query("conversations")
+      .withIndex("by_user_agent", (q) =>
+        q.eq("userId", authUser.userId).eq("agentId", args.agentId)
+      )
+      .first()
+
+    if (!existing) {
+      throw new Error("Conversation not found")
+    }
+
+    // Create the new user message
+    const newMessage = {
+      id: `temp-${Date.now()}`,
+      type: "user_message" as const,
+      text: args.message,
+    }
+
+    // Append the message to the existing messages
+    const updatedMessages = [...existing.messages, newMessage]
+
+    // Update the conversation
+    await ctx.db.patch(existing._id, {
+      messages: updatedMessages,
+      updatedAt: Date.now(),
+    })
+
+    return { _id: existing._id, messageId: newMessage.id }
   },
 })
 

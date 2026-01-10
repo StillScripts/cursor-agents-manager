@@ -722,8 +722,17 @@ export const sendFollowUp = action({
     agentId: v.string(),
     message: v.string(),
   },
-  handler: async (ctx, args) => {
-    const authUser = await ctx.runQuery(
+  handler: async (
+    ctx,
+    args
+  ): Promise<
+    {
+      success: boolean
+      simulation: boolean
+      message?: string
+    } & Record<string, unknown>
+  > => {
+    const authUser: { userId: string } = await ctx.runQuery(
       internal.auth.getAuthenticatedUserInternal
     )
 
@@ -738,9 +747,12 @@ export const sendFollowUp = action({
     }
 
     // Get and decrypt API key
-    const apiKey = await ctx.runAction(internal.cursor.getCursorApiKey, {
-      userId: authUser.userId,
-    })
+    const apiKey: string | null = await ctx.runAction(
+      internal.cursor.getCursorApiKey,
+      {
+        userId: authUser.userId,
+      }
+    )
 
     const simulationMode = !apiKey
 
@@ -755,7 +767,7 @@ export const sendFollowUp = action({
 
     // Live mode - call Cursor API
     try {
-      const response = await fetch(
+      const response: Response = await fetch(
         `${CURSOR_API_URL}/${args.agentId}/followup`,
         {
           method: "POST",
@@ -774,7 +786,7 @@ export const sendFollowUp = action({
         throw new Error(`Cursor API error: ${response.status} - ${errorText}`)
       }
 
-      const data = await response.json()
+      const data: Record<string, unknown> = await response.json()
 
       // Refresh agent data in database
       await ctx.runAction(api.cursor.getAgentById, {
