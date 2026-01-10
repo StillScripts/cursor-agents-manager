@@ -184,14 +184,6 @@ describe("launchAgentFormSchema", () => {
     expect(() => launchAgentFormSchema.parse(data)).toThrow()
   })
 
-  it("requires ref in form source", () => {
-    const data = {
-      ...validFormData,
-      source: { repository: "https://github.com/user/repo" },
-    }
-    expect(() => launchAgentFormSchema.parse(data)).toThrow()
-  })
-
   it("rejects ref longer than 100 characters", () => {
     const data = {
       ...validFormData,

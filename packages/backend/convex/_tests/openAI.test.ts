@@ -143,23 +143,90 @@ describe("openAI", () => {
       ).rejects.toThrow("Text cannot be empty")
     })
 
-    it("successfully improves prompt", async () => {
+    it("successfully improves prompt with branch name", async () => {
       const asUser = createTestWithUser()
       await setupApiKey(asUser)
 
-      const mockImprovedText = "This is an improved version of the prompt"
+      const mockResponse = `IMPROVED_DESCRIPTION:
+This is an improved version of the prompt
+
+BRANCH_NAME:
+hotfix/fix-bug`
       getMockGenerateText().mockResolvedValue({
-        text: mockImprovedText,
+        text: mockResponse,
       } as any)
 
       const result = await asUser.action(api.openAI.improvePrompt, {
         text: "fix bug",
       })
 
-      expect(result.text).toBe(mockImprovedText)
+      expect(result.text).toBe("This is an improved version of the prompt")
+      expect(result.branchName).toBe("hotfix/fix-bug")
       expect(getMockGenerateText()).toHaveBeenCalledTimes(1)
       const callArgs = getMockGenerateText().mock.calls[0][0]
       expect(callArgs.prompt).toContain("fix bug")
+    })
+
+    it("successfully improves prompt with feature branch name", async () => {
+      const asUser = createTestWithUser()
+      await setupApiKey(asUser)
+
+      const mockResponse = `IMPROVED_DESCRIPTION:
+Add user authentication feature with login and signup
+
+BRANCH_NAME:
+feature/add-user-authentication`
+      getMockGenerateText().mockResolvedValue({
+        text: mockResponse,
+      } as any)
+
+      const result = await asUser.action(api.openAI.improvePrompt, {
+        text: "add login",
+      })
+
+      expect(result.text).toBe(
+        "Add user authentication feature with login and signup"
+      )
+      expect(result.branchName).toBe("feature/add-user-authentication")
+    })
+
+    it("handles response without structured format", async () => {
+      const asUser = createTestWithUser()
+      await setupApiKey(asUser)
+
+      const mockResponse =
+        "This is an improved version without structured format"
+      getMockGenerateText().mockResolvedValue({
+        text: mockResponse,
+      } as any)
+
+      const result = await asUser.action(api.openAI.improvePrompt, {
+        text: "test",
+      })
+
+      expect(result.text).toBe(mockResponse)
+      expect(result.branchName).toBeUndefined()
+    })
+
+    it("ignores invalid branch name format", async () => {
+      const asUser = createTestWithUser()
+      await setupApiKey(asUser)
+
+      const mockResponse = `IMPROVED_DESCRIPTION:
+Improved text
+
+BRANCH_NAME:
+invalid-branch-name`
+      getMockGenerateText().mockResolvedValue({
+        text: mockResponse,
+      } as any)
+
+      const result = await asUser.action(api.openAI.improvePrompt, {
+        text: "test",
+      })
+
+      expect(result.text).toBe("Improved text")
+      expect(result.branchName).toBeUndefined()
     })
 
     it("throws error for invalid API key", async () => {

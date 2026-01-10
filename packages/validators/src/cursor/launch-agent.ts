@@ -169,10 +169,7 @@ export const launchAgentFormSchema = launchAgentRequestSchema.extend({
           return false
         }
       }, "Must be a valid GitHub repository URL (e.g., https://github.com/owner/repo)"),
-    ref: z
-      .string()
-      .min(1, "Base branch is required")
-      .max(100, "Branch name is too long"),
+    ref: z.string().max(100, "Branch name is too long").optional(),
   }),
   target: targetSchema.extend({
     branchName: z
@@ -183,6 +180,10 @@ export const launchAgentFormSchema = launchAgentRequestSchema.extend({
         "Branch name can only contain letters, numbers, hyphens, underscores, and forward slashes"
       ),
   }),
+  taskId: z
+    .string()
+    .optional()
+    .describe("Optional task ID to associate with this agent"),
 })
 
 export type LaunchAgentFormData = z.infer<typeof launchAgentFormSchema>

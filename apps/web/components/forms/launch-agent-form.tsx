@@ -175,10 +175,10 @@ const TaskSelectField = ({ field }: { field: any }) => {
     return null // Don't show the field if user has no tasks
   }
 
-  const options = [
+  const taskOptions = [
     { value: "", label: "None" },
     ...(tasks?.map((task) => ({
-      value: task._id,
+      value: task.title,
       label: task.title,
     })) || []),
   ]
@@ -187,9 +187,9 @@ const TaskSelectField = ({ field }: { field: any }) => {
     <field.ControlledSelect
       field={field}
       label="Task (Optional)"
-      description="Associate this agent with a task for better organization"
-      placeholder="Select task..."
-      options={options}
+      description="Associate this agent with a task you are working on"
+      placeholder="Select a task..."
+      options={taskOptions}
       onValueChange={(value: string) => {
         const taskIdValue: Id<"tasks"> | undefined =
           value === "" || value === null ? undefined : (value as Id<"tasks">)
@@ -256,13 +256,14 @@ export function LaunchAgentForm() {
       setError(null)
 
       try {
+        const actualTaskId = tasks?.find((t) => t.title === value.taskId)?._id
         // Launch the agent via Convex action
         await launchAgentAction({
           prompt: value.prompt,
           source: value.source,
           model: value.model,
           target: value.target,
-          taskId: value.taskId,
+          taskId: actualTaskId,
         })
 
         // Reset form to default values before navigation
@@ -315,6 +316,10 @@ export function LaunchAgentForm() {
                           description="Describe the task you want the agent to perform (10-5000 characters)"
                           placeholder="Add a README.md file with installation instructions..."
                           className="min-h-[120px]"
+                          onBranchNameRecommended={(branchName) => {
+                            // Auto-populate the recommended branch name
+                            form.setFieldValue("target.branchName", branchName)
+                          }}
                         />
                       ) : (
                         <field.ControlledTextarea

@@ -18,6 +18,7 @@ interface TextareaWithVoiceProps
   extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   onTranscribed?: (text: string) => void
   appendTranscription?: boolean
+  onBranchNameRecommended?: (branchName: string) => void
 }
 
 export function TextareaWithVoice({
@@ -26,6 +27,7 @@ export function TextareaWithVoice({
   value,
   onChange,
   className,
+  onBranchNameRecommended,
   ...props
 }: TextareaWithVoiceProps) {
   const [isRecording, setIsRecording] = useState(false)
@@ -178,15 +180,20 @@ export function TextareaWithVoice({
     }
 
     try {
-      const improvedText = await improvePrompt.mutateAsync(currentValue)
+      const result = await improvePrompt.mutateAsync(currentValue)
 
       if (onChange) {
         const syntheticEvent = {
-          target: { value: improvedText },
-          currentTarget: { value: improvedText },
+          target: { value: result.text },
+          currentTarget: { value: result.text },
         } as React.ChangeEvent<HTMLTextAreaElement>
 
         onChange(syntheticEvent)
+      }
+
+      // Callback for branch name if provided
+      if (result.branchName && onBranchNameRecommended) {
+        onBranchNameRecommended(result.branchName)
       }
     } catch (error) {
       console.error("Error improving prompt:", error)
@@ -194,6 +201,7 @@ export function TextareaWithVoice({
   }
 
   const isProcessing = isTranscribing || transcribe.isPending
+  const isImproving = improvePrompt.isPending
 
   return (
     <div className="relative w-full">
@@ -214,13 +222,19 @@ export function TextareaWithVoice({
               variant="ghost"
               onClick={handleImprovePrompt}
               disabled={
-                improvePrompt.isPending ||
+                isImproving ||
                 !value ||
                 (typeof value === "string" && !value.trim())
               }
-              title="Improve prompt with AI"
+              title={
+                isImproving ? "Improving prompt..." : "Improve prompt with AI"
+              }
             >
-              <Sparkles className="h-3.5 w-3.5" />
+              {isImproving ? (
+                <Spinner className="h-3.5 w-3.5" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
             </InputGroupButton>
             {isSupported && (
               <InputGroupButton
@@ -250,9 +264,14 @@ export function TextareaWithVoice({
           </InputGroupAddon>
         )}
       </InputGroup>
-      {(isRecording || isProcessing) && (
+      {(isRecording || isProcessing || isImproving) && (
         <div className="absolute bottom-2 left-2 flex items-center gap-2 px-2 py-1 bg-background/80 backdrop-blur-sm rounded-md text-xs text-muted-foreground border border-border/50">
-          {isProcessing ? (
+          {isImproving ? (
+            <>
+              <Spinner className="h-3 w-3" />
+              <span>Improving task description...</span>
+            </>
+          ) : isProcessing ? (
             <>
               <Spinner className="h-3 w-3" />
               <span>Transcribing audio...</span>
