@@ -11,6 +11,7 @@ import type {
 } from "validators"
 import { api, components, internal } from "./_generated/api"
 import { action, internalAction } from "./_generated/server"
+import { checkRateLimit, cursorRateLimiters } from "./rateLimiting"
 
 const CURSOR_API_URL = "https://api.cursor.com/v0/agents"
 const CURSOR_MODELS_API_URL = "https://api.cursor.com/v0/models"
@@ -177,6 +178,9 @@ export const getAgents = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
+    // Check rate limit before making external API calls
+    await checkRateLimit(ctx, cursorRateLimiters.getAgents, authUser.userId)
+
     // Get agents from the database
     const dbAgents = await ctx.runQuery(internal.agents.listByUserInternal, {
       userId: authUser.userId,
@@ -319,7 +323,7 @@ export const getAgentById = action({
       agentId: args.agentId,
     })
 
-    // If found in DB, return it
+    // If found in DB, return it (no rate limit check needed for cached data)
     if (dbAgent) {
       return {
         agent: dbAgentToApiFormat(dbAgent),
@@ -331,6 +335,8 @@ export const getAgentById = action({
     const apiKey = await ctx.runAction(internal.cursor.getCursorApiKey, {
       userId: authUser.userId,
     })
+
+    await checkRateLimit(ctx, cursorRateLimiters.getAgentById, authUser.userId)
 
     const simulationMode = !apiKey
 
@@ -454,10 +460,11 @@ export const launchAgent = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
-    // Get and decrypt API key
     const apiKey = await ctx.runAction(internal.cursor.getCursorApiKey, {
       userId: authUser.userId,
     })
+
+    await checkRateLimit(ctx, cursorRateLimiters.launchAgent, authUser.userId)
 
     // Check if we're in simulation mode (no API key)
     const simulationMode = !apiKey
@@ -501,9 +508,16 @@ export const launchAgent = action({
 
     // Live mode - call Cursor API
     try {
-      // Build request body
+      // Build request body - explicitly include all fields, especially images
       const requestBody: LaunchAgentRequest = {
-        prompt: args.prompt,
+        prompt: {
+          text: args.prompt.text,
+          // Explicitly include images array if it exists and has items
+          ...(args.prompt.images &&
+            args.prompt.images.length > 0 && {
+              images: args.prompt.images,
+            }),
+        },
         source: args.source,
         ...(args.model && { model: args.model }),
         ...(args.target && {
@@ -596,6 +610,9 @@ export const stopAgent = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
+    // Check rate limit before stopping agent
+    await checkRateLimit(ctx, cursorRateLimiters.stopAgent, authUser.userId)
+
     // Get agent from database
     const dbAgent = await ctx.runQuery(internal.agents.getByIdInternal, {
       userId: authUser.userId,
@@ -661,6 +678,9 @@ export const deleteAgent = action({
     const authUser = await ctx.runQuery(
       internal.auth.getAuthenticatedUserInternal
     )
+
+    // Check rate limit before deleting agent
+    await checkRateLimit(ctx, cursorRateLimiters.deleteAgent, authUser.userId)
 
     // Get agent from database
     const dbAgent = await ctx.runQuery(internal.agents.getByIdInternal, {
@@ -735,6 +755,9 @@ export const sendFollowUp = action({
     const authUser: { userId: string } = await ctx.runQuery(
       internal.auth.getAuthenticatedUserInternal
     )
+
+    // Check rate limit before sending follow-up
+    await checkRateLimit(ctx, cursorRateLimiters.sendFollowUp, authUser.userId)
 
     // Get agent from database
     const dbAgent = await ctx.runQuery(internal.agents.getByIdInternal, {
@@ -829,6 +852,12 @@ export const getConversation = action({
     const apiKey = await ctx.runAction(internal.cursor.getCursorApiKey, {
       userId: authUser.userId,
     })
+
+    await checkRateLimit(
+      ctx,
+      cursorRateLimiters.getConversation,
+      authUser.userId
+    )
 
     const simulationMode = !apiKey
 
@@ -931,6 +960,12 @@ export const getConversationWithCursor = action({
     const apiKey = await ctx.runAction(internal.cursor.getCursorApiKey, {
       userId: authUser.userId,
     })
+
+    await checkRateLimit(
+      ctx,
+      cursorRateLimiters.getConversationWithCursor,
+      authUser.userId
+    )
 
     const simulationMode = !apiKey
 
@@ -1136,10 +1171,11 @@ export const getModels = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
-    // Get and decrypt API key
     const apiKey = await ctx.runAction(internal.cursor.getCursorApiKey, {
       userId: authUser.userId,
     })
+
+    await checkRateLimit(ctx, cursorRateLimiters.getModels, authUser.userId)
 
     const simulationMode = !apiKey
 

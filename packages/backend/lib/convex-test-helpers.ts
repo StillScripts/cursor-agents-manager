@@ -1,6 +1,7 @@
 import { convexTest } from "convex-test"
 import { vi } from "vitest"
 import * as authModule from "../convex/auth"
+import * as rateLimitingModule from "../convex/rateLimiting"
 import schema from "../convex/schema"
 
 // Manually import modules for Bun compatibility
@@ -21,6 +22,7 @@ const modules = {
   "./http.ts": () => import("../convex/http"),
   "./cursor.ts": () => import("../convex/cursor"),
   "./webhookActions.ts": () => import("../convex/webhookActions"),
+  "./rateLimiting.ts": () => import("../convex/rateLimiting"),
 }
 
 /**
@@ -37,6 +39,15 @@ const modules = {
  */
 export function createTestInstance() {
   const t = convexTest(schema, modules)
+
+  // Mock checkRateLimit to bypass rate limiting in tests
+  // This avoids needing to register the rate limiter component
+  vi.spyOn(rateLimitingModule, "checkRateLimit").mockImplementation(
+    async () => {
+      // No-op: rate limiting is bypassed in tests
+      return Promise.resolve()
+    }
+  )
 
   // Mock getAuthenticatedUser to use the identity from convex-test
   // This bypasses Better Auth's database lookup
