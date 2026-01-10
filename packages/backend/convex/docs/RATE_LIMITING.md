@@ -29,7 +29,7 @@ Rate limits for Cursor API endpoints are based on realistic power user usage pat
 | `getAgents` | 20 | Refreshing agent list, reasonable for active monitoring |
 | `getAgentById` | 20 | Viewing individual agent details |
 | `getConversation` | 30 | Refreshing conversation view, auto-refresh scenarios |
-| `getConversationWithCursor` | 30 | Reading conversation data with pagination |
+| `getConversationWithCursor` | 20 | Reading conversation data with pagination |
 | `sendFollowUp` | 10 | Sending follow-up messages to agents |
 | `stopAgent` | 5 | Stopping running agents |
 | `deleteAgent` | 3 | Destructive operation, should be rare |
@@ -42,9 +42,9 @@ Rate limits for OpenAI API endpoints are based on realistic power user usage pat
 | Endpoint | Rate Limit (RPM) | Rationale |
 |----------|------------------|-----------|
 | `summarizeConversation` | 3 | Users typically generate 1-2 summaries per conversation, maybe 3-5 per hour |
-| `transcribeAudio` | 10 | Users might transcribe a few audio clips, but not 30 per minute |
+| `transcribeAudio` | 5 | Users might transcribe a few audio clips, but not 30 per minute |
 | `textToSpeech` | 10 | Similar to transcribe, generating audio for summaries |
-| `improvePrompt` | 10 | Users might improve prompts a few times, but not constantly |
+| `improvePrompt` | 5 | Users might improve prompts a few times, but not constantly |
 
 ## Usage Pattern
 

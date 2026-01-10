@@ -47,7 +47,7 @@ const cursorRateLimiter = new RateLimiter(rateLimiterComponent, {
   },
   "cursor:get-conversation-cursor": {
     kind: "token bucket",
-    rate: 30,
+    rate: 20,
     period: MINUTE,
     capacity: 15,
   },
@@ -66,7 +66,7 @@ const cursorRateLimiter = new RateLimiter(rateLimiterComponent, {
   },
   "cursor:get-models": {
     kind: "token bucket",
-    rate: 10,
+    rate: 20,
     period: MINUTE,
     capacity: 5,
   },
@@ -138,16 +138,16 @@ const openAIRateLimiter = new RateLimiter(rateLimiterComponent, {
   },
   "openai:transcribe": {
     kind: "token bucket",
-    rate: 10,
+    rate: 5,
     period: MINUTE,
-    capacity: 5,
+    capacity: 3,
   },
   "openai:tts": { kind: "token bucket", rate: 10, period: MINUTE, capacity: 5 },
   "openai:improve-prompt": {
     kind: "token bucket",
-    rate: 10,
+    rate: 5,
     period: MINUTE,
-    capacity: 5,
+    capacity: 3,
   },
 })
 
@@ -198,6 +198,8 @@ export async function checkRateLimit(
     rateLimiterConfig.name,
     { key: userId }
   )) as { ok: boolean; retryAfter?: number }
+
+  console.log("result", result)
 
   if (!result.ok) {
     const retryAfter = result.retryAfter
