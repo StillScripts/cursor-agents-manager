@@ -7,6 +7,7 @@ import { TimerDisplay } from "@/components/time-tracking/components/timer-displa
 import { TodayEntries } from "@/components/time-tracking/components/today-entries"
 import { Separator } from "@/components/ui/separator"
 import { viewAtom } from "@/lib/atoms"
+import { cn } from "@/lib/utils"
 
 export function TimeTrackingScreen() {
   const view = useAtomValue(viewAtom)
@@ -21,17 +22,27 @@ export function TimeTrackingScreen() {
       </div>
       <Separator />
 
-      <div className="flex-1 p-6">
-        {view === "timer" ? (
-          <div className="flex flex-col items-center justify-center gap-12 pt-12 md:pt-20">
-            <TimerDisplay />
-            <TodayEntries />
-          </div>
-        ) : (
-          <div className="max-w-2xl mx-auto">
-            <TaskList />
-          </div>
-        )}
+      <div className="flex-1 p-6 relative">
+        {/* Timer view - conditionally visible */}
+        <div
+          className={cn(
+            "flex flex-col items-center justify-center gap-12 pt-12 md:pt-20",
+            view !== "timer" && "hidden"
+          )}
+        >
+          <TimerDisplay />
+          <TodayEntries />
+        </div>
+
+        {/* Tasks view - always mounted but conditionally visible to keep queries active */}
+        <div
+          className={cn(
+            "max-w-2xl mx-auto",
+            view !== "tasks" && "hidden"
+          )}
+        >
+          <TaskList />
+        </div>
       </div>
     </main>
   )
