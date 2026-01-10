@@ -11,6 +11,7 @@ import type {
 } from "validators"
 import { api, components, internal } from "./_generated/api"
 import { action, internalAction } from "./_generated/server"
+import { checkRateLimit, cursorRateLimiters } from "./rateLimiting"
 
 const CURSOR_API_URL = "https://api.cursor.com/v0/agents"
 const CURSOR_MODELS_API_URL = "https://api.cursor.com/v0/models"
@@ -146,6 +147,9 @@ export const getAgents = action({
     const authUser = await ctx.runQuery(
       internal.auth.getAuthenticatedUserInternal
     )
+
+    // Check rate limit before making external API calls
+    await checkRateLimit(ctx, cursorRateLimiters.getAgents, authUser.userId)
 
     // Get agents from the database
     const dbAgents = await ctx.runQuery(internal.agents.listByUserInternal, {
@@ -302,13 +306,16 @@ export const getAgentById = action({
       agentId: args.agentId,
     })
 
-    // If found in DB, return it
+    // If found in DB, return it (no rate limit check needed for cached data)
     if (dbAgent) {
       return {
         agent: dbAgentToApiFormat(dbAgent),
         simulation: false,
       }
     }
+
+    // Check rate limit before making external API call
+    await checkRateLimit(ctx, cursorRateLimiters.getAgentById, authUser.userId)
 
     // Get encrypted API key record
     const record = await ctx.runQuery(
@@ -449,6 +456,9 @@ export const launchAgent = action({
     const authUser = await ctx.runQuery(
       internal.auth.getAuthenticatedUserInternal
     )
+
+    // Check rate limit before launching agent (applies to both simulation and live mode)
+    await checkRateLimit(ctx, cursorRateLimiters.launchAgent, authUser.userId)
 
     // Get encrypted API key record
     const record = await ctx.runQuery(
@@ -612,6 +622,9 @@ export const stopAgent = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
+    // Check rate limit before stopping agent
+    await checkRateLimit(ctx, cursorRateLimiters.stopAgent, authUser.userId)
+
     // Get agent from database
     const dbAgent = await ctx.runQuery(internal.agents.getByIdInternal, {
       userId: authUser.userId,
@@ -691,6 +704,9 @@ export const deleteAgent = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
+    // Check rate limit before deleting agent
+    await checkRateLimit(ctx, cursorRateLimiters.deleteAgent, authUser.userId)
+
     // Get agent from database
     const dbAgent = await ctx.runQuery(internal.agents.getByIdInternal, {
       userId: authUser.userId,
@@ -768,6 +784,9 @@ export const sendFollowUp = action({
     const authUser = await ctx.runQuery(
       internal.auth.getAuthenticatedUserInternal
     )
+
+    // Check rate limit before sending follow-up
+    await checkRateLimit(ctx, cursorRateLimiters.sendFollowUp, authUser.userId)
 
     // Get agent from database
     const dbAgent = await ctx.runQuery(internal.agents.getByIdInternal, {
@@ -866,6 +885,13 @@ export const getConversation = action({
   }> => {
     const authUser = await ctx.runQuery(
       internal.auth.getAuthenticatedUserInternal
+    )
+
+    // Check rate limit before fetching conversation
+    await checkRateLimit(
+      ctx,
+      cursorRateLimiters.getConversation,
+      authUser.userId
     )
 
     // Get encrypted API key record
@@ -967,6 +993,13 @@ export const getConversationWithCursor = action({
   }> => {
     const authUser = await ctx.runQuery(
       internal.auth.getAuthenticatedUserInternal
+    )
+
+    // Check rate limit before fetching conversation
+    await checkRateLimit(
+      ctx,
+      cursorRateLimiters.getConversationWithCursor,
+      authUser.userId
     )
 
     // Get encrypted API key record
@@ -1099,6 +1132,9 @@ export const getModels = action({
     const authUser = await ctx.runQuery(
       internal.auth.getAuthenticatedUserInternal
     )
+
+    // Check rate limit before fetching models
+    await checkRateLimit(ctx, cursorRateLimiters.getModels, authUser.userId)
 
     // Get encrypted API key record
     const record = await ctx.runQuery(
