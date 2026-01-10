@@ -191,9 +191,9 @@ const TaskSelectField = ({ field }: { field: any }) => {
       placeholder="Select a task..."
       options={taskOptions}
       onValueChange={(value: string) => {
-        const taskIdValue: Id<"tasks"> | undefined =
-          value === "" || value === null ? undefined : (value as Id<"tasks">)
-        field.handleChange(taskIdValue)
+        const taskTitleValue: string | undefined =
+          value === "" || value === null ? undefined : value
+        field.handleChange(taskTitleValue)
       }}
     />
   )
