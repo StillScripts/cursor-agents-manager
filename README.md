@@ -10,56 +10,80 @@ A mobile-first Next.js application for managing Cursor background agents from an
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat&logo=typescript)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-[Features](#features) • [Quick Start](#quick-start) • [Documentation](#documentation) • [Deployment](#deployment)
+[Quick Start](#-quick-start) • [Documentation](#-documentation)
 
 </div>
 
 ---
 
-## ✨ Features
+## 🚀 Quick Start
 
-### 🔐 Authentication & Security
-- **Secure Authentication**: Email/password auth powered by Better Auth + Convex
-- **Encrypted Storage**: API keys encrypted with AES-256-GCM before database storage
-- **Session Management**: Secure sessions with automatic expiry
-- **Route Protection**: Middleware-based authentication for all routes
+### Prerequisites
 
-### 💾 Convex Backend
-- **Real-time Data**: Convex provides reactive queries with automatic UI updates
-- **Per-User API Keys**: Each user has their own encrypted Cursor API key
-- **Serverless Functions**: Backend logic runs as Convex actions and mutations
-- **Type-Safe**: End-to-end type safety from database to frontend
+- [Bun](https://bun.sh) v1.2.16+ installed
+- [Convex](https://convex.dev) account (free tier available)
 
-### 🎨 User Experience
-- **Mobile-First Design**: Optimized 448px centered layout for mobile devices
-- **Simulation Mode**: Try the app without a Cursor API key using realistic mock data
-- **Real-time Updates**: Convex reactive queries with optimistic updates
-- **Theme Support**: Dark/light/system theme modes with no flash on load
-- **Responsive UI**: Works beautifully on phones, tablets, and desktops
+### Setup Steps
 
-### 🛠️ Developer Features
-- **Type-Safe**: Full TypeScript coverage with strict mode
-- **Modern Stack**: Next.js 16 App Router, React 19, Tailwind CSS 4
-- **Fast Runtime**: Built with Bun for lightning-fast installs and builds
-- **Convex Backend**: Serverless database and functions with real-time sync
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/StillScripts/cursor-agents-manager.git
+   cd cursor-agents-manager
+   ```
 
-## 📚 Table of Contents
+2. **Install dependencies**
+   ```bash
+   bun install
+   ```
 
-- [Features](#-features)
-- [Tech Stack](#-tech-stack)
-- [Quick Start](#-quick-start)
-- [Environment Setup](#-environment-setup)
-- [Architecture](#-architecture)
-- [Available Scripts](#-available-scripts)
-- [Project Structure](#-project-structure)
-- [Deployment](#-deployment)
-- [Troubleshooting](#-troubleshooting)
-- [Contributing](#-contributing)
+3. **Configure environment variables**
+   
+   **Step 3a: Create environment file at monorepo root**
+   ```bash
+   cp .env.example .env.local
+   ```
+   
+   **Step 3b: Generate and set encryption secret**
+   ```bash
+   openssl rand -base64 32
+   ```
+   Edit `.env.local` (at the monorepo root) and set `ENCRYPTION_SECRET` to the generated value.
+   
+   > **Note**: You only need to set `ENCRYPTION_SECRET` manually. The other 3 variables (`CONVEX_DEPLOYMENT`, `NEXT_PUBLIC_CONVEX_URL`, `NEXT_PUBLIC_CONVEX_SITE_URL`) will be automatically generated when you run `bun run dev` in the next step. Convex CLI will prompt you to create a project and add these values.
+   
+   See [Environment Variables](#-environment-variables) for complete details.
+
+4. **Start development server**
+   ```bash
+   bun run dev
+   ```
+   
+   This command starts both the Next.js dev server and Convex dev server together. On first run, Convex will:
+   - Prompt you to create a Convex project (if you haven't already)
+   - Generate and add the Convex environment variables to your `.env.local` file (at monorepo root)
+   - Create `packages/backend/.env.local` with `CONVEX_DEPLOYMENT`
+
+5. **Configure Convex Dashboard environment variables**
+   
+   After Convex creates your project, go to your [Convex Dashboard](https://dashboard.convex.dev) → Settings → Environment Variables and configure variables for your **dev** deployment:
+   
+   **Required:**
+   - `SITE_URL` = `http://localhost:3000` (for development)
+   - `ENCRYPTION_SECRET` = same value as in `.env.local` (at monorepo root)
+   
+   **Optional (for webhook support):**
+   - `CURSOR_WEBHOOK_URL` = `https://your-deployment.convex.site/webhooks/cursor`
+   - `CURSOR_WEBHOOK_SECRET` = generate with `openssl rand -hex 32`
+   
+   > **Note**: For production, you'll need to set these same variables in your production deployment's environment variables, but with `SITE_URL` set to your production URL (e.g., `https://your-app.com`).
+
+🎉 **Open [http://localhost:3000](http://localhost:3000)** and create your account!
 
 ## 🛠️ Tech Stack
 
 | Category | Technology |
 |----------|-----------|
+| **Architecture** | Bun Monorepo with Workspaces |
 | **Framework** | Next.js 16 (App Router) |
 | **UI Library** | React 19 |
 | **Styling** | Tailwind CSS 4, Base UI |
@@ -71,347 +95,202 @@ A mobile-first Next.js application for managing Cursor background agents from an
 | **Language** | TypeScript 5.0 |
 | **Deployment** | Vercel + Convex |
 
-## 🚀 Quick Start
+## ⚙️ Environment Variables
 
-**Get up and running in 5 minutes!**
+Environment variables are organized into three categories based on where they're used:
 
-### Prerequisites
+### 1. Local Development (`.env.local` at monorepo root)
 
-- [Bun](https://bun.sh) v1.2.16+ installed
-- [Convex](https://convex.dev) account (free tier available)
+These 4 variables are all you need for local development. The `.env.local` file should be created at the **monorepo root** (same directory as `package.json`).
 
-### One-Command Setup
-
-```bash
-# Clone, install, and setup
-git clone <repository-url> && cd cursor-agents-manager && bun install
-```
-
-### Configuration Steps
-
-1️⃣ **Setup Convex**
-```bash
-bunx convex dev
-```
-This will prompt you to create a Convex project and generate your environment variables.
-
-2️⃣ **Setup Environment Variables**
-
-```bash
-cp .env.example .env.local
-# Edit .env.local with your credentials
-```
-
-See [Environment Setup](#-environment-setup) for details
-
-3️⃣ **Start Development Server**
-```bash
-bun run dev
-```
-
-🎉 **Open [http://localhost:3000](http://localhost:3000)** and create your account!
-
-## ⚙️ Environment Setup
-
-### Quick Setup
-
-Copy the example file and fill in your values:
-
+**Setup:**
 ```bash
 cp .env.example .env.local
 ```
 
-### Environment Variables
-
-Your `.env.local` should contain:
+**The 4 Required Variables:**
 
 ```bash
-# Convex
-# Get these from: bunx convex dev (auto-generated)
+# 1. Convex Deployment (Auto-generated)
+# Automatically generated when you run `bun run dev` for the first time
 CONVEX_DEPLOYMENT=dev:your-deployment-name
+
+# 2. Convex URL (Auto-generated)
+# Automatically generated when you run `bun run dev` for the first time
 NEXT_PUBLIC_CONVEX_URL=https://your-deployment.convex.cloud
+
+# 3. Convex Site URL (Auto-generated)
+# Automatically generated when you run `bun run dev` for the first time
 NEXT_PUBLIC_CONVEX_SITE_URL=https://your-deployment.convex.site
 
-# Encryption
-# Used for encrypting API keys stored in Convex
+# 4. Encryption Secret (Manual - Required)
 # Generate with: openssl rand -base64 32
+# IMPORTANT: This same value must also be set in Convex Dashboard
 ENCRYPTION_SECRET=your-encryption-secret-min-32-chars
-
-# Note: Cursor Webhook variables are set in Convex Dashboard, not .env.local
-# See "Convex Dashboard Environment Variables" section below
 ```
 
-### Convex Dashboard Environment Variables
+> **Note**: When you run `bun run dev` for the first time, Convex CLI will automatically:
+> - Create `packages/backend/.env.local` with `CONVEX_DEPLOYMENT`
+> - Add the 3 Convex variables (items 1-3 above) to your `.env.local` file (at monorepo root)
+> - You only need to manually set `ENCRYPTION_SECRET` (item 4)
 
-Set these in your Convex dashboard (Settings → Environment Variables):
+### 2. Convex CLI Variables (`packages/backend/.env.local`)
 
-| Variable | Purpose |
-|----------|---------|
-| `SITE_URL` | Your app URL (e.g., `http://localhost:3000` for dev) |
-| `ENCRYPTION_SECRET` | Same as your local encryption secret |
-| `CURSOR_WEBHOOK_URL` | Your Convex webhook endpoint (e.g., `https://your-deployment.convex.site/webhooks/cursor`) |
-| `CURSOR_WEBHOOK_SECRET` | Secret for webhook signature verification (generate with `openssl rand -hex 32`) |
+These variables are used by the Convex CLI when running `bunx convex dev`.
 
-**Note on Webhooks**: Webhooks are automatically included in agent launch requests when `CURSOR_WEBHOOK_URL` is configured. The webhook URL should point to your Convex deployment's `/webhooks/cursor` endpoint. You can find your Convex site URL in your `.env.local` as `NEXT_PUBLIC_CONVEX_SITE_URL`, or in the Convex dashboard. The same secret value should be used for `CURSOR_WEBHOOK_SECRET` - it's used to verify that incoming webhook requests are authentically from Cursor.
+**Auto-generated:** Convex CLI automatically creates this file when you run `bun run dev` for the first time. You typically don't need to create it manually.
 
-### 🔑 Generating Secrets
+**Contains:**
+```bash
+CONVEX_DEPLOYMENT=dev:your-deployment-name
+```
 
-Generate secure random secrets for `ENCRYPTION_SECRET` and `CURSOR_WEBHOOK_SECRET`:
+This tells the Convex CLI which deployment to use. It's automatically synced with the value in `.env.local` (at monorepo root).
+
+### 3. Convex Dashboard Environment Variables
+
+These variables are used by Convex functions running in the Convex cloud (not locally). Set them in your Convex Dashboard: **Settings → Environment Variables**
+
+You need to configure these for **both your dev and production deployments** (with different `SITE_URL` values).
+
+#### Required Variables
+
+| Variable | Purpose | Dev Value | Prod Value |
+|----------|---------|-----------|------------|
+| `SITE_URL` | Your app URL for Better Auth | `http://localhost:3000` | `https://your-app.com` |
+| `ENCRYPTION_SECRET` | Secret for encrypting API keys. **Must match** the value in `.env.local` (at monorepo root) | Same as local | Same as local |
+
+#### Optional Variables (for webhook support)
+
+| Variable | Purpose | How to Get |
+|----------|---------|------------|
+| `CURSOR_WEBHOOK_URL` | Your Convex webhook endpoint | `https://your-deployment.convex.site/webhooks/cursor` |
+| `CURSOR_WEBHOOK_SECRET` | Secret for webhook signature verification | Generate with `openssl rand -hex 32` |
+
+**Where to find your Convex site URL:**
+- Check `NEXT_PUBLIC_CONVEX_SITE_URL` in your `.env.local` file (at monorepo root)
+- Or find it in your Convex Dashboard under your deployment settings
+
+**Setting Variables in Convex Dashboard:**
+1. Go to [Convex Dashboard](https://dashboard.convex.dev)
+2. Select your deployment (dev or production)
+3. Navigate to **Settings → Environment Variables**
+4. Add the required variables for that deployment
+5. Repeat for your production deployment with production `SITE_URL`
+
+### Generating Secrets
+
+Generate secure random secrets:
 
 ```bash
-# For ENCRYPTION_SECRET (base64)
-# macOS/Linux
+# For ENCRYPTION_SECRET (base64) - used in both .env.local and Convex Dashboard
 openssl rand -base64 32
 
-# Or use Node.js
-node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
-
-# For CURSOR_WEBHOOK_SECRET (hex - recommended for webhooks)
+# For CURSOR_WEBHOOK_SECRET (hex) - only used in Convex Dashboard
 openssl rand -hex 32
 ```
 
-> **⚠️ Important**: Never commit `.env.local` to version control. It's already in `.gitignore`.
+### Quick Setup Summary
 
-## 🏗️ Architecture
+**Local Development:**
+1. **Create `.env.local` at monorepo root** with `ENCRYPTION_SECRET` (generate with `openssl rand -base64 32`)
+2. **Run `bun run dev`** from monorepo root - Convex CLI will auto-generate the 3 Convex variables
+3. You now have all 4 variables needed for local development ✅
 
-### 🔄 Authentication Flow
+**Convex Dashboard (Dev Deployment):**
+1. Go to [Convex Dashboard](https://dashboard.convex.dev) → Select your dev deployment → Settings → Environment Variables
+2. Add required variables:
+   - `SITE_URL` = `http://localhost:3000`
+   - `ENCRYPTION_SECRET` = same value as in `.env.local` (at monorepo root)
+3. Add optional variables (for webhook support):
+   - `CURSOR_WEBHOOK_URL` = `https://your-deployment.convex.site/webhooks/cursor`
+   - `CURSOR_WEBHOOK_SECRET` = generate with `openssl rand -hex 32`
 
-```mermaid
-graph LR
-    A[User Visits App] --> B{Has Session?}
-    B -->|No| C[Redirect to /login]
-    B -->|Yes| D[Load App]
-    C --> E[User Login/Signup]
-    E --> F[Better Auth + Convex Validates]
-    F --> G[Create Session]
-    G --> D
+**Convex Dashboard (Production Deployment):**
+1. Go to [Convex Dashboard](https://dashboard.convex.dev) → Select your production deployment → Settings → Environment Variables
+2. Add required variables:
+   - `SITE_URL` = `https://your-app.com` (your production URL)
+   - `ENCRYPTION_SECRET` = same value as in `.env.local` (at monorepo root)
+3. Add optional variables (for webhook support):
+   - `CURSOR_WEBHOOK_URL` = `https://your-production-deployment.convex.site/webhooks/cursor`
+   - `CURSOR_WEBHOOK_SECRET` = same value as dev (or generate a new one)
+
+> **⚠️ Important**: Never commit `.env.local` files to version control. They're already in `.gitignore`.
+
+## 📁 Project Structure
+
+This is a **Bun monorepo** with the following structure:
+
+```
+cursor-agents-manager/
+├── 📱 apps/web/                  # Next.js Web Application
+│   ├── app/                      # Next.js App Router
+│   │   ├── (authenticated)/      # Pages requiring login
+│   │   │   ├── page.tsx          # Agent list (home)
+│   │   │   ├── new/              # Launch new agent
+│   │   │   ├── agent/[id]/       # Agent detail view
+│   │   │   ├── account/          # Account management
+│   │   │   └── settings/         # User settings
+│   │   ├── (unauthenticated)/    # Public pages
+│   │   │   ├── login/            # Login page
+│   │   │   └── signup/           # Signup page
+│   │   └── (server)/api/         # API Routes
+│   ├── components/               # React Components
+│   ├── lib/                      # App-specific logic & hooks
+│   └── proxy.ts                  # Route protection middleware
+│
+├── 📦 packages/
+│   ├── backend/                  # Convex Backend
+│   │   └── convex/               # Convex functions
+│   │       ├── schema.ts         # Database schema
+│   │       ├── agents.ts         # Agent queries
+│   │       ├── cursor.ts         # Agent mutations/actions
+│   │       ├── apiKeys.ts        # API key queries
+│   │       ├── auth.ts           # Better Auth + Convex
+│   │       └── ...               # Other Convex functions
+│   ├── validators/               # Shared Zod schemas
+│   ├── encryption/               # AES-256-GCM encryption
+│   ├── helpers/                  # Shared utilities
+│   └── tests/                    # Shared test configuration
+│
+├── 🔧 scripts/
+│   └── dev.ts                    # Unified dev server script
+│
+└── package.json                  # Workspace configuration
 ```
 
-**Flow Details**:
-1. User registers via `/signup` with email/password
-2. Better Auth (via Convex) hashes password and creates user record
-3. Session created and managed by Convex
-4. Middleware validates session on every request
-5. Unauthenticated users redirected to `/login?callbackUrl=<path>`
+### Monorepo Workspaces
 
-### 💾 Convex Schema
-
-**Convex Tables** (defined in `convex/schema.ts`):
-
-| Table | Purpose | Key Fields |
-|-------|---------|-----------|
-| `agents` | Cached agent data from Cursor API | agentId, userId, status, name |
-| `apiKeys` | Encrypted API keys | userId, encryptedCursorApiKey |
-| `repositories` | User's GitHub repos | userId, url, name |
-| `branches` | User's branch names | userId, name |
-| `timeLogs` | Task time tracking | userId, agentId, activityType |
-
-🔗 All tables use `userId` for user association
-
-### 🎭 Simulation vs Live Mode
-
-| Mode | Trigger | Data Source | Use Case |
-|------|---------|-------------|----------|
-| **Simulation** | No API key configured | Mock data (`lib/mock-data.ts`) | Demo, testing, development |
-| **Live** | Valid API key in Convex | Cursor API (`api.cursor.com/v0/agents`) | Production use |
-
-**Mode Detection**: Convex actions check for encrypted API key and determine mode automatically.
+| Workspace | Purpose |
+|-----------|---------|
+| `apps/web` | Next.js 16 web application |
+| `packages/backend` | Convex backend (schema, functions, actions) |
+| `packages/validators` | Shared Zod validation schemas |
+| `packages/encryption` | AES-256-GCM encryption utilities |
+| `packages/helpers` | Shared utilities (formatting, mock data) |
+| `packages/tests` | Shared Vitest configuration and tests |
 
 ## 📜 Available Scripts
 
 | Command | Description |
 |---------|-------------|
-| `bun run dev` | Start development server on port 3000 |
+| `bun run dev` | Start development server (Next.js + Convex) |
 | `bun run build` | Create production build |
 | `bun run start` | Start production server |
 | `bun run lint` | Run Biome for code quality |
 | `bun run lint:fix` | Auto-fix linting and formatting issues |
 | `bun run test` | Run tests (Vitest + convex-test) |
-| `bun run test:watch` | Run tests in watch mode |
 
 ### Development Workflow
 
 ```bash
-# Start Convex dev server (in one terminal)
-bunx convex dev
-
-# Start Next.js dev server (in another terminal)
+# Start both Next.js and Convex dev servers together (recommended)
 bun run dev
+
+# Or run individually in separate terminals:
+bun run dev:web      # Next.js only (apps/web)
+bun run dev:backend  # Convex only (packages/backend)
 ```
-
-## 📁 Project Structure
-
-```
-cursor-agents-manager/
-├── 📱 app/                       # Next.js App Router
-│   ├── (authenticated)/          # Pages requiring login
-│   │   ├── page.tsx              # Agent list (home)
-│   │   ├── new/                  # Launch new agent
-│   │   ├── agent/[id]/           # Agent detail view
-│   │   ├── account/              # Account management
-│   │   └── settings/             # User settings
-│   ├── (unauthenticated)/        # Public pages
-│   │   ├── login/                # Login page
-│   │   └── signup/               # Signup page
-│   └── (server)/api/             # API Routes
-│       └── auth/[...all]/        # Better Auth endpoints
-│
-├── 🔧 convex/                    # Convex Backend
-│   ├── schema.ts                 # Database schema
-│   ├── agents.ts                 # Agent queries
-│   ├── cursor.ts          # Agent mutations/actions
-│   ├── apiKeys.ts                # API key queries
-│   ├── apiKeysActions.ts         # API key mutations
-│   ├── auth.ts                   # Better Auth + Convex
-│   ├── repositories.ts           # Repository CRUD
-│   ├── branches.ts               # Branch CRUD
-│   ├── timeLogs.ts               # Time tracking
-│   ├── models.ts                 # AI models
-│   └── openAI.ts              # AI actions (summarize, TTS)
-│
-├── 🎨 components/                # React Components
-│   ├── ui/                       # Base UI primitives
-│   ├── forms/                    # Form components
-│   └── ai/                       # AI-related components
-│
-├── 📚 lib/                       # Core Logic
-│   ├── hooks/                    # React hooks
-│   ├── schemas/                  # Zod validation schemas
-│   ├── db/encryption.ts          # AES-256-GCM encryption
-│   ├── better-auth/              # Better Auth config
-│   └── types.ts                  # TypeScript types
-│
-└── 🛡️ proxy.ts                   # Route protection middleware
-```
-
-### Key Files
-
-| File | Purpose |
-|------|---------|
-| `convex/schema.ts` | Convex database schema |
-| `convex/auth.ts` | Better Auth + Convex integration |
-| `lib/db/encryption.ts` | Encrypts/decrypts API keys |
-| `proxy.ts` | Middleware for route protection |
-
-## 🔒 Security
-
-This application implements multiple layers of security:
-
-| Layer | Implementation | Details |
-|-------|---------------|---------|
-| **Passwords** | Bcrypt hashing | Handled by Better Auth |
-| **Sessions** | Convex-managed | Secure session handling |
-| **API Keys** | AES-256-GCM encryption | Encrypted before storage |
-| **HTTPS** | TLS/SSL | Enforced in production |
-| **XSS Protection** | React sanitization | Automatic by React/Next.js |
-
-### Security Best Practices
-
-✅ Never commit `.env.local` to version control
-✅ Set `ENCRYPTION_SECRET` in Convex dashboard for production
-✅ Use strong passwords (enforced: 8+ characters)
-✅ Keep dependencies updated (`bun update`)
-
-## 🚀 Deployment
-
-### Vercel + Convex (Recommended)
-
-**1️⃣ Deploy Convex Backend**
-
-```bash
-bunx convex deploy
-```
-
-**2️⃣ Set Convex Environment Variables**
-
-In Convex Dashboard → Settings → Environment Variables:
-- `SITE_URL` = your production URL
-- `ENCRYPTION_SECRET` = your encryption secret
-
-**3️⃣ Deploy to Vercel**
-
-Push to GitHub, then import to Vercel.
-
-**Build Command:**
-```bash
-if [ "$VERCEL_ENV" = "production" ]; then bunx convex deploy --cmd 'bun run build'; else bun run build; fi
-```
-
-**Environment Variables in Vercel:**
-
-| Variable | Environment |
-|----------|-------------|
-| `CONVEX_DEPLOY_KEY` | Production only |
-| `NEXT_PUBLIC_CONVEX_URL` | All |
-| `NEXT_PUBLIC_CONVEX_SITE_URL` | All |
-
-### Post-Deployment Checklist
-
-- [ ] Verify Convex environment variables are set
-- [ ] Test signup/login flow
-- [ ] Configure your Cursor API key in the app
-- [ ] Test agent operations
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-#### Build Errors
-
-**Issue**: `Module not found` errors during build
-```bash
-# Solution: Clear cache and reinstall
-rm -rf node_modules .next
-bun install
-bun run build
-```
-
-#### Convex Issues
-
-**Issue**: Convex deployment errors
-```bash
-# Solution: Re-authenticate with Convex
-bunx convex logout
-bunx convex login
-bunx convex dev
-```
-
-#### Authentication Issues
-
-**Issue**: "Unauthorized" errors
-```bash
-# Solution: Ensure SITE_URL is set correctly in Convex dashboard
-# Should match your app URL exactly
-```
-
-### Getting Help
-
-- 📖 Check [CLAUDE.md](./CLAUDE.md) for detailed architecture
-- 🐛 [Open an issue](https://github.com/YOUR_USERNAME/cursor-agents-manager/issues)
-- 💬 Join discussions in GitHub Discussions
-
-## 🤝 Contributing
-
-We welcome contributions! Here's how to get started:
-
-### Development Setup
-
-1. Fork the repository
-2. Clone your fork
-3. Create a new branch: `git checkout -b feature/amazing-feature`
-4. Make your changes
-5. Run `bun run lint:fix` before committing
-6. Commit: `git commit -m 'Add amazing feature'`
-7. Push: `git push origin feature/amazing-feature`
-8. Open a Pull Request
-
-### Contribution Guidelines
-
-- ✅ Follow existing code style (TypeScript, Biome)
-- ✅ Write meaningful commit messages
-- ✅ Update documentation if needed
-- ✅ Test your changes locally
-- ✅ Run `bun run lint:fix` before pushing
 
 ## 📚 Documentation
 
@@ -420,20 +299,9 @@ We welcome contributions! Here's how to get started:
 - **[Convex Docs](https://docs.convex.dev)** - Backend documentation
 - **[Better Auth Docs](https://www.better-auth.com/docs)** - Authentication documentation
 
-### Testing
-
-Tests use **Vitest** with **convex-test** for Convex function testing. Test files are located in `convex/_tests/` and follow a consistent structure: `describe(model)` → `describe(function)` → `it(test case)`. See [AGENTS.md](./AGENTS.md#test-structure) for detailed testing conventions and patterns.
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Built with [Next.js](https://nextjs.org) by Vercel
-- Backend by [Convex](https://convex.dev)
-- Authentication by [Better Auth](https://www.better-auth.com)
-- UI components by [Base UI](https://base-ui.com)
 
 ---
 
@@ -441,6 +309,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Made with ❤️ for developers managing Cursor agents**
 
-[⭐ Star this repo](https://github.com/YOUR_USERNAME/cursor-agents-manager) • [🐛 Report Bug](https://github.com/YOUR_USERNAME/cursor-agents-manager/issues) • [✨ Request Feature](https://github.com/YOUR_USERNAME/cursor-agents-manager/issues)
+[⭐ Star this repo](https://github.com/StillScripts/cursor-agents-manager) • [🐛 Report Bug](https://github.com/StillScripts/cursor-agents-manager/issues) • [✨ Request Feature](https://github.com/StillScripts/cursor-agents-manager/issues)
 
 </div>

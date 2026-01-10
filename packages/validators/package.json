@@ -1,0 +1,23 @@
+{
+  "name": "validators",
+  "version": "0.1.0",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./index.ts",
+    "./cursor/*": "./src/cursor/*.ts",
+    "./ai": "./src/ai.ts",
+    "./auth": "./src/auth.ts",
+    "./settings": "./src/settings.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "zod": "^4.3.5"
+  }
+}

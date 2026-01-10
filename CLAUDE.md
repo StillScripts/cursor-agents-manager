@@ -536,7 +536,7 @@ All user-specific tables have `userId` foreign keys with cascade delete.
 **Key Files**:
 - `lib/auth.ts` - Better Auth server configuration
 - `lib/auth-client.ts` - Client-side auth utilities (signIn, signUp, signOut, useSession)
-- `lib/db.ts` - Database connection
+- `lib/backend.ts` - Database connection
 - `lib/encryption.ts` - AES-256-GCM encryption/decryption for API keys
 - `lib/schema/auth-schema.ts` - Better Auth tables + user_api_keys
 - `lib/schema/user-schema.ts` - User data tables
@@ -677,7 +677,7 @@ lib/
 │   ├── auth.test.ts
 │   └── ai.ts                # AI-related schemas
 │
-├── db/                      # Database layer
+├── backend/                      # Database layer
 │   ├── index.ts             # Database client
 │   ├── schema/              # Database schemas
 │   │   ├── auth-schema.ts   # Better Auth tables + user_api_keys
@@ -702,7 +702,7 @@ lib/
 **Organization Rules**:
 - `hooks/` - All React hooks (data fetching, forms, utilities)
 - `schemas/` - Zod schemas organized by domain (cursor/, settings, auth)
-- `db/` - Database connection, schemas, and encryption
+- `backend/` - Database connection, schemas, and encryption
 - Root level - Standalone utilities and types
 
 ### UI Architecture
