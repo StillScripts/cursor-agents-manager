@@ -22,16 +22,17 @@ export function TimeTrackingScreen() {
       <Separator />
 
       <div className="flex-1 p-6">
-        {view === "timer" ? (
+        <div className={view === "timer" ? "block" : "hidden"}>
           <div className="flex flex-col items-center justify-center gap-12 pt-12 md:pt-20">
             <TimerDisplay />
             <TodayEntries />
           </div>
-        ) : (
-          <div className="max-w-2xl mx-auto">
-            <TaskList />
-          </div>
-        )}
+        </div>
+        <div
+          className={view === "tasks" ? "block max-w-2xl mx-auto" : "hidden"}
+        >
+          <TaskList />
+        </div>
       </div>
     </main>
   )
