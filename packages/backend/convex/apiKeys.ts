@@ -242,6 +242,28 @@ export const getApiKeysRecordInternal = internalQuery({
   },
 })
 
+/**
+ * Get all users who have a Cursor API key configured
+ * Used by the nightly sync job
+ */
+export const getUsersWithCursorApiKeys = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const allApiKeys = await ctx.db.query("apiKeys").collect()
+
+    // Filter to users with non-empty Cursor API keys
+    return allApiKeys
+      .filter(
+        (record) =>
+          record.encryptedCursorApiKey && record.encryptedCursorApiKey !== ""
+      )
+      .map((record) => ({
+        userId: record.userId,
+        encryptedCursorApiKey: record.encryptedCursorApiKey,
+      }))
+  },
+})
+
 export const upsertApiKeysInternal = internalMutation({
   args: {
     userId: v.string(),

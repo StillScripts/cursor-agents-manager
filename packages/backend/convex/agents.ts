@@ -1,4 +1,5 @@
 import { v } from "convex/values"
+import type { Id } from "./_generated/dataModel"
 import {
   internalMutation,
   internalQuery,
@@ -104,7 +105,11 @@ export const batchUpsert = mutation({
     const authUser = await getAuthenticatedUser(ctx)
     const now = Date.now()
 
-    const results = []
+    const results: Array<{
+      _id: Id<"agents">
+      agentId: string
+      updated: boolean
+    }> = []
     for (const agent of args.agents) {
       // Check if agent already exists for this user
       const existing = await ctx.db
@@ -732,5 +737,126 @@ export const updateFromWebhook = internalMutation({
     await ctx.db.patch(agent._id, updates)
 
     return { success: true, agentId: args.agentId }
+  },
+})
+
+/**
+ * Internal mutation to batch upsert agents for a specific user (used by sync job)
+ */
+export const batchUpsertInternal = internalMutation({
+  args: {
+    userId: v.string(),
+    agents: v.array(
+      v.object({
+        agentId: v.string(),
+        provider: v.union(v.literal("cursor"), v.literal("claude-code")),
+        name: v.string(),
+        status: agentStatusValidator,
+        sourceRepository: v.string(),
+        sourceRef: v.optional(v.string()),
+        targetBranchName: v.optional(v.string()),
+        targetUrl: v.optional(v.string()),
+        targetPrUrl: v.optional(v.string()),
+        targetAutoCreatePr: v.optional(v.boolean()),
+        model: v.optional(v.string()),
+        summary: v.optional(v.string()),
+        providerData: v.optional(v.any()),
+        createdAt: v.optional(v.string()),
+        updatedAt: v.optional(v.number()),
+        taskId: v.optional(v.id("tasks")),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now()
+    const results: Array<{
+      _id: Id<"agents">
+      agentId: string
+      updated: boolean
+    }> = []
+
+    for (const agent of args.agents) {
+      // Check if agent already exists for this user
+      const existing = await ctx.db
+        .query("agents")
+        .withIndex("by_user_agent", (q) =>
+          q.eq("userId", args.userId).eq("agentId", agent.agentId)
+        )
+        .first()
+
+      if (existing) {
+        // Update existing agent
+        const patchData: {
+          name: string
+          status: typeof agent.status
+          sourceRepository: string
+          sourceRef?: string
+          targetBranchName?: string
+          targetUrl?: string
+          targetPrUrl?: string
+          targetAutoCreatePr?: boolean
+          model?: string
+          summary?: string
+          providerData?: any
+          taskId?: typeof agent.taskId
+          updatedAt: number
+          syncStatus: "synced"
+          syncError?: undefined
+          audioSummary?: undefined
+        } = {
+          name: agent.name,
+          status: agent.status,
+          sourceRepository: agent.sourceRepository,
+          sourceRef: agent.sourceRef,
+          targetBranchName: agent.targetBranchName,
+          targetUrl: agent.targetUrl,
+          targetPrUrl: agent.targetPrUrl,
+          targetAutoCreatePr: agent.targetAutoCreatePr,
+          model: agent.model,
+          summary: agent.summary,
+          providerData: agent.providerData,
+          taskId: agent.taskId,
+          updatedAt: agent.updatedAt ?? now,
+          syncStatus: "synced",
+          syncError: undefined,
+        }
+
+        // If summary is being updated, clear audioSummary
+        if (agent.summary !== undefined && agent.summary !== existing.summary) {
+          patchData.audioSummary = undefined
+        }
+
+        await ctx.db.patch(existing._id, patchData)
+        results.push({
+          _id: existing._id,
+          agentId: agent.agentId,
+          updated: true,
+        })
+      } else {
+        // Create new agent
+        const id = await ctx.db.insert("agents", {
+          agentId: agent.agentId,
+          userId: args.userId,
+          provider: agent.provider,
+          name: agent.name,
+          status: agent.status,
+          sourceRepository: agent.sourceRepository,
+          sourceRef: agent.sourceRef,
+          targetBranchName: agent.targetBranchName,
+          targetUrl: agent.targetUrl,
+          targetPrUrl: agent.targetPrUrl,
+          targetAutoCreatePr: agent.targetAutoCreatePr,
+          model: agent.model,
+          summary: agent.summary,
+          providerData: agent.providerData,
+          taskId: agent.taskId,
+          updatedAt: agent.updatedAt ?? now,
+          syncStatus: "synced",
+        })
+        results.push({ _id: id, agentId: agent.agentId, updated: false })
+      }
+    }
+
+    return results
   },
 })

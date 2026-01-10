@@ -1,7 +1,7 @@
 "use node"
 
-import { decryptData } from "@/lib/encryption"
-import type { Agent } from "../lib/types"
+import { decryptData } from "encryption"
+import type { Agent } from "validators"
 import { internal } from "./_generated/api"
 import { internalAction } from "./_generated/server"
 
@@ -18,10 +18,10 @@ function cursorAgentToDbFormat(agent: Agent) {
     status: agent.status as typeof agent.status,
     sourceRepository: agent.source.repository,
     sourceRef: agent.source.ref,
-    targetBranchName: agent.target?.branchName,
-    targetUrl: agent.target?.url,
-    targetPrUrl: agent.target?.prUrl,
-    targetAutoCreatePr: agent.target?.autoCreatePr ?? false,
+    targetBranchName: agent.target.branchName,
+    targetUrl: agent.target.url,
+    targetPrUrl: agent.target.prUrl,
+    targetAutoCreatePr: agent.target.autoCreatePr,
     model: undefined,
     summary: agent.summary,
     providerData: { createdAt: agent.createdAt },
@@ -30,75 +30,49 @@ function cursorAgentToDbFormat(agent: Agent) {
 }
 
 /**
- * Internal action to sync a single agent from the Cursor API
+ * Fetch the latest agents from Cursor API for a user
  */
-async function syncAgent(
-  ctx: any,
-  agent: {
-    _id: any
-    agentId: string
-    userId: string
-  },
-  apiKey: string
-): Promise<{ success: boolean; error?: string }> {
+async function fetchLatestAgentsFromCursor(
+  apiKey: string,
+  limit = 10
+): Promise<{ agents: Agent[] | null; error?: string }> {
   try {
-    const response = await fetch(`${CURSOR_API_URL}/${agent.agentId}`, {
+    const response = await fetch(`${CURSOR_API_URL}?limit=${limit}`, {
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
     })
 
     if (!response.ok) {
-      if (response.status === 404) {
-        // Agent no longer exists in Cursor, mark as expired
-        await ctx.runMutation(internal.agents.updateStatusInternal, {
-          agentId: agent.agentId,
-          status: "EXPIRED",
-        })
-        return { success: true }
-      }
-
       const errorText = await response.text()
       console.error(
-        `[Sync] Failed to fetch agent ${agent.agentId}: ${response.status} - ${errorText}`
+        `[Sync] Failed to fetch agents list: ${response.status} - ${errorText}`
       )
       return {
-        success: false,
+        agents: null,
         error: `API error: ${response.status}`,
       }
     }
 
-    const cursorAgent: Agent = await response.json()
-
-    // Update agent in database using internal mutation
-    const dbFormat = cursorAgentToDbFormat(cursorAgent)
-    await ctx.runMutation(internal.agents.updateFromSync, {
-      agentId: dbFormat.agentId,
-      name: dbFormat.name,
-      status: dbFormat.status,
-      sourceRepository: dbFormat.sourceRepository,
-      sourceRef: dbFormat.sourceRef,
-      targetBranchName: dbFormat.targetBranchName,
-      targetUrl: dbFormat.targetUrl,
-      targetPrUrl: dbFormat.targetPrUrl,
-      targetAutoCreatePr: dbFormat.targetAutoCreatePr,
-      summary: dbFormat.summary,
-      providerData: dbFormat.providerData,
-    })
-
-    return { success: true }
+    const data = await response.json()
+    return { agents: data.agents || [] }
   } catch (error) {
-    console.error(`[Sync] Error syncing agent ${agent.agentId}:`, error)
+    console.error("[Sync] Error fetching agents list:", error)
     return {
-      success: false,
+      agents: null,
       error: error instanceof Error ? error.message : "Unknown error",
     }
   }
 }
 
 /**
- * Internal action to sync all agents created in the past day
+ * Internal action to sync recent agents from Cursor API
  * This is called by the nightly cron job
+ *
+ * For each user with a Cursor API key:
+ * 1. Fetch their latest 10 agents from Cursor API
+ * 2. Filter to agents created in the last 24 hours
+ * 3. Create or update agent records in the database
  */
 export const syncRecentAgents = internalAction({
   args: {},
@@ -106,81 +80,122 @@ export const syncRecentAgents = internalAction({
     // Calculate timestamp for 24 hours ago
     const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000
 
-    // Get all agents created in the past day that are not finished
-    const agentsByUser = await ctx.runQuery(
-      internal.agents.getAgentsNeedingSync,
-      {
-        sinceTimestamp: oneDayAgo,
-      }
+    // Get all users with Cursor API keys
+    const usersWithApiKeys = await ctx.runQuery(
+      internal.apiKeys.getUsersWithCursorApiKeys
     )
 
-    if (agentsByUser.length === 0) {
-      console.log("[Sync] No agents need syncing")
+    if (usersWithApiKeys.length === 0) {
+      console.log("[Sync] No users with Cursor API keys found")
       return {
         synced: 0,
+        created: 0,
+        updated: 0,
         errors: 0,
         skipped: 0,
       }
     }
 
     let synced = 0
+    let created = 0
+    let updated = 0
     let errors = 0
     let skipped = 0
 
-    // Process each user's agents
-    for (const { userId, agents } of agentsByUser) {
-      // Get encrypted API key for this user
-      const apiKeyRecord = await ctx.runQuery(
-        internal.apiKeys.getApiKeysRecordInternal,
-        {
-          userId,
-        }
-      )
-
-      if (!apiKeyRecord?.encryptedCursorApiKey) {
-        console.log(
-          `[Sync] Skipping ${agents.length} agents for user ${userId} - no API key`
-        )
-        skipped += agents.length
-        continue
-      }
-
+    // Process each user
+    for (const userRecord of usersWithApiKeys) {
       // Decrypt API key
       let apiKey: string | null = null
       try {
-        apiKey = decryptData(apiKeyRecord.encryptedCursorApiKey)
+        apiKey = decryptData(userRecord.encryptedCursorApiKey)
       } catch (error) {
         console.error(
-          `[Sync] Failed to decrypt API key for user ${userId}:`,
+          `[Sync] Failed to decrypt API key for user ${userRecord.userId}:`,
           error
         )
-        skipped += agents.length
+        skipped++
         continue
       }
 
-      // Sync each agent for this user
-      for (const agent of agents) {
-        const result = await syncAgent(ctx, agent, apiKey)
-        if (result.success) {
+      // Fetch latest 10 agents from Cursor API
+      const { agents: cursorAgents, error } = await fetchLatestAgentsFromCursor(
+        apiKey,
+        10
+      )
+
+      if (error || !cursorAgents) {
+        console.error(
+          `[Sync] Failed to fetch agents for user ${userRecord.userId}: ${error}`
+        )
+        errors++
+        continue
+      }
+
+      // Filter to agents created in the last 24 hours
+      const recentAgents = cursorAgents.filter((agent) => {
+        const createdAtMs = new Date(agent.createdAt).getTime()
+        return createdAtMs >= oneDayAgo
+      })
+
+      if (recentAgents.length === 0) {
+        console.log(
+          `[Sync] No recent agents found for user ${userRecord.userId}`
+        )
+        continue
+      }
+
+      console.log(
+        `[Sync] Found ${recentAgents.length} recent agents for user ${userRecord.userId}`
+      )
+
+      // Convert agents to DB format
+      const agentsToUpsert = recentAgents.map((agent) =>
+        cursorAgentToDbFormat(agent)
+      )
+
+      // Batch upsert agents
+      try {
+        const results = await ctx.runMutation(
+          internal.agents.batchUpsertInternal,
+          {
+            userId: userRecord.userId,
+            agents: agentsToUpsert,
+          }
+        )
+
+        // Count created vs updated
+        for (const result of results) {
+          if (result.updated) {
+            updated++
+          } else {
+            created++
+          }
           synced++
-        } else {
-          errors++
-          console.error(
-            `[Sync] Failed to sync agent ${agent.agentId}: ${result.error}`
-          )
         }
 
-        // Small delay to avoid rate limiting (100ms between requests)
-        await new Promise((resolve) => setTimeout(resolve, 100))
+        console.log(
+          `[Sync] Synced ${results.length} agents for user ${userRecord.userId} (${results.filter((r) => r.updated).length} updated, ${results.filter((r) => !r.updated).length} created)`
+        )
+      } catch (error) {
+        console.error(
+          `[Sync] Failed to upsert agents for user ${userRecord.userId}:`,
+          error
+        )
+        errors++
       }
+
+      // Small delay to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 100))
     }
 
     console.log(
-      `[Sync] Completed: ${synced} synced, ${errors} errors, ${skipped} skipped`
+      `[Sync] Completed: ${synced} synced (${created} created, ${updated} updated), ${errors} errors, ${skipped} skipped`
     )
 
     return {
       synced,
+      created,
+      updated,
       errors,
       skipped,
     }
