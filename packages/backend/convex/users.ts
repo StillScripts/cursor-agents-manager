@@ -13,9 +13,6 @@ import { getAuthenticatedUser } from "./auth"
  * - Tasks
  * - Time logs
  * - Conversations
- *
- * Note: Better Auth user account deletion is handled separately through
- * the Better Auth API. This mutation only deletes application-specific data.
  */
 export const deleteAccount = mutation({
   args: {},

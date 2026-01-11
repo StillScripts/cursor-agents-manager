@@ -72,6 +72,9 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
           required: false,
         },
       },
+      deleteUser: {
+        enabled: true,
+      },
     },
     plugins: [convex({ authConfig })],
   })
