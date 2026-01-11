@@ -1,0 +1,7 @@
+# Bun test configuration
+# This limits Bun's test discovery to the packages directory,
+# preventing it from picking up Playwright e2e tests in __e2e__/
+[test]
+# Only discover tests in packages directory
+# This excludes root-level __e2e__ directory from Bun test discovery
+root = "packages"
