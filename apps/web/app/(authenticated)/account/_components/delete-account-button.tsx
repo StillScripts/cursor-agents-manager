@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { api } from "@/convex/_generated/api"
-import { signOut } from "@/lib/better-auth/auth-client"
+import { deleteUser, signOut } from "@/lib/better-auth/auth-client"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 
 export function DeleteAccountButton() {
@@ -47,10 +47,16 @@ export function DeleteAccountButton() {
         await deleteAccountMutation()
 
         // Sign out the user
-        await signOut()
-
-        // Redirect to login page
-        router.push("/login")
+        await deleteUser({
+          callbackURL: "/",
+        })
+        try {
+          await signOut()
+        } catch (error) {
+          console.error("Failed to sign out:", error)
+        }
+        // In case the callbackURL fails...
+        router.push("/")
         router.refresh()
       } catch (err) {
         setError(

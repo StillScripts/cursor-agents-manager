@@ -19,6 +19,7 @@ export const metadata: Metadata = {
     default: "Cursor Agents",
     template: "%s | Cursor Agents",
   },
+  metadataBase: new URL("https://www.anywhere.builders"),
   description: "Manage your Cursor background agents on the go",
   manifest: "/manifest.json",
   appleWebApp: {
