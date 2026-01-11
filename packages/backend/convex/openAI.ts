@@ -368,6 +368,7 @@ For the branch name:
 - If this is a bug fix, use format: hotfix/slug (e.g., hotfix/fix-login-error)
 - Create a short, descriptive slug (lowercase, use hyphens instead of spaces)
 - The slug should be 2-4 words that summarize the task
+- If a Jira ticket is provided, use the ticket number in the slug (e.g., feature/BE-2708-tablet-design-improvements)
 
 Original task description:
 ${args.text}
