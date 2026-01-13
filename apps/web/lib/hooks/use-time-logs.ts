@@ -45,6 +45,15 @@ export function useTodayTimeLogs() {
   }
 }
 
+export function useLast24HoursTimeLogs() {
+  const timeLogs = useStableQuery(api.timeLogs.getLast24HoursTimeLogs)
+
+  return {
+    timeLogs,
+    isLoading: timeLogs === undefined,
+  }
+}
+
 export function useSaveTimeLog() {
   const saveTimeLog = useMutation(api.timeLogs.saveTimeLog)
 

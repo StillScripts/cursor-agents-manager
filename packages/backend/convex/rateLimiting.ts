@@ -149,6 +149,12 @@ const openAIRateLimiter = new RateLimiter(rateLimiterComponent, {
     period: MINUTE,
     capacity: 3,
   },
+  "openai:summarize-tasks": {
+    kind: "token bucket",
+    rate: 3,
+    period: MINUTE,
+    capacity: 2,
+  },
 })
 
 export const openAIRateLimiters = {
@@ -171,6 +177,11 @@ export const openAIRateLimiters = {
     limiter: openAIRateLimiter,
     name: "openai:improve-prompt" as const,
     requestsPerMinute: 10,
+  },
+  summarizeTasks: {
+    limiter: openAIRateLimiter,
+    name: "openai:summarize-tasks" as const,
+    requestsPerMinute: 3,
   },
 }
 

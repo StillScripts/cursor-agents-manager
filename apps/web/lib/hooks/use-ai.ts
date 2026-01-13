@@ -81,3 +81,14 @@ export function useImprovePrompt() {
     },
   })
 }
+
+export function useSummarizeTasks() {
+  const summarizeTasksAction = useAction(api.openAI.summarizeTasks)
+
+  return useMutation({
+    mutationFn: async () => {
+      const result = await summarizeTasksAction({})
+      return result.summary
+    },
+  })
+}

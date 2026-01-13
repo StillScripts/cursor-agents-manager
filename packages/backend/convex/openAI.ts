@@ -426,3 +426,142 @@ BRANCH_NAME:
     }
   },
 })
+
+/**
+ * Summarize all tasks and their time logs into a coherent string of sentences
+ */
+export const summarizeTasks = action({
+  args: {},
+  handler: async (ctx) => {
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
+
+    // Check rate limit before calling OpenAI API
+    await checkRateLimit(
+      ctx,
+      openAIRateLimiters.summarizeTasks,
+      authUser.userId
+    )
+
+    // Get OpenAI API key
+    const record = await ctx.runQuery(
+      internal.apiKeys.getApiKeysRecordInternal,
+      {
+        userId: authUser.userId,
+      }
+    )
+
+    if (!record?.encryptedOpenaiApiKey) {
+      throw new Error("OpenAI API key not configured")
+    }
+
+    let openaiApiKey: string
+    try {
+      openaiApiKey = decryptData(record.encryptedOpenaiApiKey)
+    } catch {
+      throw new Error("Failed to decrypt OpenAI API key")
+    }
+
+    // Get all tasks and time logs
+    const tasks = await ctx.runQuery(api.tasks.getTasks)
+    const allTimeLogs = await ctx.runQuery(api.timeLogs.getAllTimeLogs)
+
+    if (!tasks || tasks.length === 0) {
+      throw new Error("No tasks found to summarize")
+    }
+
+    // Group time logs by task and calculate totals
+    const tasksWithTime = tasks.map((task) => {
+      const taskTimeLogs = allTimeLogs.filter((log) => log.taskId === task._id)
+      const totalDuration = taskTimeLogs.reduce(
+        (sum, log) => sum + (log.endTime - log.startTime),
+        0
+      )
+      const sessionCount = taskTimeLogs.length
+      const lastUsed = Math.max(...taskTimeLogs.map((log) => log.startTime), 0)
+
+      return {
+        title: task.title,
+        description: task.description || "",
+        totalDuration,
+        sessionCount,
+        lastUsed,
+        createdAt: task.createdAt,
+      }
+    })
+
+    // Filter out tasks with no time logs
+    const tasksWithSessions = tasksWithTime.filter(
+      (task) => task.sessionCount > 0
+    )
+
+    if (tasksWithSessions.length === 0) {
+      throw new Error("No tasks with time tracking data found")
+    }
+
+    // Format tasks data for summarization
+    const formatDuration = (ms: number): string => {
+      const hours = Math.floor(ms / (1000 * 60 * 60))
+      const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60))
+      if (hours > 0) {
+        return `${hours}h ${minutes}m`
+      }
+      return `${minutes}m`
+    }
+
+    const formatDate = (timestamp: number): string => {
+      const date = new Date(timestamp)
+      return date.toLocaleDateString([], {
+        month: "short",
+        day: "numeric",
+        year:
+          date.getFullYear() !== new Date().getFullYear()
+            ? "numeric"
+            : undefined,
+      })
+    }
+
+    const tasksText = tasksWithSessions
+      .map((task) => {
+        const lastUsedDate =
+          task.lastUsed > 0 ? formatDate(task.lastUsed) : "Never"
+        return `Task: ${task.title}
+${task.description ? `Description: ${task.description}\n` : ""}Total time: ${formatDuration(task.totalDuration)}
+Sessions: ${task.sessionCount}
+Last worked on: ${lastUsedDate}`
+      })
+      .join("\n\n")
+
+    try {
+      // Generate summary using AI SDK with user's API key
+      const openaiProvider = createOpenAI({ apiKey: openaiApiKey })
+      const { text: summary } = await generateText({
+        model: openaiProvider("gpt-4o-mini"),
+        prompt: `Please summarize the following tasks and their time tracking data into a coherent paragraph or a few sentences. Focus on:
+- The overall work pattern and productivity
+- Key tasks and their time investment
+- Any notable patterns or insights
+- Make it natural and readable, like a brief work summary
+
+Tasks and time tracking data:
+${tasksText}
+
+Summary:`,
+      })
+
+      return { summary }
+    } catch (error) {
+      console.error("[Convex summarizeTasks] Error:", error)
+      if (error instanceof OpenAI.APIError) {
+        if (error.status === 401) {
+          throw new Error("Invalid OpenAI API key")
+        }
+        if (error.status === 429) {
+          throw new Error("OpenAI rate limit exceeded")
+        }
+      }
+      throw new Error("Failed to generate summary")
+    }
+  },
+})

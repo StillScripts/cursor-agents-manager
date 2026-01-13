@@ -91,6 +91,36 @@ export const getTodayTimeLogs = query({
   },
 })
 
+export const getLast24HoursTimeLogs = query({
+  args: {},
+  handler: async (ctx) => {
+    const authUser = await getAuthenticatedUser(ctx).catch(() => null)
+    if (!authUser) {
+      return []
+    }
+
+    const now = Date.now()
+    const last24HoursStart = now - 24 * 60 * 60 * 1000 // 24 hours ago
+
+    const timeLogs = await ctx.db
+      .query("timeLogs")
+      .withIndex("by_user", (q) => q.eq("userId", authUser.userId))
+      .order("desc")
+      .collect()
+
+    return timeLogs
+      .filter((log) => log.startTime >= last24HoursStart)
+      .map((log) => ({
+        _id: log._id,
+        taskId: log.taskId,
+        activityType: log.activityType,
+        startTime: log.startTime,
+        endTime: log.endTime,
+        createdAt: log.createdAt,
+      }))
+  },
+})
+
 export const saveTimeLog = mutation({
   args: {
     taskId: v.id("tasks"),

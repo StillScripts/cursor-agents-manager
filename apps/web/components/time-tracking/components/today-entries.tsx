@@ -4,11 +4,11 @@ import { formatDuration, formatTime } from "helpers"
 import { Clock } from "lucide-react"
 import { useMemo } from "react"
 import { useTasks } from "@/lib/hooks/use-tasks"
-import { useTodayTimeLogs } from "@/lib/hooks/use-time-logs"
+import { useLast24HoursTimeLogs } from "@/lib/hooks/use-time-logs"
 
 export function TodayEntries() {
   const { tasks } = useTasks()
-  const { timeLogs } = useTodayTimeLogs()
+  const { timeLogs } = useLast24HoursTimeLogs()
 
   // Map time logs to entries with task titles
   const entries = useMemo(() => {
@@ -35,7 +35,7 @@ export function TodayEntries() {
     <div className="w-full max-w-md">
       <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
         <Clock className="w-4 h-4" />
-        Today&apos;s Sessions
+        Recent Sessions (Last 24 Hours)
       </h3>
       <div className="space-y-2">
         {entries.slice(0, 5).map((entry) => (
