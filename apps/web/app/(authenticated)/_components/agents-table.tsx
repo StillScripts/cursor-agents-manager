@@ -72,26 +72,27 @@ export function AgentsTable() {
   }, [rawQueryResult, syncAgents, limit])
 
   // Transform database result to Agent format
-  const agents: Agent[] =
-    dbResult?.agents.map((agent: Doc<"agents">) => ({
-      id: agent.agentId,
-      name: agent.name,
-      status: agent.status,
-      source: {
-        repository: agent.sourceRepository,
-        ref: agent.sourceRef,
-      },
-      target: {
-        url: agent.targetUrl ?? "",
-        branchName: agent.targetBranchName,
-        prUrl: agent.targetPrUrl,
-        autoCreatePr: agent.targetAutoCreatePr ?? false,
-      },
-      createdAt:
-        (agent.providerData as { createdAt?: string })?.createdAt ??
-        new Date().toISOString(),
-      summary: agent.summary,
-    })) ?? []
+  const agents: Agent[] = dbResult
+    ? dbResult.agents.map((agent: Doc<"agents">) => ({
+        id: agent.agentId,
+        name: agent.name,
+        status: agent.status,
+        source: {
+          repository: agent.sourceRepository,
+          ref: agent.sourceRef,
+        },
+        target: {
+          url: agent.targetUrl ?? "",
+          branchName: agent.targetBranchName,
+          prUrl: agent.targetPrUrl,
+          autoCreatePr: agent.targetAutoCreatePr ?? false,
+        },
+        createdAt:
+          (agent.providerData as { createdAt?: string })?.createdAt ??
+          new Date().toISOString(),
+        summary: agent.summary,
+      }))
+    : []
 
   const hasMore = dbResult?.hasMore ?? false
 
