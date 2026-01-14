@@ -5,14 +5,28 @@ import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
 import { useStableQuery } from "@/lib/hooks/use-stable-query"
 
-// TimeLog type matching what the queries actually return
+// TimeLog type matching what the queries actually return (completed logs only)
 export type TimeLog = {
   _id: Id<"timeLogs">
   taskId: Id<"tasks">
   activityType?: string
   startTime: number
-  endTime: number
+  endTime: number // Always present for completed logs
   createdAt: number
+}
+
+// ActiveTimeLog type for ongoing tasks
+export type ActiveTimeLog = {
+  _id: Id<"timeLogs">
+  taskId: Id<"tasks">
+  activityType?: string
+  startTime: number
+  createdAt: number
+  task: {
+    _id: Id<"tasks">
+    title: string
+    description?: string
+  }
 }
 
 export function useTimeLogsByTask(taskId: Id<"tasks"> | null) {
@@ -45,6 +59,16 @@ export function useTodayTimeLogs() {
   }
 }
 
+export function useActiveTimeLog() {
+  const activeTimeLog = useStableQuery(api.timeLogs.getActiveTimeLog)
+
+  return {
+    activeTimeLog,
+    isLoading: activeTimeLog === undefined,
+    hasActiveTask: activeTimeLog !== null && activeTimeLog !== undefined,
+  }
+}
+
 export function useSaveTimeLog() {
   const saveTimeLog = useMutation(api.timeLogs.saveTimeLog)
 
@@ -52,9 +76,20 @@ export function useSaveTimeLog() {
     saveTimeLog: (data: {
       taskId: Id<"tasks">
       startTime: number
-      endTime: number
+      endTime?: number // Optional - undefined means ongoing task
       activityType?: TimeLog["activityType"]
     }) => saveTimeLog(data),
+  }
+}
+
+export function useStopTimeLog() {
+  const stopTimeLog = useMutation(api.timeLogs.stopTimeLog)
+
+  return {
+    stopTimeLog: (data: {
+      timeLogId: Id<"timeLogs">
+      endTime: number
+    }) => stopTimeLog(data),
   }
 }
 

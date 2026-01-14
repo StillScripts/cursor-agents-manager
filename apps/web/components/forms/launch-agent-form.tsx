@@ -27,7 +27,7 @@ import {
 import { ImageUpload } from "@/components/ui/image-upload"
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
-import { activeTimerAtom } from "@/lib/atoms"
+import { useActiveTimeLog } from "@/lib/hooks/use-time-logs"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 import { useBranches } from "@/lib/hooks/use-branches"
 import { useModels } from "@/lib/hooks/use-models"
@@ -203,7 +203,7 @@ export function LaunchAgentForm() {
   const router = useRouter()
   const launchAgentAction = useAction(api.cursor.launchAgent)
   const { hasOpenAIKey } = useOpenAIKey()
-  const activeTimer = useAtomValue(activeTimerAtom)
+  const { activeTimeLog } = useActiveTimeLog()
   const { tasks } = useTasks()
 
   // Error state
@@ -211,19 +211,10 @@ export function LaunchAgentForm() {
 
   // Find matching task for active timer
   const getDefaultTaskTitle = (): string | undefined => {
-    if (!activeTimer || !tasks) return undefined
+    if (!activeTimeLog || !tasks) return undefined
 
-    // First try to match by taskId if available
-    if (activeTimer.taskId) {
-      const taskById = tasks.find(
-        (t) => t._id === (activeTimer.taskId as Id<"tasks">)
-      )
-      if (taskById) return taskById.title
-    }
-
-    // Otherwise match by title
-    const taskByTitle = tasks.find((t) => t.title === activeTimer.title)
-    return taskByTitle?.title
+    // Use the task from activeTimeLog
+    return activeTimeLog.task.title
   }
 
   // Default values for form reset
