@@ -86,10 +86,8 @@ export function useStopTimeLog() {
   const stopTimeLog = useMutation(api.timeLogs.stopTimeLog)
 
   return {
-    stopTimeLog: (data: {
-      timeLogId: Id<"timeLogs">
-      endTime: number
-    }) => stopTimeLog(data),
+    stopTimeLog: (data: { timeLogId: Id<"timeLogs">; endTime: number }) =>
+      stopTimeLog(data),
   }
 }
 

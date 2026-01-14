@@ -8,12 +8,14 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import type { Id } from "@/convex/_generated/dataModel"
-import {
-  descriptionInputAtom,
-  taskInputAtom,
-} from "@/lib/atoms"
+import { descriptionInputAtom, taskInputAtom } from "@/lib/atoms"
 import { useTasks } from "@/lib/hooks/use-tasks"
-import { useActiveTimeLog, useSaveTimeLog, useStopTimeLog, useTodayTimeLogs } from "@/lib/hooks/use-time-logs"
+import {
+  useActiveTimeLog,
+  useSaveTimeLog,
+  useStopTimeLog,
+  useTodayTimeLogs,
+} from "@/lib/hooks/use-time-logs"
 
 export function TimerDisplay() {
   const [taskInput, setTaskInput] = useAtom(taskInputAtom)
@@ -86,7 +88,10 @@ export function TimerDisplay() {
     } catch (error) {
       console.error("Failed to start timer:", error)
       // Show error to user if they already have an active task
-      if (error instanceof Error && error.message.includes("already have an active task")) {
+      if (
+        error instanceof Error &&
+        error.message.includes("already have an active task")
+      ) {
         alert(error.message)
       }
     } finally {
@@ -169,7 +174,11 @@ export function TimerDisplay() {
       <Button
         size="lg"
         onClick={isRunning ? handleStop : handleStart}
-        disabled={(!isRunning && (!taskInput.trim() || hasActiveTask)) || isStarting || isStopping}
+        disabled={
+          (!isRunning && (!taskInput.trim() || hasActiveTask)) ||
+          isStarting ||
+          isStopping
+        }
         className={`h-14 px-10 text-lg font-medium rounded-full transition-all ${
           isRunning
             ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground"

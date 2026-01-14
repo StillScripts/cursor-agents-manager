@@ -1,7 +1,7 @@
 "use client"
 
 import { formatDuration } from "helpers"
-import { useAtomValue, useSetAtom } from "jotai"
+import { useSetAtom } from "jotai"
 import {
   Calendar,
   ChevronDown,
@@ -26,14 +26,15 @@ import {
 } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import type { Id } from "@/convex/_generated/dataModel"
-import {
-  descriptionInputAtom,
-  taskInputAtom,
-  viewAtom,
-} from "@/lib/atoms"
+import { descriptionInputAtom, taskInputAtom, viewAtom } from "@/lib/atoms"
 import { useAgentsByTaskId } from "@/lib/hooks/use-agents"
 import { useTasks } from "@/lib/hooks/use-tasks"
-import { useActiveTimeLog, useAllTimeLogs, useDeleteTimeLog, useSaveTimeLog } from "@/lib/hooks/use-time-logs"
+import {
+  useActiveTimeLog,
+  useAllTimeLogs,
+  useDeleteTimeLog,
+  useSaveTimeLog,
+} from "@/lib/hooks/use-time-logs"
 
 function formatEntryDateTime(timestamp: number): string {
   const date = new Date(timestamp)
@@ -103,7 +104,7 @@ export function TaskList() {
   const { tasks, deleteTask } = useTasks()
   const { timeLogs } = useAllTimeLogs()
   const { deleteTimeLog } = useDeleteTimeLog()
-  const { activeTimeLog, hasActiveTask } = useActiveTimeLog()
+  const { hasActiveTask } = useActiveTimeLog()
   const { saveTimeLog } = useSaveTimeLog()
   const setTaskInput = useSetAtom(taskInputAtom)
   const setDescriptionInput = useSetAtom(descriptionInputAtom)
@@ -175,7 +176,10 @@ export function TaskList() {
       setView("timer")
     } catch (error) {
       console.error("Failed to start task:", error)
-      if (error instanceof Error && error.message.includes("already have an active task")) {
+      if (
+        error instanceof Error &&
+        error.message.includes("already have an active task")
+      ) {
         alert(error.message)
       }
     }

@@ -1,7 +1,6 @@
 "use client"
 
 import { useAction } from "convex/react"
-import { useAtomValue } from "jotai"
 import { AlertCircle, ExternalLink, Rocket, Settings } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -26,14 +25,13 @@ import {
 } from "@/components/ui/field"
 import { ImageUpload } from "@/components/ui/image-upload"
 import { api } from "@/convex/_generated/api"
-import type { Id } from "@/convex/_generated/dataModel"
-import { useActiveTimeLog } from "@/lib/hooks/use-time-logs"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 import { useBranches } from "@/lib/hooks/use-branches"
 import { useModels } from "@/lib/hooks/use-models"
 import { useOpenAIKey } from "@/lib/hooks/use-openai-key"
 import { useRepositories } from "@/lib/hooks/use-repositories"
 import { useTasks } from "@/lib/hooks/use-tasks"
+import { useActiveTimeLog } from "@/lib/hooks/use-time-logs"
 
 const RepositorySelectField = ({ field }: { field: any }) => {
   const { repositories, isLoading, hasRepositories } = useRepositories()

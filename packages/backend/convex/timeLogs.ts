@@ -166,7 +166,9 @@ export const saveTimeLog = mutation({
 
       const activeLog = timeLogs.find((log) => log.endTime === undefined)
       if (activeLog) {
-        throw new Error("You already have an active task. Please stop it before starting a new one.")
+        throw new Error(
+          "You already have an active task. Please stop it before starting a new one."
+        )
       }
     }
 
