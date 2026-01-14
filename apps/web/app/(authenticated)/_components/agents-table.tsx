@@ -9,6 +9,7 @@ import { AgentListSkeleton } from "@/app/(authenticated)/_components/agent-list-
 import { PageHeader } from "@/app/(authenticated)/_components/page-header"
 import { Button } from "@/components/ui/button"
 import { api } from "@/convex/_generated/api"
+import type { Doc } from "@/convex/_generated/dataModel"
 import { useStableQuery } from "@/lib/hooks/use-stable-query"
 import type { Agent } from "@/lib/types"
 
@@ -72,7 +73,7 @@ export function AgentsTable() {
 
   // Transform database result to Agent format
   const agents: Agent[] =
-    dbResult?.agents.map((agent) => ({
+    dbResult?.agents.map((agent: Doc<"agents">) => ({
       id: agent.agentId,
       name: agent.name,
       status: agent.status,
