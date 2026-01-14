@@ -312,6 +312,234 @@ export const textToSpeech = action({
  * Improve a task description/prompt to make it clearer and more effective for an AI agent
  * Also recommends a branch name based on the task type (feature/slug or hotfix/slug)
  */
+/**
+ * Chat with AI to interactively refine a task description
+ * Supports multi-turn conversation for task planning
+ */
+export const planTask = action({
+  args: {
+    currentTask: v.string(),
+    messages: v.array(
+      v.object({
+        role: v.union(v.literal("user"), v.literal("assistant")),
+        content: v.string(),
+      })
+    ),
+    userMessage: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
+
+    // Check rate limit before calling OpenAI API
+    await checkRateLimit(ctx, openAIRateLimiters.planTask, authUser.userId)
+
+    // Get OpenAI API key
+    const record = await ctx.runQuery(
+      internal.apiKeys.getApiKeysRecordInternal,
+      {
+        userId: authUser.userId,
+      }
+    )
+
+    if (!record?.encryptedOpenaiApiKey) {
+      throw new Error("OpenAI API key not configured")
+    }
+
+    let openaiApiKey: string
+    try {
+      openaiApiKey = decryptData(record.encryptedOpenaiApiKey)
+    } catch {
+      throw new Error("Failed to decrypt OpenAI API key")
+    }
+
+    // Validate input
+    if (!args.userMessage || args.userMessage.trim().length === 0) {
+      throw new Error("Message cannot be empty")
+    }
+
+    try {
+      const openaiProvider = createOpenAI({ apiKey: openaiApiKey })
+
+      // Build the conversation history for the AI
+      const systemPrompt = `You are a helpful AI assistant that helps users refine and improve their task descriptions for AI coding agents. Your goal is to:
+
+1. Ask clarifying questions to understand the task better
+2. Help the user think through edge cases and requirements
+3. Suggest improvements to make the task clearer and more actionable
+4. Keep your responses concise and focused
+
+The user's current task description is:
+"""
+${args.currentTask}
+"""
+
+Help them refine this task through conversation. When the task is well-defined, offer to generate a final improved version.
+Keep responses short and conversational. Ask one or two questions at a time.`
+
+      // Build messages array with conversation history
+      const conversationMessages: Array<{
+        role: "user" | "assistant" | "system"
+        content: string
+      }> = [
+        { role: "system", content: systemPrompt },
+        ...args.messages.map((msg) => ({
+          role: msg.role as "user" | "assistant",
+          content: msg.content,
+        })),
+        { role: "user", content: args.userMessage },
+      ]
+
+      const { text: response } = await generateText({
+        model: openaiProvider("gpt-4o-mini"),
+        messages: conversationMessages,
+      })
+
+      return {
+        response: response.trim(),
+      }
+    } catch (error) {
+      console.error("[Convex planTask] Error:", error)
+      if (error instanceof OpenAI.APIError) {
+        if (error.status === 401) {
+          throw new Error("Invalid OpenAI API key")
+        }
+        if (error.status === 429) {
+          throw new Error("OpenAI rate limit exceeded")
+        }
+      }
+      throw new Error("Failed to process message")
+    }
+  },
+})
+
+/**
+ * Generate a final improved task description from a planning conversation
+ */
+export const generateFinalTask = action({
+  args: {
+    originalTask: v.string(),
+    messages: v.array(
+      v.object({
+        role: v.union(v.literal("user"), v.literal("assistant")),
+        content: v.string(),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
+
+    // Check rate limit before calling OpenAI API
+    await checkRateLimit(
+      ctx,
+      openAIRateLimiters.generateFinalTask,
+      authUser.userId
+    )
+
+    // Get OpenAI API key
+    const record = await ctx.runQuery(
+      internal.apiKeys.getApiKeysRecordInternal,
+      {
+        userId: authUser.userId,
+      }
+    )
+
+    if (!record?.encryptedOpenaiApiKey) {
+      throw new Error("OpenAI API key not configured")
+    }
+
+    let openaiApiKey: string
+    try {
+      openaiApiKey = decryptData(record.encryptedOpenaiApiKey)
+    } catch {
+      throw new Error("Failed to decrypt OpenAI API key")
+    }
+
+    try {
+      const openaiProvider = createOpenAI({ apiKey: openaiApiKey })
+
+      // Build a summary of the conversation for context
+      const conversationSummary = args.messages
+        .map(
+          (msg) =>
+            `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`
+        )
+        .join("\n")
+
+      const { text: response } = await generateText({
+        model: openaiProvider("gpt-4o-mini"),
+        prompt: `Based on the following conversation where a user refined their task description, generate the final improved task description.
+
+Original task:
+"""
+${args.originalTask}
+"""
+
+Conversation:
+${conversationSummary}
+
+Generate a clear, comprehensive, and actionable task description that incorporates all the insights from the conversation. The task should be ready for an AI coding agent to execute.
+
+Also recommend a branch name based on the task type:
+- If this is a new feature or enhancement, use format: feature/slug (e.g., feature/add-user-authentication)
+- If this is a bug fix, use format: hotfix/slug (e.g., hotfix/fix-login-error)
+- Create a short, descriptive slug (lowercase, use hyphens instead of spaces)
+- The slug should be 2-4 words that summarize the task
+
+Respond in the following format:
+IMPROVED_DESCRIPTION:
+[Your improved task description here]
+
+BRANCH_NAME:
+[feature/slug or hotfix/slug]`,
+      })
+
+      // Parse the response
+      const improvedTextMatch = response.match(
+        /IMPROVED_DESCRIPTION:\s*([\s\S]+?)(?=\nBRANCH_NAME:|$)/
+      )
+      const branchNameMatch = response.match(/BRANCH_NAME:\s*(.+?)(?:\n|$)/)
+
+      let improvedText: string
+      let branchName: string | undefined
+
+      if (improvedTextMatch) {
+        improvedText = improvedTextMatch[1].trim()
+        branchName = branchNameMatch
+          ? branchNameMatch[1].trim() || undefined
+          : undefined
+      } else {
+        improvedText = response.trim()
+        branchName = undefined
+      }
+
+      // Validate branch name format
+      if (branchName && !/^(feature|hotfix)\//.test(branchName)) {
+        branchName = undefined
+      }
+
+      return {
+        text: improvedText,
+        branchName: branchName || undefined,
+      }
+    } catch (error) {
+      console.error("[Convex generateFinalTask] Error:", error)
+      if (error instanceof OpenAI.APIError) {
+        if (error.status === 401) {
+          throw new Error("Invalid OpenAI API key")
+        }
+        if (error.status === 429) {
+          throw new Error("OpenAI rate limit exceeded")
+        }
+      }
+      throw new Error("Failed to generate final task")
+    }
+  },
+})
+
 export const improvePrompt = action({
   args: {
     text: v.string(),
