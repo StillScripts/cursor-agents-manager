@@ -11,6 +11,8 @@ import Link from "next/link"
 import { PageHeader } from "@/app/(authenticated)/_components/page-header"
 import { Card, CardContent } from "@/components/ui/card"
 import { SkeletonCard } from "@/components/ui/skeleton-card"
+import type { Id } from "@/convex/_generated/dataModel"
+import type { Task } from "@/lib/hooks/use-tasks"
 import { useTasks } from "@/lib/hooks/use-tasks"
 import { type TimeLog, useAllTimeLogs } from "@/lib/hooks/use-time-logs"
 
@@ -46,14 +48,14 @@ function ActivityItem({ log }: { log: TimeLog }) {
 }
 
 interface GroupedLogs {
-  taskId: string
+  taskId: Id<"tasks">
   logs: TimeLog[]
   totalDuration: number
 }
 
 function TaskActivityGroup({ group }: { group: GroupedLogs }) {
   const { tasks } = useTasks()
-  const task = tasks?.find((t) => t._id === group.taskId)
+  const task = tasks?.find((t: Task) => t._id === group.taskId)
 
   // Show loading state or task name
   const displayName = task?.title || `Task ${group.taskId}`
