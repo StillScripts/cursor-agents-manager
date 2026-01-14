@@ -1,6 +1,6 @@
 "use client"
 
-import { useAction } from "convex/react"
+import { useAction, useQuery } from "convex/react"
 import {
   Brain,
   Check,
@@ -26,6 +26,13 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { api } from "@/convex/_generated/api"
 import { cn } from "@/lib/utils"
 
@@ -77,27 +84,34 @@ const features = [
   },
 ] as const
 
-interface OpenAIKeyEditorProps {
+type AIProvider = "openai" | "verso"
+
+interface ApiKeyEditorProps {
   className?: string
   isEditing: boolean
+  provider: AIProvider
   onSave: (apiKey: string) => Promise<void>
   onCancel: () => void
 }
 
-const OpenAIKeyEditor = ({
+const ApiKeyEditor = ({
   className,
   isEditing,
+  provider,
   onSave,
   onCancel,
-}: OpenAIKeyEditorProps) => {
+}: ApiKeyEditorProps) => {
   const [showKey, setShowKey] = useState(false)
   const [newApiKey, setNewApiKey] = useState("")
   const [error, setError] = useState("")
   const [isSaving, setIsSaving] = useState(false)
 
+  const providerName = provider === "openai" ? "OpenAI" : "Verso"
+  const placeholder = provider === "openai" ? "sk-..." : "Enter your Verso API key"
+
   const handleSave = async () => {
     if (!newApiKey.trim() || newApiKey.trim().length < 10) {
-      setError("Please enter a valid OpenAI API key (at least 10 characters)")
+      setError(`Please enter a valid ${providerName} API key (at least 10 characters)`)
       return
     }
     setError("")
@@ -108,7 +122,7 @@ const OpenAIKeyEditor = ({
       setShowKey(false)
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to save OpenAI API key"
+        err instanceof Error ? err.message : `Failed to save ${providerName} API key`
       )
     } finally {
       setIsSaving(false)
@@ -129,12 +143,12 @@ const OpenAIKeyEditor = ({
   return (
     <div className={cn("space-y-3", className)}>
       <div className="space-y-2">
-        <Label htmlFor="openaiApiKey">OpenAI API Key</Label>
+        <Label htmlFor="apiKey">{providerName} API Key</Label>
         <div className="relative">
           <Input
-            id="openaiApiKey"
+            id="apiKey"
             type={showKey ? "text" : "password"}
-            placeholder="sk-..."
+            placeholder={placeholder}
             value={newApiKey}
             onChange={(e) => setNewApiKey(e.target.value)}
             disabled={isSaving}
@@ -179,46 +193,79 @@ const OpenAIKeyEditor = ({
   )
 }
 
-const AddKeyButton = ({ onClick }: { onClick: () => void }) => (
-  <Button onClick={onClick} className="w-full">
-    <Key className="h-4 w-4 mr-2" />
-    Add OpenAI API Key
-  </Button>
-)
+const AddKeyButton = ({
+  onClick,
+  provider,
+}: {
+  onClick: () => void
+  provider: AIProvider
+}) => {
+  const providerName = provider === "openai" ? "OpenAI" : "Verso"
+  return (
+    <Button onClick={onClick} className="w-full">
+      <Key className="h-4 w-4 mr-2" />
+      Add {providerName} API Key
+    </Button>
+  )
+}
 
 export function OpenAIApiKeyManager() {
   const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [apiKeyStatus, setApiKeyStatus] = useState<ApiKeyStatus>({
+  const [selectedProvider, setSelectedProvider] = useState<AIProvider>("openai")
+  const [openaiStatus, setOpenaiStatus] = useState<ApiKeyStatus>({
+    hasKey: false,
+    maskedKey: null,
+  })
+  const [versoStatus, setVersoStatus] = useState<ApiKeyStatus>({
     hasKey: false,
     maskedKey: null,
   })
 
+  const currentProvider = useQuery(api.apiKeys.getAiProvider) ?? "openai"
   const getOpenaiApiKeyStatus = useAction(
     api.apiKeysActions.getOpenaiApiKeyStatus
   )
+  const getVersoApiKeyStatus = useAction(api.apiKeysActions.getVersoApiKeyStatus)
   const saveOpenaiApiKey = useAction(api.apiKeysActions.saveOpenaiApiKey)
+  const saveVersoApiKey = useAction(api.apiKeysActions.saveVersoApiKey)
   const deleteOpenaiApiKey = useAction(api.apiKeysActions.deleteOpenaiApiKey)
+  const deleteVersoApiKey = useAction(api.apiKeysActions.deleteVersoApiKey)
+  const setAiProvider = useAction(api.apiKeysActions.setAiProvider)
 
   const fetchStatus = useCallback(async () => {
     try {
       setIsLoading(true)
-      const status = await getOpenaiApiKeyStatus()
-      setApiKeyStatus(status)
+      const [openai, verso] = await Promise.all([
+        getOpenaiApiKeyStatus(),
+        getVersoApiKeyStatus(),
+      ])
+      setOpenaiStatus(openai)
+      setVersoStatus(verso)
     } catch (err) {
-      console.error("Failed to fetch OpenAI API key status:", err)
+      console.error("Failed to fetch API key status:", err)
     } finally {
       setIsLoading(false)
     }
-  }, [getOpenaiApiKeyStatus])
+  }, [getOpenaiApiKeyStatus, getVersoApiKeyStatus])
 
   useEffect(() => {
     fetchStatus()
   }, [fetchStatus])
 
+  useEffect(() => {
+    if (currentProvider) {
+      setSelectedProvider(currentProvider)
+    }
+  }, [currentProvider])
+
   const handleSave = async (apiKey: string) => {
-    await saveOpenaiApiKey({ apiKey })
+    if (selectedProvider === "openai") {
+      await saveOpenaiApiKey({ apiKey })
+    } else {
+      await saveVersoApiKey({ apiKey })
+    }
     await fetchStatus()
     setIsEditing(false)
   }
@@ -226,10 +273,14 @@ export function OpenAIApiKeyManager() {
   const handleDelete = async () => {
     setIsDeleting(true)
     try {
-      await deleteOpenaiApiKey()
+      if (selectedProvider === "openai") {
+        await deleteOpenaiApiKey()
+      } else {
+        await deleteVersoApiKey()
+      }
       await fetchStatus()
     } catch (err) {
-      console.error("Failed to delete OpenAI API key:", err)
+      console.error(`Failed to delete ${selectedProvider} API key:`, err)
     } finally {
       setIsDeleting(false)
     }
@@ -238,6 +289,16 @@ export function OpenAIApiKeyManager() {
   const handleCancel = () => {
     setIsEditing(false)
   }
+
+  const handleProviderChange = async (provider: AIProvider) => {
+    setSelectedProvider(provider)
+    await setAiProvider({ provider })
+    await fetchStatus()
+  }
+
+  const currentStatus =
+    selectedProvider === "openai" ? openaiStatus : versoStatus
+  const providerName = selectedProvider === "openai" ? "OpenAI" : "Verso"
 
   if (isLoading) {
     return (
@@ -252,7 +313,9 @@ export function OpenAIApiKeyManager() {
     )
   }
 
-  if (!apiKeyStatus.hasKey) {
+  const hasAnyKey = openaiStatus.hasKey || versoStatus.hasKey
+
+  if (!hasAnyKey) {
     return (
       <Card className="bg-linear-to-br from-primary/5 to-primary/0 border-primary/20">
         <CardHeader>
@@ -263,21 +326,42 @@ export function OpenAIApiKeyManager() {
             </CardTitle>
           </div>
           <CardDescription className="text-base">
-            Add your OpenAI API key to unlock powerful AI features that enhance
+            Add your AI provider API key to unlock powerful AI features that enhance
             your agent management experience.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
+            <div className="space-y-2">
+              <Label>AI Provider</Label>
+              <Select
+                value={selectedProvider}
+                onValueChange={(value) => handleProviderChange(value as AIProvider)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="openai">OpenAI</SelectItem>
+                  <SelectItem value="verso">Verso AI</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             {features.map((feature) => (
               <FeatureItem key={feature.title} {...feature} />
             ))}
           </div>
 
-          {!isEditing && <AddKeyButton onClick={() => setIsEditing(true)} />}
-          <OpenAIKeyEditor
+          {!isEditing && (
+            <AddKeyButton
+              provider={selectedProvider}
+              onClick={() => setIsEditing(true)}
+            />
+          )}
+          <ApiKeyEditor
             className="rounded-lg bg-background/50 p-4"
             isEditing={isEditing}
+            provider={selectedProvider}
             onSave={handleSave}
             onCancel={handleCancel}
           />
@@ -292,49 +376,148 @@ export function OpenAIApiKeyManager() {
         <div className="flex items-center gap-2">
           <Key className="h-4 w-4 text-primary" />
           <CardTitle className="text-base font-semibold">
-            OpenAI API Key
+            AI Provider Settings
           </CardTitle>
         </div>
         <CardDescription>
-          {apiKeyStatus.hasKey
-            ? "Your OpenAI API key is configured. You can now use AI-powered conversation summaries."
-            : "Add your OpenAI API key to enable AI-powered conversation summaries. Get your key from platform.openai.com."}
+          Configure your AI provider and API keys for AI-powered features.
         </CardDescription>
       </CardHeader>
-      <CardContent className="pt-0 space-y-3">
-        {!isEditing && apiKeyStatus.hasKey && (
-          <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-            <code className="text-sm font-mono">{apiKeyStatus.maskedKey}</code>
-            <div className="flex gap-2">
+      <CardContent className="pt-0 space-y-4">
+        <div className="space-y-2">
+          <Label>Preferred AI Provider</Label>
+          <Select
+            value={selectedProvider}
+            onValueChange={(value) => handleProviderChange(value as AIProvider)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="openai">OpenAI</SelectItem>
+              <SelectItem value="verso">Verso AI</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-3">
+          {/* OpenAI Key Section */}
+          <div className="space-y-2">
+            <Label>OpenAI API Key</Label>
+            {openaiStatus.hasKey ? (
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <code className="text-sm font-mono">{openaiStatus.maskedKey}</code>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedProvider("openai")
+                      setIsEditing(true)
+                    }}
+                  >
+                    Update
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={async () => {
+                      setIsDeleting(true)
+                      try {
+                        await deleteOpenaiApiKey()
+                        await fetchStatus()
+                      } catch (err) {
+                        console.error("Failed to delete OpenAI API key:", err)
+                      } finally {
+                        setIsDeleting(false)
+                      }
+                    }}
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                onClick={() => setIsEditing(true)}
+                onClick={() => {
+                  setSelectedProvider("openai")
+                  setIsEditing(true)
+                }}
+                className="w-full"
               >
-                Update
+                <Key className="h-4 w-4 mr-2" />
+                Add OpenAI API Key
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-destructive hover:text-destructive"
-                onClick={handleDelete}
-                disabled={isDeleting}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
+            )}
           </div>
-        )}
 
-        {!isEditing && !apiKeyStatus.hasKey && (
-          <AddKeyButton onClick={() => setIsEditing(true)} />
-        )}
+          {/* Verso Key Section */}
+          <div className="space-y-2">
+            <Label>Verso API Key</Label>
+            {versoStatus.hasKey ? (
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <code className="text-sm font-mono">{versoStatus.maskedKey}</code>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedProvider("verso")
+                      setIsEditing(true)
+                    }}
+                  >
+                    Update
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={async () => {
+                      setIsDeleting(true)
+                      try {
+                        await deleteVersoApiKey()
+                        await fetchStatus()
+                      } catch (err) {
+                        console.error("Failed to delete Verso API key:", err)
+                      } finally {
+                        setIsDeleting(false)
+                      }
+                    }}
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedProvider("verso")
+                  setIsEditing(true)
+                }}
+                className="w-full"
+              >
+                <Key className="h-4 w-4 mr-2" />
+                Add Verso API Key
+              </Button>
+            )}
+          </div>
+        </div>
 
-        <OpenAIKeyEditor
-          isEditing={isEditing}
-          onSave={handleSave}
-          onCancel={handleCancel}
-        />
+        {isEditing && (
+          <ApiKeyEditor
+            provider={selectedProvider}
+            isEditing={isEditing}
+            onSave={handleSave}
+            onCancel={handleCancel}
+          />
+        )}
       </CardContent>
     </Card>
   )

@@ -1,9 +1,7 @@
 "use node"
 
-import { createOpenAI } from "@ai-sdk/openai"
 import { generateText } from "ai"
 import { v } from "convex/values"
-import { decryptData } from "encryption"
 import OpenAI from "openai"
 import {
   type AgentConversation,
@@ -12,6 +10,13 @@ import {
 import { api, internal } from "./_generated/api"
 import { action } from "./_generated/server"
 import { checkRateLimit, openAIRateLimiters } from "./rateLimiting"
+import {
+  createAIProvider,
+  createOpenAIClient,
+  getAIProviderConfig,
+  handleAIError,
+  type AIProvider,
+} from "./aiProvider"
 
 /**
  * Summarize a conversation using OpenAI
@@ -25,31 +30,15 @@ export const summarizeConversation = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
-    // Check rate limit before calling OpenAI API
+    // Check rate limit before calling AI API
     await checkRateLimit(
       ctx,
       openAIRateLimiters.summarizeConversation,
       authUser.userId
     )
 
-    // Get OpenAI API key
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
-      {
-        userId: authUser.userId,
-      }
-    )
-
-    if (!record?.encryptedOpenaiApiKey) {
-      throw new Error("OpenAI API key not configured")
-    }
-
-    let openaiApiKey: string
-    try {
-      openaiApiKey = decryptData(record.encryptedOpenaiApiKey)
-    } catch {
-      throw new Error("Failed to decrypt OpenAI API key")
-    }
+    // Get AI provider configuration
+    const aiConfig = await getAIProviderConfig(ctx, authUser)
 
     // Get conversation (the action handles API key internally)
     const conversationData = await ctx.runAction(api.cursor.getConversation, {
@@ -103,10 +92,10 @@ export const summarizeConversation = action({
     }
 
     try {
-      // Generate summary using AI SDK with user's API key
-      const openaiProvider = createOpenAI({ apiKey: openaiApiKey })
+      // Generate summary using AI SDK with user's provider
+      const aiProvider = createAIProvider(aiConfig)
       const { text: summary } = await generateText({
-        model: openaiProvider("gpt-4o-mini"),
+        model: aiProvider("gpt-4o-mini"),
         prompt: `Please provide a concise summary of the following conversation between a user and a Cursor AI agent. Focus on:
 - The main task or goal
 - Key actions taken by the agent
@@ -129,14 +118,7 @@ Summary:`,
       return { summary }
     } catch (error) {
       console.error("[Convex summarizeConversation] Error:", error)
-      if (error instanceof OpenAI.APIError) {
-        if (error.status === 401) {
-          throw new Error("Invalid OpenAI API key")
-        }
-        if (error.status === 429) {
-          throw new Error("OpenAI rate limit exceeded")
-        }
-      }
+      handleAIError(error, aiConfig.provider)
       throw new Error("Failed to generate summary")
     }
   },
@@ -155,31 +137,15 @@ export const transcribeAudio = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
-    // Check rate limit before calling OpenAI API
+    // Check rate limit before calling AI API
     await checkRateLimit(
       ctx,
       openAIRateLimiters.transcribeAudio,
       authUser.userId
     )
 
-    // Get OpenAI API key
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
-      {
-        userId: authUser.userId,
-      }
-    )
-
-    if (!record?.encryptedOpenaiApiKey) {
-      throw new Error("OpenAI API key not configured")
-    }
-
-    let openaiApiKey: string
-    try {
-      openaiApiKey = decryptData(record.encryptedOpenaiApiKey)
-    } catch {
-      throw new Error("Failed to decrypt OpenAI API key")
-    }
+    // Get AI provider configuration
+    const aiConfig = await getAIProviderConfig(ctx, authUser)
 
     try {
       // Convert base64 to buffer
@@ -216,9 +182,9 @@ export const transcribeAudio = action({
         type: args.mimeType,
       })
 
-      // Call OpenAI Whisper API
-      const openai = new OpenAI({ apiKey: openaiApiKey })
-      const transcription = await openai.audio.transcriptions.create({
+      // Call AI transcription API
+      const aiClient = createOpenAIClient(aiConfig)
+      const transcription = await aiClient.audio.transcriptions.create({
         file: audioFile,
         model: "whisper-1",
       })
@@ -226,14 +192,7 @@ export const transcribeAudio = action({
       return { text: transcription.text }
     } catch (error) {
       console.error("[Convex transcribeAudio] Error:", error)
-      if (error instanceof OpenAI.APIError) {
-        if (error.status === 401) {
-          throw new Error("Invalid OpenAI API key")
-        }
-        if (error.status === 429) {
-          throw new Error("OpenAI rate limit exceeded")
-        }
-      }
+      handleAIError(error, aiConfig.provider)
       throw new Error("Failed to transcribe audio")
     }
   },
@@ -252,31 +211,15 @@ export const textToSpeech = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
-    // Check rate limit before calling OpenAI API
+    // Check rate limit before calling AI API
     await checkRateLimit(ctx, openAIRateLimiters.textToSpeech, authUser.userId)
 
-    // Get OpenAI API key
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
-      {
-        userId: authUser.userId,
-      }
-    )
-
-    if (!record?.encryptedOpenaiApiKey) {
-      throw new Error("OpenAI API key not configured")
-    }
-
-    let openaiApiKey: string
-    try {
-      openaiApiKey = decryptData(record.encryptedOpenaiApiKey)
-    } catch {
-      throw new Error("Failed to decrypt OpenAI API key")
-    }
+    // Get AI provider configuration
+    const aiConfig = await getAIProviderConfig(ctx, authUser)
 
     try {
-      const openai = new OpenAI({ apiKey: openaiApiKey })
-      const mp3 = await openai.audio.speech.create({
+      const aiClient = createOpenAIClient(aiConfig)
+      const mp3 = await aiClient.audio.speech.create({
         model: "tts-1",
         voice: (args.voice || "alloy") as
           | "alloy"
@@ -295,14 +238,7 @@ export const textToSpeech = action({
       return { audioData: base64, mimeType: "audio/mpeg" }
     } catch (error) {
       console.error("[Convex textToSpeech] Error:", error)
-      if (error instanceof OpenAI.APIError) {
-        if (error.status === 401) {
-          throw new Error("Invalid OpenAI API key")
-        }
-        if (error.status === 429) {
-          throw new Error("OpenAI rate limit exceeded")
-        }
-      }
+      handleAIError(error, aiConfig.provider)
       throw new Error("Failed to generate speech")
     }
   },
@@ -332,27 +268,11 @@ export const planTask = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
-    // Check rate limit before calling OpenAI API
+    // Check rate limit before calling AI API
     await checkRateLimit(ctx, openAIRateLimiters.planTask, authUser.userId)
 
-    // Get OpenAI API key
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
-      {
-        userId: authUser.userId,
-      }
-    )
-
-    if (!record?.encryptedOpenaiApiKey) {
-      throw new Error("OpenAI API key not configured")
-    }
-
-    let openaiApiKey: string
-    try {
-      openaiApiKey = decryptData(record.encryptedOpenaiApiKey)
-    } catch {
-      throw new Error("Failed to decrypt OpenAI API key")
-    }
+    // Get AI provider configuration
+    const aiConfig = await getAIProviderConfig(ctx, authUser)
 
     // Validate input
     if (!args.userMessage || args.userMessage.trim().length === 0) {
@@ -360,7 +280,7 @@ export const planTask = action({
     }
 
     try {
-      const openaiProvider = createOpenAI({ apiKey: openaiApiKey })
+      const aiProvider = createAIProvider(aiConfig)
 
       // Build the conversation history for the AI
       const systemPrompt = `You are a helpful AI assistant that helps users refine and improve their task descriptions for AI coding agents. Your goal is to:
@@ -392,7 +312,7 @@ Keep responses short and conversational. Ask one or two questions at a time.`
       ]
 
       const { text: response } = await generateText({
-        model: openaiProvider("gpt-4o-mini"),
+        model: aiProvider("gpt-4o-mini"),
         messages: conversationMessages,
       })
 
@@ -401,14 +321,7 @@ Keep responses short and conversational. Ask one or two questions at a time.`
       }
     } catch (error) {
       console.error("[Convex planTask] Error:", error)
-      if (error instanceof OpenAI.APIError) {
-        if (error.status === 401) {
-          throw new Error("Invalid OpenAI API key")
-        }
-        if (error.status === 429) {
-          throw new Error("OpenAI rate limit exceeded")
-        }
-      }
+      handleAIError(error, aiConfig.provider)
       throw new Error("Failed to process message")
     }
   },
@@ -432,34 +345,18 @@ export const generateFinalTask = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
-    // Check rate limit before calling OpenAI API
+    // Check rate limit before calling AI API
     await checkRateLimit(
       ctx,
       openAIRateLimiters.generateFinalTask,
       authUser.userId
     )
 
-    // Get OpenAI API key
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
-      {
-        userId: authUser.userId,
-      }
-    )
-
-    if (!record?.encryptedOpenaiApiKey) {
-      throw new Error("OpenAI API key not configured")
-    }
-
-    let openaiApiKey: string
-    try {
-      openaiApiKey = decryptData(record.encryptedOpenaiApiKey)
-    } catch {
-      throw new Error("Failed to decrypt OpenAI API key")
-    }
+    // Get AI provider configuration
+    const aiConfig = await getAIProviderConfig(ctx, authUser)
 
     try {
-      const openaiProvider = createOpenAI({ apiKey: openaiApiKey })
+      const aiProvider = createAIProvider(aiConfig)
 
       // Build a summary of the conversation for context
       const conversationSummary = args.messages
@@ -470,7 +367,7 @@ export const generateFinalTask = action({
         .join("\n")
 
       const { text: response } = await generateText({
-        model: openaiProvider("gpt-4o-mini"),
+        model: aiProvider("gpt-4o-mini"),
         prompt: `Based on the following conversation where a user refined their task description, generate the final improved task description.
 
 Original task:
@@ -527,14 +424,7 @@ BRANCH_NAME:
       }
     } catch (error) {
       console.error("[Convex generateFinalTask] Error:", error)
-      if (error instanceof OpenAI.APIError) {
-        if (error.status === 401) {
-          throw new Error("Invalid OpenAI API key")
-        }
-        if (error.status === 429) {
-          throw new Error("OpenAI rate limit exceeded")
-        }
-      }
+      handleAIError(error, aiConfig.provider)
       throw new Error("Failed to generate final task")
     }
   },
@@ -549,27 +439,11 @@ export const improvePrompt = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
-    // Check rate limit before calling OpenAI API
+    // Check rate limit before calling AI API
     await checkRateLimit(ctx, openAIRateLimiters.improvePrompt, authUser.userId)
 
-    // Get OpenAI API key
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
-      {
-        userId: authUser.userId,
-      }
-    )
-
-    if (!record?.encryptedOpenaiApiKey) {
-      throw new Error("OpenAI API key not configured")
-    }
-
-    let openaiApiKey: string
-    try {
-      openaiApiKey = decryptData(record.encryptedOpenaiApiKey)
-    } catch {
-      throw new Error("Failed to decrypt OpenAI API key")
-    }
+    // Get AI provider configuration
+    const aiConfig = await getAIProviderConfig(ctx, authUser)
 
     // Validate input
     if (!args.text || args.text.trim().length === 0) {
@@ -578,9 +452,9 @@ export const improvePrompt = action({
 
     try {
       // Generate improved prompt and branch name using AI SDK
-      const openaiProvider = createOpenAI({ apiKey: openaiApiKey })
+      const aiProvider = createAIProvider(aiConfig)
       const { text: response } = await generateText({
-        model: openaiProvider("gpt-4o-mini"),
+        model: aiProvider("gpt-4o-mini"),
         prompt: `You are helping to improve task descriptions for AI coding agents. The user has provided a task description that they want to make clearer and more effective.
 
 Your goal is to:
@@ -642,14 +516,7 @@ BRANCH_NAME:
       }
     } catch (error) {
       console.error("[Convex improvePrompt] Error:", error)
-      if (error instanceof OpenAI.APIError) {
-        if (error.status === 401) {
-          throw new Error("Invalid OpenAI API key")
-        }
-        if (error.status === 429) {
-          throw new Error("OpenAI rate limit exceeded")
-        }
-      }
+      handleAIError(error, aiConfig.provider)
       throw new Error("Failed to improve prompt")
     }
   },
