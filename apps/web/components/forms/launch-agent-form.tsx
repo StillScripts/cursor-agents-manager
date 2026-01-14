@@ -1,7 +1,6 @@
 "use client"
 
 import { useAction } from "convex/react"
-import { useAtomValue } from "jotai"
 import { AlertCircle, ExternalLink, Rocket, Settings } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -26,14 +25,13 @@ import {
 } from "@/components/ui/field"
 import { ImageUpload } from "@/components/ui/image-upload"
 import { api } from "@/convex/_generated/api"
-import type { Id } from "@/convex/_generated/dataModel"
-import { activeTimerAtom } from "@/lib/atoms"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 import { useBranches } from "@/lib/hooks/use-branches"
 import { useModels } from "@/lib/hooks/use-models"
 import { useOpenAIKey } from "@/lib/hooks/use-openai-key"
 import { useRepositories } from "@/lib/hooks/use-repositories"
 import { useTasks } from "@/lib/hooks/use-tasks"
+import { useActiveTimeLog } from "@/lib/hooks/use-time-logs"
 
 const RepositorySelectField = ({ field }: { field: any }) => {
   const { repositories, isLoading, hasRepositories } = useRepositories()
@@ -203,7 +201,7 @@ export function LaunchAgentForm() {
   const router = useRouter()
   const launchAgentAction = useAction(api.cursor.launchAgent)
   const { hasOpenAIKey } = useOpenAIKey()
-  const activeTimer = useAtomValue(activeTimerAtom)
+  const { activeTimeLog } = useActiveTimeLog()
   const { tasks } = useTasks()
 
   // Error state
@@ -211,19 +209,10 @@ export function LaunchAgentForm() {
 
   // Find matching task for active timer
   const getDefaultTaskTitle = (): string | undefined => {
-    if (!activeTimer || !tasks) return undefined
+    if (!activeTimeLog || !tasks) return undefined
 
-    // First try to match by taskId if available
-    if (activeTimer.taskId) {
-      const taskById = tasks.find(
-        (t) => t._id === (activeTimer.taskId as Id<"tasks">)
-      )
-      if (taskById) return taskById.title
-    }
-
-    // Otherwise match by title
-    const taskByTitle = tasks.find((t) => t.title === activeTimer.title)
-    return taskByTitle?.title
+    // Use the task from activeTimeLog
+    return activeTimeLog.task.title
   }
 
   // Default values for form reset
