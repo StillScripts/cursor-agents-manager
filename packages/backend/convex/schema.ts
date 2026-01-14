@@ -79,7 +79,7 @@ export default defineSchema({
     taskId: v.id("tasks"),
     activityType: v.optional(v.string()),
     startTime: v.number(),
-    endTime: v.number(),
+    endTime: v.optional(v.number()), // Optional - null means task is ongoing
     createdAt: v.number(),
   })
     .index("by_user", ["userId"])

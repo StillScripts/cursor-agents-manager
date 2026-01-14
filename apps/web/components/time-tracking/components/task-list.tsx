@@ -1,7 +1,7 @@
 "use client"
 
 import { formatDuration } from "helpers"
-import { useAtomValue, useSetAtom } from "jotai"
+import { useSetAtom } from "jotai"
 import {
   Calendar,
   ChevronDown,
@@ -26,15 +26,15 @@ import {
 } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import type { Id } from "@/convex/_generated/dataModel"
-import {
-  activeTimerAtom,
-  descriptionInputAtom,
-  taskInputAtom,
-  viewAtom,
-} from "@/lib/atoms"
+import { descriptionInputAtom, taskInputAtom, viewAtom } from "@/lib/atoms"
 import { useAgentsByTaskId } from "@/lib/hooks/use-agents"
 import { useTasks } from "@/lib/hooks/use-tasks"
-import { useAllTimeLogs, useDeleteTimeLog } from "@/lib/hooks/use-time-logs"
+import {
+  useActiveTimeLog,
+  useAllTimeLogs,
+  useDeleteTimeLog,
+  useSaveTimeLog,
+} from "@/lib/hooks/use-time-logs"
 
 function formatEntryDateTime(timestamp: number): string {
   const date = new Date(timestamp)
@@ -104,8 +104,8 @@ export function TaskList() {
   const { tasks, deleteTask } = useTasks()
   const { timeLogs } = useAllTimeLogs()
   const { deleteTimeLog } = useDeleteTimeLog()
-  const activeTimer = useAtomValue(activeTimerAtom)
-  const setActiveTimer = useSetAtom(activeTimerAtom)
+  const { hasActiveTask } = useActiveTimeLog()
+  const { saveTimeLog } = useSaveTimeLog()
   const setTaskInput = useSetAtom(taskInputAtom)
   const setDescriptionInput = useSetAtom(descriptionInputAtom)
   const setView = useSetAtom(viewAtom)
@@ -157,22 +157,32 @@ export function TaskList() {
     })
   }
 
-  const handleContinue = (task: {
+  const handleContinue = async (task: {
     title: string
     description?: string
     _id: Id<"tasks">
   }) => {
-    if (activeTimer) return
+    if (hasActiveTask) return
 
-    setActiveTimer({
-      title: task.title,
-      description: task.description,
-      startTime: Date.now(),
-      taskId: task._id,
-    })
-    setTaskInput(task.title)
-    setDescriptionInput(task.description || "")
-    setView("timer")
+    try {
+      // Create time log in Convex (without endTime = ongoing task)
+      await saveTimeLog({
+        taskId: task._id,
+        startTime: Date.now(),
+        // No endTime = ongoing task
+      })
+      setTaskInput(task.title)
+      setDescriptionInput(task.description || "")
+      setView("timer")
+    } catch (error) {
+      console.error("Failed to start task:", error)
+      if (
+        error instanceof Error &&
+        error.message.includes("already have an active task")
+      ) {
+        alert(error.message)
+      }
+    }
   }
 
   const handleDelete = async (taskId: Id<"tasks">) => {
@@ -280,7 +290,7 @@ export function TaskList() {
                     variant="ghost"
                     size="icon"
                     onClick={() => handleContinue(task)}
-                    disabled={activeTimer !== null}
+                    disabled={hasActiveTask}
                     className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10 disabled:opacity-30"
                     title="Continue"
                   >
