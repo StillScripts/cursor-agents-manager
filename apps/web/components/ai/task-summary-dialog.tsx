@@ -237,8 +237,8 @@ export function TaskSummaryDialog({
                       <>
                         <Wand2 className="h-6 w-6 text-muted-foreground" />
                         <span className="text-sm text-muted-foreground text-center">
-                          Click the button below to generate an AI-improved
-                          version of your task.
+                          Click the button below to get a quick AI-generated
+                          improvement on your task description.
                         </span>
                         <Button
                           onClick={handleGenerateSummary}
@@ -246,7 +246,7 @@ export function TaskSummaryDialog({
                           size="sm"
                         >
                           <Sparkles className="h-4 w-4 mr-2" />
-                          Generate Summary
+                          Quick Summary
                         </Button>
                       </>
                     )}
