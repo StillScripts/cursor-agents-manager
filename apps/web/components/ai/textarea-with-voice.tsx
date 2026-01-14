@@ -3,6 +3,7 @@
 import { Mic, Sparkles, Square } from "lucide-react"
 import type React from "react"
 import { useEffect, useRef, useState } from "react"
+import { TaskSummaryDialog } from "@/components/ai/task-summary-dialog"
 import { Button } from "@/components/ui/button"
 import {
   InputGroup,
@@ -11,7 +12,7 @@ import {
   InputGroupTextarea,
 } from "@/components/ui/input-group"
 import { Spinner } from "@/components/ui/spinner"
-import { useImprovePrompt, useTranscribeAudio } from "@/lib/hooks/use-ai"
+import { useTranscribeAudio } from "@/lib/hooks/use-ai"
 import { useOpenAIKey } from "@/lib/hooks/use-openai-key"
 
 interface TextareaWithVoiceProps
@@ -33,12 +34,12 @@ export function TextareaWithVoice({
   const [isRecording, setIsRecording] = useState(false)
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [isSupported, setIsSupported] = useState(true)
+  const [isSummaryDialogOpen, setIsSummaryDialogOpen] = useState(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const chunksRef = useRef<Blob[]>([])
 
   const transcribe = useTranscribeAudio()
-  const improvePrompt = useImprovePrompt()
   const { hasOpenAIKey } = useOpenAIKey()
 
   useEffect(() => {
@@ -173,35 +174,28 @@ export function TextareaWithVoice({
     setIsRecording(false)
   }
 
-  const handleImprovePrompt = async () => {
-    const currentValue = typeof value === "string" ? value : ""
-    if (!currentValue.trim()) {
-      return
+  const handleOpenSummaryDialog = () => {
+    setIsSummaryDialogOpen(true)
+  }
+
+  const handleTaskUpdate = (text: string, branchName?: string) => {
+    if (onChange) {
+      const syntheticEvent = {
+        target: { value: text },
+        currentTarget: { value: text },
+      } as React.ChangeEvent<HTMLTextAreaElement>
+
+      onChange(syntheticEvent)
     }
 
-    try {
-      const result = await improvePrompt.mutateAsync(currentValue)
-
-      if (onChange) {
-        const syntheticEvent = {
-          target: { value: result.text },
-          currentTarget: { value: result.text },
-        } as React.ChangeEvent<HTMLTextAreaElement>
-
-        onChange(syntheticEvent)
-      }
-
-      // Callback for branch name if provided
-      if (result.branchName && onBranchNameRecommended) {
-        onBranchNameRecommended(result.branchName)
-      }
-    } catch (error) {
-      console.error("Error improving prompt:", error)
+    // Callback for branch name if provided
+    if (branchName && onBranchNameRecommended) {
+      onBranchNameRecommended(branchName)
     }
   }
 
   const isProcessing = isTranscribing || transcribe.isPending
-  const isImproving = improvePrompt.isPending
+  const currentTaskValue = typeof value === "string" ? value : ""
 
   return (
     <div className="relative w-full">
@@ -220,21 +214,10 @@ export function TextareaWithVoice({
             <InputGroupButton
               size="icon-xs"
               variant="ghost"
-              onClick={handleImprovePrompt}
-              disabled={
-                isImproving ||
-                !value ||
-                (typeof value === "string" && !value.trim())
-              }
-              title={
-                isImproving ? "Improving prompt..." : "Improve prompt with AI"
-              }
+              onClick={handleOpenSummaryDialog}
+              title="AI Task Assistant - Improve and refine your task"
             >
-              {isImproving ? (
-                <Spinner className="h-3.5 w-3.5" />
-              ) : (
-                <Sparkles className="h-3.5 w-3.5" />
-              )}
+              <Sparkles className="h-3.5 w-3.5" />
             </InputGroupButton>
             {isSupported && (
               <InputGroupButton
@@ -264,14 +247,9 @@ export function TextareaWithVoice({
           </InputGroupAddon>
         )}
       </InputGroup>
-      {(isRecording || isProcessing || isImproving) && (
+      {(isRecording || isProcessing) && (
         <div className="absolute bottom-2 left-2 flex items-center gap-2 px-2 py-1 bg-background/80 backdrop-blur-sm rounded-md text-xs text-muted-foreground border border-border/50">
-          {isImproving ? (
-            <>
-              <Spinner className="h-3 w-3" />
-              <span>Improving task description...</span>
-            </>
-          ) : isProcessing ? (
+          {isProcessing ? (
             <>
               <Spinner className="h-3 w-3" />
               <span>Transcribing audio...</span>
@@ -296,6 +274,14 @@ export function TextareaWithVoice({
           )}
         </div>
       )}
+
+      {/* AI Task Summary Dialog */}
+      <TaskSummaryDialog
+        open={isSummaryDialogOpen}
+        onOpenChange={setIsSummaryDialogOpen}
+        currentTask={currentTaskValue}
+        onTaskUpdate={handleTaskUpdate}
+      />
     </div>
   )
 }

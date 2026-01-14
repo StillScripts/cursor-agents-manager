@@ -4,6 +4,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useAction } from "convex/react"
 import { api } from "@/convex/_generated/api"
 
+export type PlanningMessage = {
+  role: "user" | "assistant"
+  content: string
+}
+
 export function useSummarizeConversation() {
   const queryClient = useQueryClient()
   const summarizeAction = useAction(api.openAI.summarizeConversation)
@@ -20,6 +25,52 @@ export function useSummarizeConversation() {
     onSuccess: () => {
       // Invalidate queries to refetch agent data with new summary and audio
       queryClient.invalidateQueries({ queryKey: ["agents"] })
+    },
+  })
+}
+
+export function usePlanTask() {
+  const planTaskAction = useAction(api.openAI.planTask)
+
+  return useMutation({
+    mutationFn: async ({
+      currentTask,
+      messages,
+      userMessage,
+    }: {
+      currentTask: string
+      messages: PlanningMessage[]
+      userMessage: string
+    }) => {
+      const result = await planTaskAction({
+        currentTask,
+        messages,
+        userMessage,
+      })
+      return result.response
+    },
+  })
+}
+
+export function useGenerateFinalTask() {
+  const generateFinalTaskAction = useAction(api.openAI.generateFinalTask)
+
+  return useMutation({
+    mutationFn: async ({
+      originalTask,
+      messages,
+    }: {
+      originalTask: string
+      messages: PlanningMessage[]
+    }) => {
+      const result = await generateFinalTaskAction({
+        originalTask,
+        messages,
+      })
+      return {
+        text: result.text,
+        branchName: result.branchName,
+      }
     },
   })
 }

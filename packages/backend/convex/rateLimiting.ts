@@ -128,6 +128,8 @@ export const cursorRateLimiters = {
  * - Transcribe audio: 10 RPM (users might transcribe a few audio clips, but not 30 per minute)
  * - Text to speech: 10 RPM (similar to transcribe, generating audio for summaries)
  * - Improve prompt: 10 RPM (users might improve prompts a few times, but not constantly)
+ * - Plan task: 20 RPM (interactive conversation for task planning, users may send multiple messages)
+ * - Generate final task: 5 RPM (generating final task from planning conversation)
  */
 const openAIRateLimiter = new RateLimiter(rateLimiterComponent, {
   "openai:summarize": {
@@ -144,6 +146,18 @@ const openAIRateLimiter = new RateLimiter(rateLimiterComponent, {
   },
   "openai:tts": { kind: "token bucket", rate: 10, period: MINUTE, capacity: 5 },
   "openai:improve-prompt": {
+    kind: "token bucket",
+    rate: 5,
+    period: MINUTE,
+    capacity: 3,
+  },
+  "openai:plan-task": {
+    kind: "token bucket",
+    rate: 20,
+    period: MINUTE,
+    capacity: 10,
+  },
+  "openai:generate-final-task": {
     kind: "token bucket",
     rate: 5,
     period: MINUTE,
@@ -171,6 +185,16 @@ export const openAIRateLimiters = {
     limiter: openAIRateLimiter,
     name: "openai:improve-prompt" as const,
     requestsPerMinute: 10,
+  },
+  planTask: {
+    limiter: openAIRateLimiter,
+    name: "openai:plan-task" as const,
+    requestsPerMinute: 20,
+  },
+  generateFinalTask: {
+    limiter: openAIRateLimiter,
+    name: "openai:generate-final-task" as const,
+    requestsPerMinute: 5,
   },
 }
 
