@@ -213,6 +213,33 @@ export const stopTimeLog = mutation({
   },
 })
 
+// Update the end time of a completed time log
+export const updateTimeLogEndTime = mutation({
+  args: {
+    timeLogId: v.id("timeLogs"),
+    endTime: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const authUser = await getAuthenticatedUser(ctx)
+
+    const timeLog = await ctx.db.get(args.timeLogId)
+    if (!timeLog || timeLog.userId !== authUser.userId) {
+      throw new Error("Time log not found or unauthorized")
+    }
+
+    // Validate that endTime is after startTime
+    if (args.endTime <= timeLog.startTime) {
+      throw new Error("End time must be after start time")
+    }
+
+    await ctx.db.patch(args.timeLogId, {
+      endTime: args.endTime,
+    })
+
+    return { success: true }
+  },
+})
+
 export const deleteTimeLog = mutation({
   args: {
     timeLogId: v.id("timeLogs"),
