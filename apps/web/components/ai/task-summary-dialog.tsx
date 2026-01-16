@@ -15,10 +15,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Spinner } from "@/components/ui/spinner"
-import {
-  type PlanningMessage,
-  useImprovePrompt,
-} from "@/lib/hooks/use-ai"
+import { type PlanningMessage, useImprovePrompt } from "@/lib/hooks/use-ai"
 import { cn } from "@/lib/utils"
 
 type DialogMode = "summary" | "plan" | "loading"
@@ -61,6 +58,37 @@ export function TaskSummaryDialog({
     }
   }, [open])
 
+  // Auto-generate summary on load
+  const handleAutoGenerateSummary = useCallback(async () => {
+    if (!currentTask.trim()) return
+
+    try {
+      setMode("loading")
+      const result = await improvePrompt.mutateAsync({
+        text: currentTask,
+        messages: [],
+      })
+
+      // Check if questions were returned (plan mode)
+      if (result.questions?.trim()) {
+        // Switch to plan mode with questions as first message
+        setMode("plan")
+        setMessages([{ role: "assistant", content: result.questions }])
+      } else if (result.text) {
+        // Summary is ready
+        setMode("summary")
+        setImprovedSummary(result.text)
+        setSuggestedBranchName(result.branchName)
+      } else {
+        // Fallback to summary mode
+        setMode("summary")
+      }
+    } catch (error) {
+      console.error("Error generating summary:", error)
+      setMode("summary")
+    }
+  }, [currentTask, improvePrompt])
+
   // Auto-generate summary when dialog opens with task content
   useEffect(() => {
     if (open && isInitialLoad && currentTask.trim()) {
@@ -88,39 +116,6 @@ export function TaskSummaryDialog({
     }
   }, [mode])
 
-  // Auto-generate summary on load
-  const handleAutoGenerateSummary = useCallback(async () => {
-    if (!currentTask.trim()) return
-
-    try {
-      setMode("loading")
-      const result = await improvePrompt.mutateAsync({
-        text: currentTask,
-        messages: [],
-      })
-
-      // Check if questions were returned (plan mode)
-      if (result.questions && result.questions.trim()) {
-        // Switch to plan mode with questions as first message
-        setMode("plan")
-        setMessages([
-          { role: "assistant", content: result.questions },
-        ])
-      } else if (result.text) {
-        // Summary is ready
-        setMode("summary")
-        setImprovedSummary(result.text)
-        setSuggestedBranchName(result.branchName)
-      } else {
-        // Fallback to summary mode
-        setMode("summary")
-      }
-    } catch (error) {
-      console.error("Error generating summary:", error)
-      setMode("summary")
-    }
-  }, [currentTask, improvePrompt])
-
   // Handle sending a message in plan mode - retriggers improvePrompt
   const handleSendMessage = async () => {
     if (!inputValue.trim() || improvePrompt.isPending) return
@@ -143,7 +138,7 @@ export function TaskSummaryDialog({
       })
 
       // Check if more questions are needed
-      if (result.questions && result.questions.trim()) {
+      if (result.questions?.trim()) {
         // Still in plan mode - add assistant questions
         setMessages([
           ...newMessages,
@@ -181,7 +176,7 @@ export function TaskSummaryDialog({
         messages: [],
       })
 
-      if (result.questions && result.questions.trim()) {
+      if (result.questions?.trim()) {
         setMode("plan")
         setMessages([{ role: "assistant", content: result.questions }])
       } else if (result.text) {

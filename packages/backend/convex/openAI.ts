@@ -640,8 +640,10 @@ Respond in ONE of the two formats above.`,
       })
 
       // Check if response contains questions
-      const questionsMatch = response.match(/QUESTIONS:\s*([\s\S]+?)(?=\n(?:IMPROVED_DESCRIPTION|BRANCH_NAME)|$)/)
-      
+      const questionsMatch = response.match(
+        /QUESTIONS:\s*([\s\S]+?)(?=\n(?:IMPROVED_DESCRIPTION|BRANCH_NAME)|$)/
+      )
+
       if (questionsMatch) {
         // Task needs clarification - return questions
         const questions = questionsMatch[1].trim()
