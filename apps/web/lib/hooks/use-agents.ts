@@ -116,14 +116,82 @@ export function useAgent(
 }
 
 export function useAgentConversation(id: string) {
-  const conversationData = useQuery(api.conversations.getByAgentId, {
+  const [initialSyncDone, setInitialSyncDone] = useState(false)
+  const [actionData, setActionData] = useState<
+    (AgentConversation & { simulation: boolean }) | null
+  >(null)
+  const [syncError, setSyncError] = useState<string | null>(null)
+
+  // Convex query for reactive database updates
+  const dbResult = useStableQuery(api.conversations.getByAgentId, {
     agentId: id,
   })
 
+  // Convex action for syncing from Cursor API
+  const getConversation = useAction(api.cursor.getConversation)
+
+  // Initial sync on mount (if no data in DB, fetches from Cursor API)
+  useEffect(() => {
+    if (initialSyncDone || !id) return
+
+    // Only try to fetch from API if database query has finished and returned null
+    // useStableQuery returns undefined while loading, null when done with no result
+    if (dbResult === undefined) return // Still loading from DB
+
+    const doInitialSync = async () => {
+      try {
+        setSyncError(null)
+        const result = await getConversation({ agentId: id })
+        if (result.conversation) {
+          setActionData({
+            ...result.conversation,
+            simulation: result.simulation,
+          })
+        } else {
+          setActionData(null)
+        }
+        setInitialSyncDone(true)
+      } catch (err) {
+        console.error("Failed to sync conversation:", err)
+        setSyncError(
+          err instanceof Error ? err.message : "Failed to sync conversation"
+        )
+        setActionData(null)
+        setInitialSyncDone(true)
+      }
+    }
+
+    // Only fetch from API if DB query returned null (no conversation found)
+    if (dbResult === null) {
+      void doInitialSync()
+    } else {
+      // We have data from DB, mark sync as done
+      setInitialSyncDone(true)
+    }
+  }, [getConversation, id, initialSyncDone, dbResult])
+
+  // Determine what data to show
+  // Prefer database result (reactive updates), fall back to action data
+  const conversation: AgentConversation | null = dbResult
+    ? {
+        id: dbResult.conversationId,
+        messages: dbResult.messages,
+      }
+    : actionData
+      ? {
+          id: actionData.id,
+          messages: actionData.messages,
+        }
+      : null
+
+  // Loading state: loading if DB query is still loading OR if we're waiting for API sync
+  const isLoading =
+    dbResult === undefined || (!initialSyncDone && dbResult === null)
+
   return {
-    data: conversationData,
-    isLoading: !conversationData,
-    error: null,
+    data: conversation,
+    isLoading,
+    error: syncError,
   }
 }
 
