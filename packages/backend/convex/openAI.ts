@@ -543,6 +543,14 @@ BRANCH_NAME:
 export const improvePrompt = action({
   args: {
     text: v.string(),
+    messages: v.optional(
+      v.array(
+        v.object({
+          role: v.union(v.literal("user"), v.literal("assistant")),
+          content: v.string(),
+        })
+      )
+    ),
   },
   handler: async (ctx, args) => {
     const authUser = await ctx.runQuery(
@@ -579,17 +587,47 @@ export const improvePrompt = action({
     try {
       // Generate improved prompt and branch name using AI SDK
       const openaiProvider = createOpenAI({ apiKey: openaiApiKey })
+
+      // Build conversation context if messages exist
+      const conversationContext =
+        args.messages && args.messages.length > 0
+          ? `\n\nPrevious conversation:\n${args.messages
+              .map(
+                (msg) =>
+                  `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`
+              )
+              .join("\n")}`
+          : ""
+
       const { text: response } = await generateText({
         model: openaiProvider("gpt-4o-mini"),
-        prompt: `You are helping to improve task descriptions for AI coding agents. The user has provided a task description that they want to make clearer and more effective.
+        prompt: `You are helping to improve task descriptions for AI coding agents. Your role is similar to Cursor or Claude Code - you need to determine if a task description is ready to go or if you need to ask clarifying questions first.
 
-Your goal is to:
-1. Make the task description more specific and actionable
-2. Clarify any ambiguous requirements
-3. Add context that would help an AI agent understand the goal better
-4. Maintain the original intent and tone
-5. Keep it concise but comprehensive
-6. Recommend a branch name based on the task type
+Original task description:
+${args.text}${conversationContext}
+
+Your process:
+1. First, analyze the task description to determine if it's clear and actionable enough for an AI coding agent to execute
+2. If the task needs clarification (e.g., ambiguous requirements, missing context, unclear scope), you should ask questions instead of generating a summary
+3. If the task is clear enough, generate an improved version with better structure and clarity
+
+Decision criteria for asking questions:
+- Task is too vague or high-level (e.g., "improve the app", "add features")
+- Missing important context (e.g., which files/components to modify, what the expected behavior should be)
+- Ambiguous requirements (e.g., "make it better", "fix the bug")
+- Unclear scope (e.g., should this include frontend, backend, or both?)
+- Missing technical details (e.g., which framework, which database, which API endpoints)
+
+If you need to ask questions, respond with:
+QUESTIONS:
+[Your clarifying questions here. Be specific and helpful. For example: "Just to clarify, will this task only build the backend or would you also like a user interface for this feature? Also, should this integrate with the existing authentication system or be standalone?"]
+
+If the task is ready, respond with:
+IMPROVED_DESCRIPTION:
+[Your improved task description here]
+
+BRANCH_NAME:
+[feature/slug or hotfix/slug]
 
 For the branch name:
 - If this is a new feature or enhancement, use format: feature/slug (e.g., feature/add-user-authentication)
@@ -598,19 +636,25 @@ For the branch name:
 - The slug should be 2-4 words that summarize the task
 - If a Jira ticket is provided, use the ticket number in the slug (e.g., feature/BE-2708-tablet-design-improvements)
 
-Original task description:
-${args.text}
-
-Respond in the following format:
-IMPROVED_DESCRIPTION:
-[Your improved task description here]
-
-BRANCH_NAME:
-[feature/slug or hotfix/slug]`,
+Respond in ONE of the two formats above.`,
       })
 
+      // Check if response contains questions
+      const questionsMatch = response.match(
+        /QUESTIONS:\s*([\s\S]+?)(?=\n(?:IMPROVED_DESCRIPTION|BRANCH_NAME)|$)/
+      )
+
+      if (questionsMatch) {
+        // Task needs clarification - return questions
+        const questions = questionsMatch[1].trim()
+        return {
+          text: undefined,
+          branchName: undefined,
+          questions: questions || undefined,
+        }
+      }
+
       // Parse the response to extract improved text and branch name
-      // Try to match the structured format first
       const improvedTextMatch = response.match(
         /IMPROVED_DESCRIPTION:\s*([\s\S]+?)(?=\nBRANCH_NAME:|$)/
       )
@@ -639,6 +683,7 @@ BRANCH_NAME:
       return {
         text: improvedText,
         branchName: branchName || undefined,
+        questions: undefined,
       }
     } catch (error) {
       console.error("[Convex improvePrompt] Error:", error)

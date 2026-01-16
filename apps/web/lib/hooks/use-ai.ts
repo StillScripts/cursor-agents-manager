@@ -123,11 +123,24 @@ export function useImprovePrompt() {
   const improvePromptAction = useAction(api.openAI.improvePrompt)
 
   return useMutation({
-    mutationFn: async (text: string) => {
-      const result = await improvePromptAction({ text })
+    mutationFn: async ({
+      text,
+      messages,
+    }: {
+      text: string
+      messages?: PlanningMessage[]
+    }) => {
+      const result = await improvePromptAction({
+        text,
+        messages: messages?.map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        })),
+      })
       return {
         text: result.text,
         branchName: result.branchName,
+        questions: result.questions,
       }
     },
   })
