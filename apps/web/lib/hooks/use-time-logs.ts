@@ -91,6 +91,17 @@ export function useStopTimeLog() {
   }
 }
 
+export function useUpdateTimeLogEndTime() {
+  const updateTimeLogEndTime = useMutation(api.timeLogs.updateTimeLogEndTime)
+
+  return {
+    updateTimeLogEndTime: (data: {
+      timeLogId: Id<"timeLogs">
+      endTime: number
+    }) => updateTimeLogEndTime(data),
+  }
+}
+
 export function useDeleteTimeLog() {
   const deleteTimeLog = useMutation(api.timeLogs.deleteTimeLog)
 

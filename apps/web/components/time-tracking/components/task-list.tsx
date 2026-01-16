@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
+  Edit,
   PlayCircle,
   Rocket,
   Trash2,
@@ -24,6 +25,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import type { Id } from "@/convex/_generated/dataModel"
 import { descriptionInputAtom, taskInputAtom, viewAtom } from "@/lib/atoms"
@@ -34,6 +37,7 @@ import {
   useAllTimeLogs,
   useDeleteTimeLog,
   useSaveTimeLog,
+  useUpdateTimeLogEndTime,
 } from "@/lib/hooks/use-time-logs"
 
 function formatEntryDateTime(timestamp: number): string {
@@ -106,12 +110,16 @@ export function TaskList() {
   const { deleteTimeLog } = useDeleteTimeLog()
   const { hasActiveTask } = useActiveTimeLog()
   const { saveTimeLog } = useSaveTimeLog()
+  const { updateTimeLogEndTime } = useUpdateTimeLogEndTime()
   const setTaskInput = useSetAtom(taskInputAtom)
   const setDescriptionInput = useSetAtom(descriptionInputAtom)
   const setView = useSetAtom(viewAtom)
   const [expandedTasks, setExpandedTasks] = useState<Set<Id<"tasks">>>(
     new Set()
   )
+  const [editingTimeLogId, setEditingTimeLogId] =
+    useState<Id<"timeLogs"> | null>(null)
+  const [editEndTime, setEditEndTime] = useState<string>("")
 
   // Group time logs by task and calculate totals
   const tasksWithEntries = useMemo(() => {
@@ -202,6 +210,60 @@ export function TaskList() {
       await deleteTimeLog(timeLogId)
     } catch (error) {
       console.error("Failed to delete time log:", error)
+    }
+  }
+
+  const handleEditEndTime = (
+    entry: { _id: Id<"timeLogs">; startTime: number; endTime: number },
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation()
+    const endDate = new Date(entry.endTime)
+    // Format as YYYY-MM-DDTHH:mm for datetime-local input
+    const year = endDate.getFullYear()
+    const month = String(endDate.getMonth() + 1).padStart(2, "0")
+    const day = String(endDate.getDate()).padStart(2, "0")
+    const hours = String(endDate.getHours()).padStart(2, "0")
+    const minutes = String(endDate.getMinutes()).padStart(2, "0")
+    setEditEndTime(`${year}-${month}-${day}T${hours}:${minutes}`)
+    setEditingTimeLogId(entry._id)
+  }
+
+  const handleSaveEndTime = async () => {
+    if (!editingTimeLogId || !editEndTime) return
+
+    try {
+      const newEndTime = new Date(editEndTime).getTime()
+      const entry = tasksWithEntries
+        .flatMap((task) => task.entries)
+        .find((e) => e._id === editingTimeLogId)
+
+      if (!entry) {
+        alert("Time log entry not found")
+        return
+      }
+
+      // Validate that end time is after start time
+      if (newEndTime <= entry.startTime) {
+        alert("End time must be after start time")
+        return
+      }
+
+      await updateTimeLogEndTime({
+        timeLogId: editingTimeLogId,
+        endTime: newEndTime,
+      })
+
+      setEditingTimeLogId(null)
+      setEditEndTime("")
+      alert("End time updated successfully")
+    } catch (error) {
+      console.error("Failed to update end time:", error)
+      if (error instanceof Error) {
+        alert(error.message)
+      } else {
+        alert("Failed to update end time")
+      }
     }
   }
 
@@ -319,18 +381,91 @@ export function TaskList() {
                       key={entry._id}
                       className="group/entry flex items-center justify-between px-4 py-3 border-b border-border/30 last:border-b-0 hover:bg-secondary/30 transition-colors"
                     >
-                      <div className="flex items-center gap-3">
-                        <Calendar className="w-4 h-4 text-muted-foreground/60" />
-                        <div>
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <Calendar className="w-4 h-4 text-muted-foreground/60 shrink-0" />
+                        <div className="flex-1 min-w-0">
                           <p className="text-sm text-foreground">
                             {formatEntryDateTime(entry.startTime)}
                           </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Ended: {formatEntryDateTime(entry.endTime)}
+                          </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 shrink-0">
                         <span className="text-sm font-mono text-muted-foreground">
                           {formatDuration(entry.duration)}
                         </span>
+                        <Dialog
+                          open={editingTimeLogId === entry._id}
+                          onOpenChange={(open) => {
+                            if (!open) {
+                              setEditingTimeLogId(null)
+                              setEditEndTime("")
+                            }
+                          }}
+                        >
+                          <DialogTrigger
+                            render={
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => handleEditEndTime(entry, e)}
+                                className="h-7 w-7 opacity-0 group-hover/entry:opacity-100 transition-opacity text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                title="Edit end time"
+                              >
+                                <Edit className="w-3 h-3" />
+                              </Button>
+                            }
+                          />
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Edit End Time</DialogTitle>
+                              <DialogDescription>
+                                Update the end time for this time log entry. The
+                                end time must be after the start time.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="start-time">Start Time</Label>
+                                <Input
+                                  id="start-time"
+                                  type="text"
+                                  value={formatEntryDateTime(entry.startTime)}
+                                  disabled
+                                  className="bg-secondary"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="end-time">End Time</Label>
+                                <Input
+                                  id="end-time"
+                                  type="datetime-local"
+                                  value={editEndTime}
+                                  onChange={(e) =>
+                                    setEditEndTime(e.target.value)
+                                  }
+                                  min={new Date(entry.startTime + 1000)
+                                    .toISOString()
+                                    .slice(0, 16)}
+                                />
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingTimeLogId(null)
+                                  setEditEndTime("")
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                              <Button onClick={handleSaveEndTime}>Save</Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
                         <Button
                           variant="ghost"
                           size="icon"
