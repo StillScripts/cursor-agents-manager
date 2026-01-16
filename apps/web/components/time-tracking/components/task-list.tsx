@@ -117,9 +117,8 @@ export function TaskList() {
   const [expandedTasks, setExpandedTasks] = useState<Set<Id<"tasks">>>(
     new Set()
   )
-  const [editingTimeLogId, setEditingTimeLogId] = useState<
-    Id<"timeLogs"> | null
-  >(null)
+  const [editingTimeLogId, setEditingTimeLogId] =
+    useState<Id<"timeLogs"> | null>(null)
   const [editEndTime, setEditEndTime] = useState<string>("")
 
   // Group time logs by task and calculate totals
@@ -423,8 +422,8 @@ export function TaskList() {
                             <DialogHeader>
                               <DialogTitle>Edit End Time</DialogTitle>
                               <DialogDescription>
-                                Update the end time for this time log entry.
-                                The end time must be after the start time.
+                                Update the end time for this time log entry. The
+                                end time must be after the start time.
                               </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
@@ -444,7 +443,9 @@ export function TaskList() {
                                   id="end-time"
                                   type="datetime-local"
                                   value={editEndTime}
-                                  onChange={(e) => setEditEndTime(e.target.value)}
+                                  onChange={(e) =>
+                                    setEditEndTime(e.target.value)
+                                  }
                                   min={new Date(entry.startTime + 1000)
                                     .toISOString()
                                     .slice(0, 16)}
