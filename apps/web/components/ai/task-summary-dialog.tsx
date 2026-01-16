@@ -17,13 +17,11 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Spinner } from "@/components/ui/spinner"
 import {
   type PlanningMessage,
-  useGenerateFinalTask,
   useImprovePrompt,
-  usePlanTask,
 } from "@/lib/hooks/use-ai"
 import { cn } from "@/lib/utils"
 
-type DialogMode = "summary" | "plan"
+type DialogMode = "summary" | "plan" | "loading"
 
 interface TaskSummaryDialogProps {
   open: boolean
@@ -38,30 +36,42 @@ export function TaskSummaryDialog({
   currentTask,
   onTaskUpdate,
 }: TaskSummaryDialogProps) {
-  const [mode, setMode] = useState<DialogMode>("summary")
+  const [mode, setMode] = useState<DialogMode>("loading")
   const [messages, setMessages] = useState<PlanningMessage[]>([])
   const [inputValue, setInputValue] = useState("")
   const [improvedSummary, setImprovedSummary] = useState<string | null>(null)
   const [suggestedBranchName, setSuggestedBranchName] = useState<
     string | undefined
   >(undefined)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const improvePrompt = useImprovePrompt()
-  const planTask = usePlanTask()
-  const generateFinalTask = useGenerateFinalTask()
 
   // Reset state when dialog opens
   useEffect(() => {
     if (open) {
-      setMode("summary")
+      setMode("loading")
       setMessages([])
       setInputValue("")
       setImprovedSummary(null)
       setSuggestedBranchName(undefined)
+      setIsInitialLoad(true)
     }
   }, [open])
+
+  // Auto-generate summary when dialog opens with task content
+  useEffect(() => {
+    if (open && isInitialLoad && currentTask.trim()) {
+      setIsInitialLoad(false)
+      handleAutoGenerateSummary()
+    } else if (open && isInitialLoad && !currentTask.trim()) {
+      // No task content, go directly to summary mode
+      setIsInitialLoad(false)
+      setMode("summary")
+    }
+  }, [open, isInitialLoad, currentTask, handleAutoGenerateSummary])
 
   // Auto-scroll to bottom when new messages arrive
   // biome-ignore lint/correctness/useExhaustiveDependencies: Intentionally scroll when message count changes
@@ -78,22 +88,42 @@ export function TaskSummaryDialog({
     }
   }, [mode])
 
-  // Generate initial summary when switching to summary mode
-  const handleGenerateSummary = useCallback(async () => {
+  // Auto-generate summary on load
+  const handleAutoGenerateSummary = useCallback(async () => {
     if (!currentTask.trim()) return
 
     try {
-      const result = await improvePrompt.mutateAsync(currentTask)
-      setImprovedSummary(result.text)
-      setSuggestedBranchName(result.branchName)
+      setMode("loading")
+      const result = await improvePrompt.mutateAsync({
+        text: currentTask,
+        messages: [],
+      })
+
+      // Check if questions were returned (plan mode)
+      if (result.questions && result.questions.trim()) {
+        // Switch to plan mode with questions as first message
+        setMode("plan")
+        setMessages([
+          { role: "assistant", content: result.questions },
+        ])
+      } else if (result.text) {
+        // Summary is ready
+        setMode("summary")
+        setImprovedSummary(result.text)
+        setSuggestedBranchName(result.branchName)
+      } else {
+        // Fallback to summary mode
+        setMode("summary")
+      }
     } catch (error) {
       console.error("Error generating summary:", error)
+      setMode("summary")
     }
   }, [currentTask, improvePrompt])
 
-  // Handle sending a message in plan mode
+  // Handle sending a message in plan mode - retriggers improvePrompt
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || planTask.isPending) return
+    if (!inputValue.trim() || improvePrompt.isPending) return
 
     const userMessage = inputValue.trim()
     setInputValue("")
@@ -106,14 +136,25 @@ export function TaskSummaryDialog({
     setMessages(newMessages)
 
     try {
-      const response = await planTask.mutateAsync({
-        currentTask,
-        messages,
-        userMessage,
+      // Retrigger improvePrompt with conversation context
+      const result = await improvePrompt.mutateAsync({
+        text: currentTask,
+        messages: newMessages,
       })
 
-      // Add assistant response
-      setMessages([...newMessages, { role: "assistant", content: response }])
+      // Check if more questions are needed
+      if (result.questions && result.questions.trim()) {
+        // Still in plan mode - add assistant questions
+        setMessages([
+          ...newMessages,
+          { role: "assistant", content: result.questions },
+        ])
+      } else if (result.text) {
+        // Summary is ready - switch to summary mode
+        setMode("summary")
+        setImprovedSummary(result.text)
+        setSuggestedBranchName(result.branchName)
+      }
     } catch (error) {
       console.error("Error in planning conversation:", error)
       // Remove the user message on error
@@ -129,22 +170,30 @@ export function TaskSummaryDialog({
     }
   }
 
-  // Generate final task from conversation
-  const handleGenerateFinalFromChat = async () => {
-    if (messages.length === 0) return
+  // Manual regenerate summary
+  const handleGenerateSummary = useCallback(async () => {
+    if (!currentTask.trim()) return
 
     try {
-      const result = await generateFinalTask.mutateAsync({
-        originalTask: currentTask,
-        messages,
+      setMode("loading")
+      const result = await improvePrompt.mutateAsync({
+        text: currentTask,
+        messages: [],
       })
-      setImprovedSummary(result.text)
-      setSuggestedBranchName(result.branchName)
-      setMode("summary")
+
+      if (result.questions && result.questions.trim()) {
+        setMode("plan")
+        setMessages([{ role: "assistant", content: result.questions }])
+      } else if (result.text) {
+        setMode("summary")
+        setImprovedSummary(result.text)
+        setSuggestedBranchName(result.branchName)
+      }
     } catch (error) {
-      console.error("Error generating final task:", error)
+      console.error("Error generating summary:", error)
+      setMode("summary")
     }
-  }
+  }, [currentTask, improvePrompt])
 
   // Apply the improved task
   const handleApply = () => {
@@ -167,39 +216,53 @@ export function TaskSummaryDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Mode Tabs */}
-        <div className="flex items-center gap-1 p-1 bg-secondary rounded-lg">
-          <button
-            type="button"
-            onClick={() => setMode("summary")}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all flex-1 justify-center",
-              mode === "summary"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <FileText className="w-4 h-4" />
-            Summary
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode("plan")}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all flex-1 justify-center",
-              mode === "plan"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <MessageSquare className="w-4 h-4" />
-            Plan
-          </button>
-        </div>
+        {/* Mode Tabs - Hide during loading */}
+        {mode !== "loading" && (
+          <div className="flex items-center gap-1 p-1 bg-secondary rounded-lg">
+            <button
+              type="button"
+              onClick={() => setMode("summary")}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all flex-1 justify-center",
+                mode === "summary"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <FileText className="w-4 h-4" />
+              Summary
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("plan")}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all flex-1 justify-center",
+                mode === "plan"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <MessageSquare className="w-4 h-4" />
+              Plan
+            </button>
+          </div>
+        )}
 
         {/* Content Area */}
         <div className="flex-1 min-h-0">
-          {mode === "summary" ? (
+          {mode === "loading" ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-4">
+              <Spinner className="h-8 w-8" />
+              <div className="text-center space-y-2">
+                <p className="text-sm font-medium text-foreground">
+                  Processing your task...
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Analyzing task description and generating summary
+                </p>
+              </div>
+            </div>
+          ) : mode === "summary" ? (
             <div className="space-y-4">
               {/* Original Task */}
               <div className="space-y-2">
@@ -226,30 +289,23 @@ export function TaskSummaryDialog({
                   </div>
                 ) : (
                   <div className="p-4 border border-dashed border-border rounded-lg flex flex-col items-center gap-3">
-                    {improvePrompt.isPending ? (
-                      <>
-                        <Spinner className="h-5 w-5" />
-                        <span className="text-sm text-muted-foreground">
-                          Generating improved version...
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="h-6 w-6 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground text-center">
-                          Click the button below to get a quick AI-generated
-                          improvement on your task description.
-                        </span>
-                        <Button
-                          onClick={handleGenerateSummary}
-                          disabled={!currentTask.trim()}
-                          size="sm"
-                        >
-                          <Sparkles className="h-4 w-4 mr-2" />
-                          Quick Summary
-                        </Button>
-                      </>
-                    )}
+                    <Wand2 className="h-6 w-6 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground text-center">
+                      Click the button below to get a quick AI-generated
+                      improvement on your task description.
+                    </span>
+                    <Button
+                      onClick={handleGenerateSummary}
+                      disabled={!currentTask.trim() || improvePrompt.isPending}
+                      size="sm"
+                    >
+                      {improvePrompt.isPending ? (
+                        <Spinner className="h-4 w-4 mr-2" />
+                      ) : (
+                        <Sparkles className="h-4 w-4 mr-2" />
+                      )}
+                      Quick Summary
+                    </Button>
                   </div>
                 )}
               </div>
@@ -301,7 +357,7 @@ export function TaskSummaryDialog({
                       </div>
                     ))
                   )}
-                  {planTask.isPending && (
+                  {improvePrompt.isPending && (
                     <div className="flex justify-start">
                       <div className="bg-muted px-3 py-2 rounded-lg">
                         <Spinner className="h-4 w-4" />
@@ -320,12 +376,12 @@ export function TaskSummaryDialog({
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyPress}
                   placeholder="Type your message..."
-                  disabled={planTask.isPending}
+                  disabled={improvePrompt.isPending}
                   className="flex-1"
                 />
                 <Button
                   onClick={handleSendMessage}
-                  disabled={!inputValue.trim() || planTask.isPending}
+                  disabled={!inputValue.trim() || improvePrompt.isPending}
                   size="icon"
                 >
                   <Send className="h-4 w-4" />
@@ -336,21 +392,6 @@ export function TaskSummaryDialog({
         </div>
 
         <DialogFooter className="gap-2 sm:gap-2">
-          {mode === "plan" && messages.length > 0 && (
-            <Button
-              variant="outline"
-              onClick={handleGenerateFinalFromChat}
-              disabled={generateFinalTask.isPending}
-              className="flex-1 sm:flex-none"
-            >
-              {generateFinalTask.isPending ? (
-                <Spinner className="h-4 w-4 mr-2" />
-              ) : (
-                <Wand2 className="h-4 w-4 mr-2" />
-              )}
-              Generate Final
-            </Button>
-          )}
           {mode === "summary" && improvedSummary && (
             <Button onClick={handleApply} className="flex-1 sm:flex-none">
               Apply Changes
