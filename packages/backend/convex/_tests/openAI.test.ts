@@ -16,7 +16,7 @@ declare global {
   var __openAITestMocks: {
     transcriptionsCreate: ReturnType<typeof vi.fn>
     speechCreate: ReturnType<typeof vi.fn>
-    generateText: ReturnType<typeof vi.fn>
+    streamText: ReturnType<typeof vi.fn>
   }
 }
 
@@ -24,7 +24,7 @@ declare global {
 globalThis.__openAITestMocks = {
   transcriptionsCreate: vi.fn(),
   speechCreate: vi.fn(),
-  generateText: vi.fn(),
+  streamText: vi.fn(),
 }
 
 // Mock OpenAI - uses globalThis to access mocks since vi.mock is hoisted
@@ -75,7 +75,7 @@ vi.mock("openai", () => {
 // Mock AI SDK - uses globalThis to access mocks
 vi.mock("ai", () => {
   return {
-    generateText: globalThis.__openAITestMocks.generateText,
+    streamText: globalThis.__openAITestMocks.streamText,
   }
 })
 
@@ -96,7 +96,20 @@ import { api } from "../_generated/api"
 const getMockTranscriptionsCreate = () =>
   globalThis.__openAITestMocks.transcriptionsCreate
 const getMockSpeechCreate = () => globalThis.__openAITestMocks.speechCreate
-const getMockGenerateText = () => globalThis.__openAITestMocks.generateText
+const getMockStreamText = () => globalThis.__openAITestMocks.streamText
+
+// Helper to create a mock text stream from a string
+function createMockTextStream(text: string) {
+  return {
+    textStream: (async function* () {
+      // Split text into chunks to simulate streaming
+      const chunks = text.match(/.{1,10}/g) || [text]
+      for (const chunk of chunks) {
+        yield chunk
+      }
+    })(),
+  }
+}
 
 describe("openAI", () => {
   beforeEach(() => {
@@ -104,7 +117,7 @@ describe("openAI", () => {
     // Reset all mock functions
     getMockTranscriptionsCreate().mockReset()
     getMockSpeechCreate().mockReset()
-    getMockGenerateText().mockReset()
+    getMockStreamText().mockReset()
   })
 
   // Helper to set up API key in database
@@ -152,9 +165,9 @@ This is an improved version of the prompt
 
 BRANCH_NAME:
 hotfix/fix-bug`
-      getMockGenerateText().mockResolvedValue({
-        text: mockResponse,
-      } as any)
+      getMockStreamText().mockResolvedValue(
+        createMockTextStream(mockResponse) as any
+      )
 
       const result = await asUser.action(api.openAI.improvePrompt, {
         text: "fix bug",
@@ -162,8 +175,8 @@ hotfix/fix-bug`
 
       expect(result.text).toBe("This is an improved version of the prompt")
       expect(result.branchName).toBe("hotfix/fix-bug")
-      expect(getMockGenerateText()).toHaveBeenCalledTimes(1)
-      const callArgs = getMockGenerateText().mock.calls[0][0]
+      expect(getMockStreamText()).toHaveBeenCalledTimes(1)
+      const callArgs = getMockStreamText().mock.calls[0][0]
       expect(callArgs.prompt).toContain("fix bug")
     })
 
@@ -176,9 +189,9 @@ Add user authentication feature with login and signup
 
 BRANCH_NAME:
 feature/add-user-authentication`
-      getMockGenerateText().mockResolvedValue({
-        text: mockResponse,
-      } as any)
+      getMockStreamText().mockResolvedValue(
+        createMockTextStream(mockResponse) as any
+      )
 
       const result = await asUser.action(api.openAI.improvePrompt, {
         text: "add login",
@@ -196,9 +209,9 @@ feature/add-user-authentication`
 
       const mockResponse =
         "This is an improved version without structured format"
-      getMockGenerateText().mockResolvedValue({
-        text: mockResponse,
-      } as any)
+      getMockStreamText().mockResolvedValue(
+        createMockTextStream(mockResponse) as any
+      )
 
       const result = await asUser.action(api.openAI.improvePrompt, {
         text: "test",
@@ -217,9 +230,9 @@ Improved text
 
 BRANCH_NAME:
 invalid-branch-name`
-      getMockGenerateText().mockResolvedValue({
-        text: mockResponse,
-      } as any)
+      getMockStreamText().mockResolvedValue(
+        createMockTextStream(mockResponse) as any
+      )
 
       const result = await asUser.action(api.openAI.improvePrompt, {
         text: "test",
@@ -239,7 +252,7 @@ invalid-branch-name`
         "Invalid API key",
         undefined
       )
-      getMockGenerateText().mockRejectedValue(apiError)
+      getMockStreamText().mockRejectedValue(apiError)
 
       await expect(
         asUser.action(api.openAI.improvePrompt, { text: "test prompt" })
@@ -256,7 +269,7 @@ invalid-branch-name`
         "Rate limit exceeded",
         undefined
       )
-      getMockGenerateText().mockRejectedValue(apiError)
+      getMockStreamText().mockRejectedValue(apiError)
 
       await expect(
         asUser.action(api.openAI.improvePrompt, { text: "test prompt" })

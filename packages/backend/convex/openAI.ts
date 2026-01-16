@@ -1,7 +1,7 @@
 "use node"
 
 import { createOpenAI } from "@ai-sdk/openai"
-import { generateText } from "ai"
+import { streamText } from "ai"
 import { v } from "convex/values"
 import { decryptData } from "encryption"
 import OpenAI from "openai"
@@ -103,9 +103,9 @@ export const summarizeConversation = action({
     }
 
     try {
-      // Generate summary using AI SDK with user's API key
+      // Generate summary using Convex AI agents (streamText) with user's API key
       const openaiProvider = createOpenAI({ apiKey: openaiApiKey })
-      const { text: summary } = await generateText({
+      const result = await streamText({
         model: openaiProvider("gpt-4o-mini"),
         prompt: `Please provide a concise summary of the following conversation between a user and a Cursor AI agent. Focus on:
 - The main task or goal
@@ -118,6 +118,12 @@ ${conversationText}
 
 Summary:`,
       })
+
+      // Collect the full streamed text
+      let summary = ""
+      for await (const chunk of result.textStream) {
+        summary += chunk
+      }
 
       // Save summary to database and clear old audio (audio will be generated on-demand when user clicks "Listen")
       await ctx.runMutation(api.agents.updateSummary, {
@@ -391,10 +397,17 @@ Keep responses short and conversational. Ask one or two questions at a time.`
         { role: "user", content: args.userMessage },
       ]
 
-      const { text: response } = await generateText({
+      // Use Convex AI agents (streamText) for streaming support
+      const result = await streamText({
         model: openaiProvider("gpt-4o-mini"),
         messages: conversationMessages,
       })
+
+      // Collect the full streamed text
+      let response = ""
+      for await (const chunk of result.textStream) {
+        response += chunk
+      }
 
       return {
         response: response.trim(),
@@ -469,7 +482,8 @@ export const generateFinalTask = action({
         )
         .join("\n")
 
-      const { text: response } = await generateText({
+      // Use Convex AI agents (streamText) for streaming support
+      const result = await streamText({
         model: openaiProvider("gpt-4o-mini"),
         prompt: `Based on the following conversation where a user refined their task description, generate the final improved task description.
 
@@ -496,6 +510,12 @@ IMPROVED_DESCRIPTION:
 BRANCH_NAME:
 [feature/slug or hotfix/slug]`,
       })
+
+      // Collect the full streamed text
+      let response = ""
+      for await (const chunk of result.textStream) {
+        response += chunk
+      }
 
       // Parse the response
       const improvedTextMatch = response.match(
@@ -585,7 +605,7 @@ export const improvePrompt = action({
     }
 
     try {
-      // Generate improved prompt and branch name using AI SDK
+      // Generate improved prompt and branch name using Convex AI agents (streamText)
       const openaiProvider = createOpenAI({ apiKey: openaiApiKey })
 
       // Build conversation context if messages exist
@@ -599,7 +619,8 @@ export const improvePrompt = action({
               .join("\n")}`
           : ""
 
-      const { text: response } = await generateText({
+      // Use Convex AI agents (streamText) for streaming support
+      const result = await streamText({
         model: openaiProvider("gpt-4o-mini"),
         prompt: `You are helping to improve task descriptions for AI coding agents. Your role is similar to Cursor or Claude Code - you need to determine if a task description is ready to go or if you need to ask clarifying questions first.
 
@@ -638,6 +659,12 @@ For the branch name:
 
 Respond in ONE of the two formats above.`,
       })
+
+      // Collect the full streamed text
+      let response = ""
+      for await (const chunk of result.textStream) {
+        response += chunk
+      }
 
       // Check if response contains questions
       const questionsMatch = response.match(
