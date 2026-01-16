@@ -17,6 +17,7 @@ declare global {
     transcriptionsCreate: ReturnType<typeof vi.fn>
     speechCreate: ReturnType<typeof vi.fn>
     streamText: ReturnType<typeof vi.fn>
+    streamObject: ReturnType<typeof vi.fn>
   }
 }
 
@@ -25,6 +26,7 @@ globalThis.__openAITestMocks = {
   transcriptionsCreate: vi.fn(),
   speechCreate: vi.fn(),
   streamText: vi.fn(),
+  streamObject: vi.fn(),
 }
 
 // Mock OpenAI - uses globalThis to access mocks since vi.mock is hoisted
@@ -76,6 +78,7 @@ vi.mock("openai", () => {
 vi.mock("ai", () => {
   return {
     streamText: globalThis.__openAITestMocks.streamText,
+    streamObject: globalThis.__openAITestMocks.streamObject,
   }
 })
 
@@ -97,6 +100,7 @@ const getMockTranscriptionsCreate = () =>
   globalThis.__openAITestMocks.transcriptionsCreate
 const getMockSpeechCreate = () => globalThis.__openAITestMocks.speechCreate
 const getMockStreamText = () => globalThis.__openAITestMocks.streamText
+const getMockStreamObject = () => globalThis.__openAITestMocks.streamObject
 
 // Helper to create a mock text stream from a string
 function createMockTextStream(text: string) {
@@ -111,6 +115,16 @@ function createMockTextStream(text: string) {
   }
 }
 
+// Helper to create a mock object stream
+function createMockObjectStream<T>(finalObject: T) {
+  return {
+    partialObjectStream: (async function* () {
+      // Simulate streaming by yielding partial objects, then the final object
+      yield finalObject
+    })(),
+  }
+}
+
 describe("openAI", () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -118,6 +132,7 @@ describe("openAI", () => {
     getMockTranscriptionsCreate().mockReset()
     getMockSpeechCreate().mockReset()
     getMockStreamText().mockReset()
+    getMockStreamObject().mockReset()
   })
 
   // Helper to set up API key in database
@@ -160,13 +175,12 @@ describe("openAI", () => {
       const asUser = createTestWithUser()
       await setupApiKey(asUser)
 
-      const mockResponse = `IMPROVED_DESCRIPTION:
-This is an improved version of the prompt
-
-BRANCH_NAME:
-hotfix/fix-bug`
-      getMockStreamText().mockResolvedValue(
-        createMockTextStream(mockResponse) as any
+      const mockObject = {
+        improvedDescription: "This is an improved version of the prompt",
+        branchName: "hotfix/fix-bug",
+      }
+      getMockStreamObject().mockResolvedValue(
+        createMockObjectStream(mockObject) as any
       )
 
       const result = await asUser.action(api.openAI.improvePrompt, {
@@ -175,8 +189,8 @@ hotfix/fix-bug`
 
       expect(result.text).toBe("This is an improved version of the prompt")
       expect(result.branchName).toBe("hotfix/fix-bug")
-      expect(getMockStreamText()).toHaveBeenCalledTimes(1)
-      const callArgs = getMockStreamText().mock.calls[0][0]
+      expect(getMockStreamObject()).toHaveBeenCalledTimes(1)
+      const callArgs = getMockStreamObject().mock.calls[0][0]
       expect(callArgs.prompt).toContain("fix bug")
     })
 
@@ -184,13 +198,13 @@ hotfix/fix-bug`
       const asUser = createTestWithUser()
       await setupApiKey(asUser)
 
-      const mockResponse = `IMPROVED_DESCRIPTION:
-Add user authentication feature with login and signup
-
-BRANCH_NAME:
-feature/add-user-authentication`
-      getMockStreamText().mockResolvedValue(
-        createMockTextStream(mockResponse) as any
+      const mockObject = {
+        improvedDescription:
+          "Add user authentication feature with login and signup",
+        branchName: "feature/add-user-authentication",
+      }
+      getMockStreamObject().mockResolvedValue(
+        createMockObjectStream(mockObject) as any
       )
 
       const result = await asUser.action(api.openAI.improvePrompt, {
@@ -203,21 +217,46 @@ feature/add-user-authentication`
       expect(result.branchName).toBe("feature/add-user-authentication")
     })
 
-    it("handles response without structured format", async () => {
+    it("handles response with only improved description", async () => {
       const asUser = createTestWithUser()
       await setupApiKey(asUser)
 
-      const mockResponse =
-        "This is an improved version without structured format"
-      getMockStreamText().mockResolvedValue(
-        createMockTextStream(mockResponse) as any
+      const mockObject = {
+        improvedDescription:
+          "This is an improved version without branch name",
+      }
+      getMockStreamObject().mockResolvedValue(
+        createMockObjectStream(mockObject) as any
       )
 
       const result = await asUser.action(api.openAI.improvePrompt, {
         text: "test",
       })
 
-      expect(result.text).toBe(mockResponse)
+      expect(result.text).toBe("This is an improved version without branch name")
+      expect(result.branchName).toBeUndefined()
+    })
+
+    it("returns questions when task needs clarification", async () => {
+      const asUser = createTestWithUser()
+      await setupApiKey(asUser)
+
+      const mockObject = {
+        questions:
+          "Just to clarify, will this task only build the backend or would you also like a user interface for this feature?",
+      }
+      getMockStreamObject().mockResolvedValue(
+        createMockObjectStream(mockObject) as any
+      )
+
+      const result = await asUser.action(api.openAI.improvePrompt, {
+        text: "improve the app",
+      })
+
+      expect(result.questions).toBe(
+        "Just to clarify, will this task only build the backend or would you also like a user interface for this feature?"
+      )
+      expect(result.text).toBeUndefined()
       expect(result.branchName).toBeUndefined()
     })
 
@@ -225,13 +264,12 @@ feature/add-user-authentication`
       const asUser = createTestWithUser()
       await setupApiKey(asUser)
 
-      const mockResponse = `IMPROVED_DESCRIPTION:
-Improved text
-
-BRANCH_NAME:
-invalid-branch-name`
-      getMockStreamText().mockResolvedValue(
-        createMockTextStream(mockResponse) as any
+      const mockObject = {
+        improvedDescription: "Improved text",
+        branchName: "invalid-branch-name",
+      }
+      getMockStreamObject().mockResolvedValue(
+        createMockObjectStream(mockObject) as any
       )
 
       const result = await asUser.action(api.openAI.improvePrompt, {
@@ -252,7 +290,7 @@ invalid-branch-name`
         "Invalid API key",
         undefined
       )
-      getMockStreamText().mockRejectedValue(apiError)
+      getMockStreamObject().mockRejectedValue(apiError)
 
       await expect(
         asUser.action(api.openAI.improvePrompt, { text: "test prompt" })
@@ -269,7 +307,7 @@ invalid-branch-name`
         "Rate limit exceeded",
         undefined
       )
-      getMockStreamText().mockRejectedValue(apiError)
+      getMockStreamObject().mockRejectedValue(apiError)
 
       await expect(
         asUser.action(api.openAI.improvePrompt, { text: "test prompt" })

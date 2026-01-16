@@ -1,7 +1,8 @@
 "use node"
 
 import { createOpenAI } from "@ai-sdk/openai"
-import { streamText } from "ai"
+import { streamText, streamObject } from "ai"
+import { z } from "zod"
 import { v } from "convex/values"
 import { decryptData } from "encryption"
 import OpenAI from "openai"
@@ -482,9 +483,16 @@ export const generateFinalTask = action({
         )
         .join("\n")
 
-      // Use Convex AI agents (streamText) for streaming support
-      const result = await streamText({
+      // Define schema for structured streaming output
+      const generateFinalTaskSchema = z.object({
+        improvedDescription: z.string().describe("Clear, comprehensive, and actionable task description that incorporates all insights from the conversation"),
+        branchName: z.string().optional().describe("Branch name in format feature/slug or hotfix/slug based on task type"),
+      })
+
+      // Use Convex AI agents (streamObject) to stream structured object
+      const result = await streamObject({
         model: openaiProvider("gpt-4o-mini"),
+        schema: generateFinalTaskSchema,
         prompt: `Based on the following conversation where a user refined their task description, generate the final improved task description.
 
 Original task:
@@ -501,40 +509,21 @@ Also recommend a branch name based on the task type:
 - If this is a new feature or enhancement, use format: feature/slug (e.g., feature/add-user-authentication)
 - If this is a bug fix, use format: hotfix/slug (e.g., hotfix/fix-login-error)
 - Create a short, descriptive slug (lowercase, use hyphens instead of spaces)
-- The slug should be 2-4 words that summarize the task
-
-Respond in the following format:
-IMPROVED_DESCRIPTION:
-[Your improved task description here]
-
-BRANCH_NAME:
-[feature/slug or hotfix/slug]`,
+- The slug should be 2-4 words that summarize the task`,
       })
 
-      // Collect the full streamed text
-      let response = ""
-      for await (const chunk of result.textStream) {
-        response += chunk
+      // Stream the object and collect the final result
+      let finalObject: z.infer<typeof generateFinalTaskSchema> | null = null
+      for await (const partialObject of result.partialObjectStream) {
+        finalObject = partialObject as z.infer<typeof generateFinalTaskSchema>
       }
 
-      // Parse the response
-      const improvedTextMatch = response.match(
-        /IMPROVED_DESCRIPTION:\s*([\s\S]+?)(?=\nBRANCH_NAME:|$)/
-      )
-      const branchNameMatch = response.match(/BRANCH_NAME:\s*(.+?)(?:\n|$)/)
-
-      let improvedText: string
-      let branchName: string | undefined
-
-      if (improvedTextMatch) {
-        improvedText = improvedTextMatch[1].trim()
-        branchName = branchNameMatch
-          ? branchNameMatch[1].trim() || undefined
-          : undefined
-      } else {
-        improvedText = response.trim()
-        branchName = undefined
+      if (!finalObject) {
+        throw new Error("Failed to receive object from stream")
       }
+
+      const improvedText = finalObject.improvedDescription?.trim()
+      let branchName = finalObject.branchName?.trim()
 
       // Validate branch name format
       if (branchName && !/^(feature|hotfix)\//.test(branchName)) {
@@ -542,7 +531,7 @@ BRANCH_NAME:
       }
 
       return {
-        text: improvedText,
+        text: improvedText || "",
         branchName: branchName || undefined,
       }
     } catch (error) {
@@ -605,7 +594,7 @@ export const improvePrompt = action({
     }
 
     try {
-      // Generate improved prompt and branch name using Convex AI agents (streamText)
+      // Generate improved prompt and branch name using Convex AI agents (streamObject)
       const openaiProvider = createOpenAI({ apiKey: openaiApiKey })
 
       // Build conversation context if messages exist
@@ -619,9 +608,17 @@ export const improvePrompt = action({
               .join("\n")}`
           : ""
 
-      // Use Convex AI agents (streamText) for streaming support
-      const result = await streamText({
+      // Define schema for structured streaming output
+      const improvePromptSchema = z.object({
+        questions: z.string().optional().describe("Clarifying questions if the task needs more context. Only provide this if the task is too vague or missing important details."),
+        improvedDescription: z.string().optional().describe("Improved task description if the task is clear enough. Only provide this if questions is not provided."),
+        branchName: z.string().optional().describe("Branch name in format feature/slug or hotfix/slug. Only provide this if improvedDescription is provided."),
+      })
+
+      // Use Convex AI agents (streamObject) to stream structured object
+      const result = await streamObject({
         model: openaiProvider("gpt-4o-mini"),
+        schema: improvePromptSchema,
         prompt: `You are helping to improve task descriptions for AI coding agents. Your role is similar to Cursor or Claude Code - you need to determine if a task description is ready to go or if you need to ask clarifying questions first.
 
 Original task description:
@@ -629,8 +626,8 @@ ${args.text}${conversationContext}
 
 Your process:
 1. First, analyze the task description to determine if it's clear and actionable enough for an AI coding agent to execute
-2. If the task needs clarification (e.g., ambiguous requirements, missing context, unclear scope), you should ask questions instead of generating a summary
-3. If the task is clear enough, generate an improved version with better structure and clarity
+2. If the task needs clarification (e.g., ambiguous requirements, missing context, unclear scope), provide questions in the "questions" field
+3. If the task is clear enough, provide an improved version in "improvedDescription" and a branch name in "branchName"
 
 Decision criteria for asking questions:
 - Task is too vague or high-level (e.g., "improve the app", "add features")
@@ -639,68 +636,38 @@ Decision criteria for asking questions:
 - Unclear scope (e.g., should this include frontend, backend, or both?)
 - Missing technical details (e.g., which framework, which database, which API endpoints)
 
-If you need to ask questions, respond with:
-QUESTIONS:
-[Your clarifying questions here. Be specific and helpful. For example: "Just to clarify, will this task only build the backend or would you also like a user interface for this feature? Also, should this integrate with the existing authentication system or be standalone?"]
-
-If the task is ready, respond with:
-IMPROVED_DESCRIPTION:
-[Your improved task description here]
-
-BRANCH_NAME:
-[feature/slug or hotfix/slug]
-
-For the branch name:
+For the branch name (only if providing improvedDescription):
 - If this is a new feature or enhancement, use format: feature/slug (e.g., feature/add-user-authentication)
 - If this is a bug fix, use format: hotfix/slug (e.g., hotfix/fix-login-error)
 - Create a short, descriptive slug (lowercase, use hyphens instead of spaces)
 - The slug should be 2-4 words that summarize the task
 - If a Jira ticket is provided, use the ticket number in the slug (e.g., feature/BE-2708-tablet-design-improvements)
 
-Respond in ONE of the two formats above.`,
+Return either questions OR improvedDescription+branchName, never both.`,
       })
 
-      // Collect the full streamed text
-      let response = ""
-      for await (const chunk of result.textStream) {
-        response += chunk
+      // Stream the object and collect the final result
+      let finalObject: z.infer<typeof improvePromptSchema> | null = null
+      for await (const partialObject of result.partialObjectStream) {
+        finalObject = partialObject as z.infer<typeof improvePromptSchema>
       }
 
-      // Check if response contains questions
-      const questionsMatch = response.match(
-        /QUESTIONS:\s*([\s\S]+?)(?=\n(?:IMPROVED_DESCRIPTION|BRANCH_NAME)|$)/
-      )
+      if (!finalObject) {
+        throw new Error("Failed to receive object from stream")
+      }
 
-      if (questionsMatch) {
-        // Task needs clarification - return questions
-        const questions = questionsMatch[1].trim()
+      // Handle questions case
+      if (finalObject.questions) {
         return {
           text: undefined,
           branchName: undefined,
-          questions: questions || undefined,
+          questions: finalObject.questions.trim() || undefined,
         }
       }
 
-      // Parse the response to extract improved text and branch name
-      const improvedTextMatch = response.match(
-        /IMPROVED_DESCRIPTION:\s*([\s\S]+?)(?=\nBRANCH_NAME:|$)/
-      )
-      const branchNameMatch = response.match(/BRANCH_NAME:\s*(.+?)(?:\n|$)/)
-
-      let improvedText: string
-      let branchName: string | undefined
-
-      if (improvedTextMatch) {
-        // Structured format found
-        improvedText = improvedTextMatch[1].trim()
-        branchName = branchNameMatch
-          ? branchNameMatch[1].trim() || undefined
-          : undefined
-      } else {
-        // Fallback: use entire response as improved text
-        improvedText = response.trim()
-        branchName = undefined
-      }
+      // Handle improved description case
+      const improvedText = finalObject.improvedDescription?.trim()
+      let branchName = finalObject.branchName?.trim()
 
       // Validate branch name format (should start with feature/ or hotfix/)
       if (branchName && !/^(feature|hotfix)\//.test(branchName)) {
@@ -708,7 +675,7 @@ Respond in ONE of the two formats above.`,
       }
 
       return {
-        text: improvedText,
+        text: improvedText || undefined,
         branchName: branchName || undefined,
         questions: undefined,
       }
