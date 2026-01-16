@@ -32,11 +32,11 @@ export function ConversationSection({ agentId }: { agentId: string }) {
       </AccordionTrigger>
       <AccordionContent className="bg-card">
         <div className="px-4 pb-4">
-          {!conversationLoading ? (
+          {conversationLoading ? (
             <div className="flex items-center justify-center py-8">
               <Spinner className="h-6 w-6 text-primary" />
             </div>
-          ) : (
+          ) : conversation && conversation.messages.length > 0 ? (
             <div className="space-y-3">
               {/* Show Thinking Process Toggle */}
               <div className="flex items-center justify-between pb-2 border-b border-border">
@@ -53,7 +53,7 @@ export function ConversationSection({ agentId }: { agentId: string }) {
                 />
               </div>
               {filterMessagesForDisplay(
-                conversation?.messages || [],
+                conversation.messages,
                 showThinkingProcess
               ).map((message) => (
                 <div
@@ -113,6 +113,12 @@ export function ConversationSection({ agentId }: { agentId: string }) {
                   )}
                 </div>
               ))}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-8 text-center">
+              <p className="text-muted-foreground text-sm">
+                No conversation found
+              </p>
             </div>
           )}
         </div>
