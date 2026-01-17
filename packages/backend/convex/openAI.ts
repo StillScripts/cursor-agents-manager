@@ -1,8 +1,7 @@
 "use node"
 
 import { createOpenAI } from "@ai-sdk/openai"
-import { streamText, streamObject } from "ai"
-import { z } from "zod"
+import { streamObject, streamText } from "ai"
 import { v } from "convex/values"
 import { decryptData } from "encryption"
 import OpenAI from "openai"
@@ -10,9 +9,29 @@ import {
   type AgentConversation,
   extractUserMessagesAndLastAssistant,
 } from "validators"
+import { z } from "zod"
 import { api, internal } from "./_generated/api"
 import { action } from "./_generated/server"
 import { checkRateLimit, openAIRateLimiters } from "./rateLimiting"
+
+async function getUserOpenAIKey(
+  ctx: { runQuery: (query: any, args?: any) => Promise<any> },
+  userId: string
+): Promise<string> {
+  const record = await ctx.runQuery(internal.apiKeys.getApiKeysRecordInternal, {
+    userId,
+  })
+
+  if (!record?.encryptedOpenaiApiKey) {
+    throw new Error("OpenAI API key not configured")
+  }
+
+  try {
+    return decryptData(record.encryptedOpenaiApiKey)
+  } catch {
+    throw new Error("Failed to decrypt OpenAI API key")
+  }
+}
 
 /**
  * Summarize a conversation using OpenAI
@@ -33,24 +52,7 @@ export const summarizeConversation = action({
       authUser.userId
     )
 
-    // Get OpenAI API key
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
-      {
-        userId: authUser.userId,
-      }
-    )
-
-    if (!record?.encryptedOpenaiApiKey) {
-      throw new Error("OpenAI API key not configured")
-    }
-
-    let openaiApiKey: string
-    try {
-      openaiApiKey = decryptData(record.encryptedOpenaiApiKey)
-    } catch {
-      throw new Error("Failed to decrypt OpenAI API key")
-    }
+    const openaiApiKey = await getUserOpenAIKey(ctx, authUser.userId)
 
     // Get conversation (the action handles API key internally)
     const conversationData = await ctx.runAction(api.cursor.getConversation, {
@@ -169,24 +171,7 @@ export const transcribeAudio = action({
       authUser.userId
     )
 
-    // Get OpenAI API key
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
-      {
-        userId: authUser.userId,
-      }
-    )
-
-    if (!record?.encryptedOpenaiApiKey) {
-      throw new Error("OpenAI API key not configured")
-    }
-
-    let openaiApiKey: string
-    try {
-      openaiApiKey = decryptData(record.encryptedOpenaiApiKey)
-    } catch {
-      throw new Error("Failed to decrypt OpenAI API key")
-    }
+    const openaiApiKey = await getUserOpenAIKey(ctx, authUser.userId)
 
     try {
       // Convert base64 to buffer
@@ -262,24 +247,7 @@ export const textToSpeech = action({
     // Check rate limit before calling OpenAI API
     await checkRateLimit(ctx, openAIRateLimiters.textToSpeech, authUser.userId)
 
-    // Get OpenAI API key
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
-      {
-        userId: authUser.userId,
-      }
-    )
-
-    if (!record?.encryptedOpenaiApiKey) {
-      throw new Error("OpenAI API key not configured")
-    }
-
-    let openaiApiKey: string
-    try {
-      openaiApiKey = decryptData(record.encryptedOpenaiApiKey)
-    } catch {
-      throw new Error("Failed to decrypt OpenAI API key")
-    }
+    const openaiApiKey = await getUserOpenAIKey(ctx, authUser.userId)
 
     try {
       const openai = new OpenAI({ apiKey: openaiApiKey })
@@ -342,24 +310,7 @@ export const planTask = action({
     // Check rate limit before calling OpenAI API
     await checkRateLimit(ctx, openAIRateLimiters.planTask, authUser.userId)
 
-    // Get OpenAI API key
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
-      {
-        userId: authUser.userId,
-      }
-    )
-
-    if (!record?.encryptedOpenaiApiKey) {
-      throw new Error("OpenAI API key not configured")
-    }
-
-    let openaiApiKey: string
-    try {
-      openaiApiKey = decryptData(record.encryptedOpenaiApiKey)
-    } catch {
-      throw new Error("Failed to decrypt OpenAI API key")
-    }
+    const openaiApiKey = await getUserOpenAIKey(ctx, authUser.userId)
 
     // Validate input
     if (!args.userMessage || args.userMessage.trim().length === 0) {
@@ -453,24 +404,7 @@ export const generateFinalTask = action({
       authUser.userId
     )
 
-    // Get OpenAI API key
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
-      {
-        userId: authUser.userId,
-      }
-    )
-
-    if (!record?.encryptedOpenaiApiKey) {
-      throw new Error("OpenAI API key not configured")
-    }
-
-    let openaiApiKey: string
-    try {
-      openaiApiKey = decryptData(record.encryptedOpenaiApiKey)
-    } catch {
-      throw new Error("Failed to decrypt OpenAI API key")
-    }
+    const openaiApiKey = await getUserOpenAIKey(ctx, authUser.userId)
 
     try {
       const openaiProvider = createOpenAI({ apiKey: openaiApiKey })
@@ -485,8 +419,17 @@ export const generateFinalTask = action({
 
       // Define schema for structured streaming output
       const generateFinalTaskSchema = z.object({
-        improvedDescription: z.string().describe("Clear, comprehensive, and actionable task description that incorporates all insights from the conversation"),
-        branchName: z.string().optional().describe("Branch name in format feature/slug or hotfix/slug based on task type"),
+        improvedDescription: z
+          .string()
+          .describe(
+            "Clear, comprehensive, and actionable task description that incorporates all insights from the conversation"
+          ),
+        branchName: z
+          .string()
+          .optional()
+          .describe(
+            "Branch name in format feature/slug or hotfix/slug based on task type"
+          ),
       })
 
       // Use Convex AI agents (streamObject) to stream structured object
@@ -569,24 +512,7 @@ export const improvePrompt = action({
     // Check rate limit before calling OpenAI API
     await checkRateLimit(ctx, openAIRateLimiters.improvePrompt, authUser.userId)
 
-    // Get OpenAI API key
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
-      {
-        userId: authUser.userId,
-      }
-    )
-
-    if (!record?.encryptedOpenaiApiKey) {
-      throw new Error("OpenAI API key not configured")
-    }
-
-    let openaiApiKey: string
-    try {
-      openaiApiKey = decryptData(record.encryptedOpenaiApiKey)
-    } catch {
-      throw new Error("Failed to decrypt OpenAI API key")
-    }
+    const openaiApiKey = await getUserOpenAIKey(ctx, authUser.userId)
 
     // Validate input
     if (!args.text || args.text.trim().length === 0) {
@@ -610,9 +536,24 @@ export const improvePrompt = action({
 
       // Define schema for structured streaming output
       const improvePromptSchema = z.object({
-        questions: z.string().optional().describe("Clarifying questions if the task needs more context. Only provide this if the task is too vague or missing important details."),
-        improvedDescription: z.string().optional().describe("Improved task description if the task is clear enough. Only provide this if questions is not provided."),
-        branchName: z.string().optional().describe("Branch name in format feature/slug or hotfix/slug. Only provide this if improvedDescription is provided."),
+        questions: z
+          .string()
+          .optional()
+          .describe(
+            "Clarifying questions if the task needs more context. Only provide this if the task is too vague or missing important details."
+          ),
+        improvedDescription: z
+          .string()
+          .optional()
+          .describe(
+            "Improved task description if the task is clear enough. Only provide this if questions is not provided."
+          ),
+        branchName: z
+          .string()
+          .optional()
+          .describe(
+            "Branch name in format feature/slug or hotfix/slug. Only provide this if improvedDescription is provided."
+          ),
       })
 
       // Use Convex AI agents (streamObject) to stream structured object
