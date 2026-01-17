@@ -143,6 +143,128 @@ Summary:`,
 })
 
 /**
+ * Summarize today's work session using OpenAI
+ * Analyzes all time logs from today (Australia/Brisbane timezone) and generates a summary
+ */
+export const summarizeTodayWork = action({
+  args: {},
+  handler: async (ctx) => {
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
+
+    // Check rate limit before calling OpenAI API
+    await checkRateLimit(
+      ctx,
+      openAIRateLimiters.summarizeTodayWork,
+      authUser.userId
+    )
+
+    // Get OpenAI API key
+    const record = await ctx.runQuery(
+      internal.apiKeys.getApiKeysRecordInternal,
+      {
+        userId: authUser.userId,
+      }
+    )
+
+    if (!record?.encryptedOpenaiApiKey) {
+      throw new Error("OpenAI API key not configured")
+    }
+
+    let openaiApiKey: string
+    try {
+      openaiApiKey = decryptData(record.encryptedOpenaiApiKey)
+    } catch {
+      throw new Error("Failed to decrypt OpenAI API key")
+    }
+
+    // Get today's time logs (already filtered by Brisbane timezone)
+    const todayTimeLogs = await ctx.runQuery(api.timeLogs.getTodayTimeLogs)
+
+    if (!todayTimeLogs || todayTimeLogs.length === 0) {
+      throw new Error("No time logs found for today")
+    }
+
+    // Get all tasks to map task IDs to task information
+    const tasks = await ctx.runQuery(api.tasks.getTasks)
+
+    const taskMap = new Map(tasks.map((task) => [task._id, task]))
+
+    // Format time logs with task information
+    const workSessions = todayTimeLogs.map((log) => {
+      const task = taskMap.get(log.taskId)
+      const duration = log.endTime - log.startTime
+      const durationMinutes = Math.round(duration / 60000)
+      const startDate = new Date(log.startTime)
+      const endDate = new Date(log.endTime)
+
+      return {
+        task: task?.title ?? "Unknown Task",
+        description: task?.description,
+        startTime: startDate.toISOString(),
+        endTime: endDate.toISOString(),
+        duration: `${durationMinutes} minutes`,
+        activityType: log.activityType,
+      }
+    })
+
+    // Calculate total time
+    const totalMinutes = todayTimeLogs.reduce((sum, log) => {
+      return sum + Math.round((log.endTime - log.startTime) / 60000)
+    }, 0)
+    const totalHours = Math.floor(totalMinutes / 60)
+    const remainingMinutes = totalMinutes % 60
+
+    // Format work sessions for AI
+    const workSessionsText = workSessions
+      .map(
+        (session, index) => `Session ${index + 1}:
+- Task: ${session.task}
+${session.description ? `- Description: ${session.description}` : ""}
+- Start: ${session.startTime}
+- End: ${session.endTime}
+- Duration: ${session.duration}
+${session.activityType ? `- Activity Type: ${session.activityType}` : ""}`
+      )
+      .join("\n\n")
+
+    try {
+      // Generate summary using AI SDK with user's API key
+      const openaiProvider = createOpenAI({ apiKey: openaiApiKey })
+      const { text: summary } = await generateText({
+        model: openaiProvider("gpt-4o-mini"),
+        prompt: `Please provide a concise summary of today's work sessions. Focus on:
+- Overall productivity and accomplishments
+- Main tasks worked on
+- Time distribution across different tasks
+- Any patterns or insights about the work day
+
+Total time worked today: ${totalHours} hours and ${remainingMinutes} minutes
+
+Work Sessions:
+${workSessionsText}
+
+Summary:`,
+      })
+
+      return { summary }
+    } catch (error) {
+      console.error("[Convex summarizeTodayWork] Error:", error)
+      if (error instanceof OpenAI.APIError) {
+        if (error.status === 401) {
+          throw new Error("Invalid OpenAI API key")
+        }
+        if (error.status === 429) {
+          throw new Error("OpenAI rate limit exceeded")
+        }
+      }
+      throw new Error("Failed to generate summary")
+    }
+  },
+})
+
+/**
  * Transcribe audio using OpenAI Whisper
  */
 export const transcribeAudio = action({

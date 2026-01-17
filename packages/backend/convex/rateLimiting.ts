@@ -138,6 +138,12 @@ const openAIRateLimiter = new RateLimiter(rateLimiterComponent, {
     period: MINUTE,
     capacity: 2,
   },
+  "openai:summarize-today": {
+    kind: "token bucket",
+    rate: 3,
+    period: MINUTE,
+    capacity: 2,
+  },
   "openai:transcribe": {
     kind: "token bucket",
     rate: 5,
@@ -169,6 +175,11 @@ export const openAIRateLimiters = {
   summarizeConversation: {
     limiter: openAIRateLimiter,
     name: "openai:summarize" as const,
+    requestsPerMinute: 3,
+  },
+  summarizeTodayWork: {
+    limiter: openAIRateLimiter,
+    name: "openai:summarize-today" as const,
     requestsPerMinute: 3,
   },
   transcribeAudio: {
