@@ -21,11 +21,12 @@ export default function Layout({ children }: { children: ReactNode }) {
       <Suspense fallback={null}>
         <DesktopHeader />
       </Suspense>
-      <Suspense fallback={null}>
-        <GlobalTimerBanner />
-      </Suspense>
+
       <main className="h-dvh overflow-y-auto mobile-scroll main-content-bottom-padding bg-background max-w-md mx-auto w-full md:h-auto md:flex md:flex-col md:min-h-screen md:pt-16 md:overflow-visible md:max-w-none">
         <div className="md:max-w-7xl md:mx-auto md:px-6 md:py-8 md:w-full pb-8 md:pb-0">
+          <Suspense fallback={null}>
+            <GlobalTimerBanner />
+          </Suspense>
           {children}
         </div>
       </main>

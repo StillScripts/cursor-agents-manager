@@ -3,8 +3,8 @@
 import { formatDuration } from "helpers"
 import { Clock } from "lucide-react"
 import Link from "next/link"
-import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
+import { useEffect, useState } from "react"
 import { useActiveTimeLog } from "@/lib/hooks/use-time-logs"
 
 export function GlobalTimerBanner() {
@@ -34,7 +34,7 @@ export function GlobalTimerBanner() {
   return (
     <Link
       href="/tasks"
-      className="bg-primary/10 border-b border-primary/20 px-4 py-2 flex items-center gap-3 hover:bg-primary/15 transition-colors"
+      className="bg-primary/10 mb-2 rounded px-4 py-2 flex items-center gap-3 hover:bg-primary/15 transition-colors"
     >
       <Clock className="h-4 w-4 text-primary shrink-0" />
       <div className="flex-1 min-w-0">
