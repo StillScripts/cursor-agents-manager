@@ -52,10 +52,7 @@ function dbAgentToApiFormat(dbAgent: {
   }
 }
 
-export function useAgent(
-  id: string,
-  initialData?: Agent | null
-) {
+export function useAgent(id: string, initialData?: Agent | null) {
   const [initialSyncDone, setInitialSyncDone] = useState(false)
   const [actionData, setActionData] = useState<Agent | null>(null)
   const [syncError, setSyncError] = useState<string | null>(null)
@@ -97,9 +94,7 @@ export function useAgent(
   // Fall back to database query result
   const data: Agent | null =
     actionData ??
-    (dbResult
-      ? dbAgentToApiFormat(dbResult)
-      : (initialData ?? null))
+    (dbResult ? dbAgentToApiFormat(dbResult) : (initialData ?? null))
 
   // Return in the same format as the old hook
   return {
@@ -213,7 +208,8 @@ export function useAgentConversationWithCursor(
     enabled?: boolean
   }
 ) {
-  const [conversationData, setConversationData] = useState<AgentConversation | null>(null)
+  const [conversationData, setConversationData] =
+    useState<AgentConversation | null>(null)
   const [nextCursor, setNextCursor] = useState<string | undefined>(undefined)
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)

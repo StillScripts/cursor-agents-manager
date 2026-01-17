@@ -16,7 +16,6 @@ import { checkRateLimit, cursorRateLimiters } from "./rateLimiting"
 const CURSOR_API_URL = "https://api.cursor.com/v0/agents"
 const CURSOR_MODELS_API_URL = "https://api.cursor.com/v0/models"
 
-
 /**
  * Internal action to get and decrypt Cursor API key for a user
  * Returns null if no API key is configured or decryption fails
@@ -195,7 +194,9 @@ export const getAgents = action({
 
     // Require API key - throw error if not configured
     if (!apiKey) {
-      throw new Error("Cursor API key not configured. Please add your API key in Account Settings.")
+      throw new Error(
+        "Cursor API key not configured. Please add your API key in Account Settings."
+      )
     }
 
     // Fetch from Cursor API
@@ -307,7 +308,9 @@ export const getAgentById = action({
 
     // Require API key - throw error if not configured
     if (!apiKey) {
-      throw new Error("Cursor API key not configured. Please add your API key in Account Settings.")
+      throw new Error(
+        "Cursor API key not configured. Please add your API key in Account Settings."
+      )
     }
 
     // Fetch from Cursor API
@@ -427,7 +430,9 @@ export const launchAgent = action({
 
     // Require API key - throw error if not configured
     if (!apiKey) {
-      throw new Error("Cursor API key not configured. Please add your API key in Account Settings.")
+      throw new Error(
+        "Cursor API key not configured. Please add your API key in Account Settings."
+      )
     }
 
     // Live mode - call Cursor API
@@ -553,7 +558,9 @@ export const stopAgent = action({
 
     // Require API key - throw error if not configured
     if (!apiKey) {
-      throw new Error("Cursor API key not configured. Please add your API key in Account Settings.")
+      throw new Error(
+        "Cursor API key not configured. Please add your API key in Account Settings."
+      )
     }
 
     // Live mode - call Cursor API
@@ -616,7 +623,9 @@ export const deleteAgent = action({
 
     // Require API key - throw error if not configured
     if (!apiKey) {
-      throw new Error("Cursor API key not configured. Please add your API key in Account Settings.")
+      throw new Error(
+        "Cursor API key not configured. Please add your API key in Account Settings."
+      )
     }
 
     // Live mode - call Cursor API
@@ -690,7 +699,9 @@ export const sendFollowUp = action({
 
     // Require API key - throw error if not configured
     if (!apiKey) {
-      throw new Error("Cursor API key not configured. Please add your API key in Account Settings.")
+      throw new Error(
+        "Cursor API key not configured. Please add your API key in Account Settings."
+      )
     }
 
     // Live mode - call Cursor API
@@ -764,7 +775,9 @@ export const getConversation = action({
 
     // Require API key - throw error if not configured
     if (!apiKey) {
-      throw new Error("Cursor API key not configured. Please add your API key in Account Settings.")
+      throw new Error(
+        "Cursor API key not configured. Please add your API key in Account Settings."
+      )
     }
 
     // Live mode - call Cursor API
@@ -855,7 +868,9 @@ export const getConversationWithCursor = action({
 
     // Require API key - throw error if not configured
     if (!apiKey) {
-      throw new Error("Cursor API key not configured. Please add your API key in Account Settings.")
+      throw new Error(
+        "Cursor API key not configured. Please add your API key in Account Settings."
+      )
     }
 
     // Live mode - call Cursor API with pagination support
@@ -1048,7 +1063,9 @@ export const getModels = action({
 
     // Require API key - throw error if not configured
     if (!apiKey) {
-      throw new Error("Cursor API key not configured. Please add your API key in Account Settings.")
+      throw new Error(
+        "Cursor API key not configured. Please add your API key in Account Settings."
+      )
     }
 
     // Use ActionCache to fetch and cache models
