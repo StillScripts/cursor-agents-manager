@@ -71,14 +71,6 @@ export const summarizeConversation = action({
       throw new Error("No conversation messages to summarize")
     }
 
-    // Check if this is a placeholder conversation
-    if (
-      conversation.messages.length === 1 &&
-      conversation.messages[0]?.id === "msg_placeholder"
-    ) {
-      throw new Error("Conversation not found")
-    }
-
     // Extract only user messages and last assistant message from each turn
     const condensedMessages = extractUserMessagesAndLastAssistant(
       conversation.messages
