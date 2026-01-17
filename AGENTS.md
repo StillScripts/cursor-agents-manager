@@ -45,6 +45,11 @@ cursor-agents-manager/
 
 **Package Manager**: This project uses **Bun** (not npm/pnpm/yarn). See `.cursor/rules/use-bun-instead-of-node-vite-npm-pnpm.mdc` for details.
 
+**IMPORTANT**: Always use `bun` commands, never `npm`, `pnpm`, `yarn`, or `node`:
+- `bun run <script>` not `npm run <script>`
+- `bun install` not `npm install`
+- `bun <file>` not `node <file>`
+
 ```bash
 # Install dependencies (from root)
 bun install

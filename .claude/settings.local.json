@@ -12,7 +12,6 @@
       "WebFetch(domain:tanstack.com)",
       "WebFetch(domain:www.better-auth.com)",
       "WebSearch",
-
       "Bash(ls:*)",
       "Bash(pwd:*)",
       "Bash(find:*)",
@@ -23,7 +22,6 @@
       "Bash(tail:*)",
       "Bash(cat:*)",
       "Bash(tree:*)",
-
       "Bash(git status:*)",
       "Bash(git log:*)",
       "Bash(git diff:*)",
@@ -33,7 +31,6 @@
       "Bash(git tag:*)",
       "Bash(git stash list:*)",
       "Bash(git rev-parse:*)",
-
       "Bash(gh pr view:*)",
       "Bash(gh pr list:*)",
       "Bash(gh pr checks:*)",
@@ -45,7 +42,6 @@
       "Bash(gh run logs:*)",
       "Bash(gh repo view:*)",
       "Bash(gh api:*)",
-
       "Bash(bun pm:*)",
       "Bash(bun install:*)",
       "Bash(bun remove:*)",
@@ -59,7 +55,6 @@
       "Bash(bun run biome:*)",
       "Bash(bunx biome check:*)",
       "Bash(bunx tsc:*)",
-
       "Skill(commit)",
       "Skill(create-pr)",
       "Skill(code-review)",
@@ -71,7 +66,8 @@
       "Skill(better-auth-best-practices)",
       "Skill(convex-best-practices)",
       "Skill(vercel-react-best-practices)",
-      "Skill(web-design-guidelines)"
+      "Skill(web-design-guidelines)",
+      "Bash(bun run:*)"
     ]
   }
 }
