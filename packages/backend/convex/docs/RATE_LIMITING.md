@@ -106,7 +106,7 @@ export const cursorRateLimiters = {
 
 2. **Realistic Power User Limits**: Rate limits are based on realistic power user usage patterns - what a human could actually do, not theoretical maximums. This prevents abuse while allowing genuine power users to work efficiently.
 
-3. **Rate Limiting Applies to All Modes**: Rate limiting is applied even in simulation mode to prevent abuse of the endpoint itself, not just external API calls.
+3. **Rate Limiting Applies to All Requests**: Rate limiting is applied to prevent abuse of the endpoint itself, not just external API calls.
 
 4. **Early Rate Limit Checks**: Rate limits are checked at the beginning of action handlers, before any expensive operations or external API calls.
 

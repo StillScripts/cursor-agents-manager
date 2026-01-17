@@ -71,9 +71,8 @@ export const summarizeConversation = action({
       throw new Error("No conversation messages to summarize")
     }
 
-    // Check if this is a placeholder conversation (simulation mode only)
+    // Check if this is a placeholder conversation
     if (
-      conversationData.simulation &&
       conversation.messages.length === 1 &&
       conversation.messages[0]?.id === "msg_placeholder"
     ) {
