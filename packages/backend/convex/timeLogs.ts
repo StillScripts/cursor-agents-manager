@@ -91,8 +91,10 @@ export const getTodayTimeLogs = query({
       .collect()
 
     // Only return completed time logs (with endTime) from today (Brisbane timezone)
+    // Sort by createdAt descending (most recent first)
     return timeLogs
       .filter((log) => log.startTime >= todayStart && log.endTime !== undefined)
+      .sort((a, b) => b.createdAt - a.createdAt)
       .map((log) => ({
         _id: log._id,
         taskId: log.taskId,

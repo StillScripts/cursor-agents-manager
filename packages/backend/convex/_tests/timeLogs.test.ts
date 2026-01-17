@@ -6,6 +6,20 @@ import {
 } from "../../lib/convex-test-helpers"
 import { api } from "../_generated/api"
 
+// Helper function to calculate start of today in Brisbane timezone (UTC+10, no DST)
+// This matches the logic in getTodayTimeLogs
+function getBrisbaneTodayStart(): number {
+  const brisbaneOffsetMs = 10 * 60 * 60 * 1000
+  const brisbaneNow = new Date(Date.now() + brisbaneOffsetMs)
+  return (
+    Date.UTC(
+      brisbaneNow.getUTCFullYear(),
+      brisbaneNow.getUTCMonth(),
+      brisbaneNow.getUTCDate()
+    ) - brisbaneOffsetMs
+  )
+}
+
 describe("timeLogs", () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -309,9 +323,8 @@ describe("timeLogs", () => {
         title: "Test Task",
       })
 
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const todayStart = today.getTime()
+      // Use Brisbane timezone calculation to match implementation
+      const todayStart = getBrisbaneTodayStart()
 
       // Create a completed time log from today
       await asUser.mutation(api.timeLogs.saveTimeLog, {
@@ -353,10 +366,9 @@ describe("timeLogs", () => {
         title: "Test Task",
       })
 
-      // Create a time log from yesterday
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const yesterdayStart = today.getTime() - 24 * 60 * 60 * 1000
+      // Create a time log from yesterday (using Brisbane timezone)
+      const todayStart = getBrisbaneTodayStart()
+      const yesterdayStart = todayStart - 24 * 60 * 60 * 1000
 
       await asUser.mutation(api.timeLogs.saveTimeLog, {
         taskId,
@@ -377,9 +389,8 @@ describe("timeLogs", () => {
         title: "Test Task",
       })
 
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const todayStart = today.getTime()
+      // Use Brisbane timezone calculation to match implementation
+      const todayStart = getBrisbaneTodayStart()
 
       // Create first time log
       await asUser.mutation(api.timeLogs.saveTimeLog, {
@@ -402,7 +413,7 @@ describe("timeLogs", () => {
       const todayLogs = await asUser.query(api.timeLogs.getTodayTimeLogs)
 
       expect(todayLogs).toHaveLength(2)
-      // Most recently created should be first
+      // Most recently created should be first (ordered by createdAt descending)
       expect(todayLogs[0].endTime).toBe(todayStart + 7200000)
       expect(todayLogs[1].endTime).toBe(todayStart + 5400000)
     })
