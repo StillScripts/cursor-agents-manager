@@ -11,9 +11,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import type { Id } from "@/convex/_generated/dataModel"
 import { useSummarizeTodayWork } from "@/lib/hooks/use-ai"
-import { useTasks } from "@/lib/hooks/use-tasks"
-import { useTodayTimeLogs } from "@/lib/hooks/use-time-logs"
+import { type Task, useTasks } from "@/lib/hooks/use-tasks"
+import { type TimeLog, useTodayTimeLogs } from "@/lib/hooks/use-time-logs"
+import { cn } from "@/lib/utils"
+
+type TodayEntry = {
+  _id: Id<"timeLogs">
+  title: string
+  startTime: number
+  duration: number
+}
 
 export function TodayEntries() {
   const { tasks } = useTasks()
@@ -23,13 +32,15 @@ export function TodayEntries() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   // Map time logs to entries with task titles
-  const entries = useMemo(() => {
+  const entries = useMemo((): TodayEntry[] => {
     if (!timeLogs || !tasks) return []
 
-    const taskMap = new Map(tasks.map((task) => [task._id, task]))
+    const taskMap = new Map<Id<"tasks">, Task>(
+      tasks.map((task: Task) => [task._id, task])
+    )
 
     return timeLogs
-      .map((log) => {
+      .map((log: TimeLog): TodayEntry => {
         const task = taskMap.get(log.taskId)
         return {
           _id: log._id,
@@ -38,17 +49,16 @@ export function TodayEntries() {
           duration: log.endTime - log.startTime,
         }
       })
-      .sort((a, b) => b.startTime - a.startTime)
+      .sort((a: TodayEntry, b: TodayEntry) => b.startTime - a.startTime)
   }, [timeLogs, tasks])
 
-  const handleSummarize = async () => {
+  async function handleSummarize(): Promise<void> {
     try {
       const result = await summarizeTodayWork.mutateAsync()
       setSummary(result.summary)
       setIsDialogOpen(true)
     } catch (error) {
       console.error("Failed to summarize today's work:", error)
-      // Error will be handled by the mutation's error state
     }
   }
 
@@ -68,17 +78,15 @@ export function TodayEntries() {
             onClick={handleSummarize}
             disabled={summarizeTodayWork.isPending}
           >
-            {summarizeTodayWork.isPending ? (
-              <>
-                <Sparkles className="w-3.5 h-3.5 mr-1.5 animate-pulse" />
-                Summarizing...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-                Summarize Today&apos;s Work
-              </>
-            )}
+            <Sparkles
+              className={cn(
+                "w-3.5 h-3.5 mr-1.5",
+                summarizeTodayWork.isPending && "animate-pulse"
+              )}
+            />
+            {summarizeTodayWork.isPending
+              ? "Summarizing..."
+              : "Summarize Today's Work"}
           </Button>
         </div>
         <div className="space-y-2">

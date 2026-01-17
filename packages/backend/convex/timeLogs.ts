@@ -74,32 +74,15 @@ export const getTodayTimeLogs = query({
       return []
     }
 
-    // Get current time in Australia/Brisbane timezone
-    // Australia/Brisbane is UTC+10 (no DST)
-    // We need to find the start of today (12 AM) in Brisbane timezone
-    const now = new Date()
-    
-    // Get current UTC time in milliseconds
-    const utcNow = now.getTime()
-    
-    // Brisbane is UTC+10, so we add 10 hours to get Brisbane time
-    const brisbaneOffsetMs = 10 * 60 * 60 * 1000 // 10 hours in milliseconds
-    const brisbaneNowMs = utcNow + brisbaneOffsetMs
-    
-    // Create a date object representing Brisbane time
-    const brisbaneDate = new Date(brisbaneNowMs)
-    
-    // Get date components in Brisbane timezone
-    const year = brisbaneDate.getUTCFullYear()
-    const month = brisbaneDate.getUTCMonth()
-    const day = brisbaneDate.getUTCDate()
-    
-    // Create a date at midnight (00:00:00) in Brisbane timezone
-    // This is represented as a UTC date that, when offset by +10 hours, gives us midnight in Brisbane
-    const brisbaneMidnight = new Date(Date.UTC(year, month, day, 0, 0, 0, 0))
-    
-    // Convert Brisbane midnight back to UTC timestamp (subtract the offset)
-    const todayStart = brisbaneMidnight.getTime() - brisbaneOffsetMs
+    // Calculate start of today in Brisbane timezone (UTC+10, no DST)
+    const brisbaneOffsetMs = 10 * 60 * 60 * 1000
+    const brisbaneNow = new Date(Date.now() + brisbaneOffsetMs)
+    const todayStart =
+      Date.UTC(
+        brisbaneNow.getUTCFullYear(),
+        brisbaneNow.getUTCMonth(),
+        brisbaneNow.getUTCDate()
+      ) - brisbaneOffsetMs
 
     const timeLogs = await ctx.db
       .query("timeLogs")

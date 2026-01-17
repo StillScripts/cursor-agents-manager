@@ -148,7 +148,7 @@ Summary:`,
  */
 export const summarizeTodayWork = action({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx): Promise<{ summary: string }> => {
     const authUser = await ctx.runQuery(
       internal.auth.getAuthenticatedUserInternal
     )
@@ -210,23 +210,29 @@ export const summarizeTodayWork = action({
     })
 
     // Calculate total time
-    const totalMinutes = todayTimeLogs.reduce((sum, log) => {
-      return sum + Math.round((log.endTime - log.startTime) / 60000)
-    }, 0)
+    const totalMinutes = todayTimeLogs.reduce(
+      (sum, log) => sum + Math.round((log.endTime - log.startTime) / 60000),
+      0
+    )
     const totalHours = Math.floor(totalMinutes / 60)
     const remainingMinutes = totalMinutes % 60
 
     // Format work sessions for AI
     const workSessionsText = workSessions
-      .map(
-        (session, index) => `Session ${index + 1}:
-- Task: ${session.task}
-${session.description ? `- Description: ${session.description}` : ""}
-- Start: ${session.startTime}
-- End: ${session.endTime}
-- Duration: ${session.duration}
-${session.activityType ? `- Activity Type: ${session.activityType}` : ""}`
-      )
+      .map((session, index) => {
+        const lines = [
+          `Session ${index + 1}:`,
+          `- Task: ${session.task}`,
+          session.description ? `- Description: ${session.description}` : null,
+          `- Start: ${session.startTime}`,
+          `- End: ${session.endTime}`,
+          `- Duration: ${session.duration}`,
+          session.activityType
+            ? `- Activity Type: ${session.activityType}`
+            : null,
+        ]
+        return lines.filter(Boolean).join("\n")
+      })
       .join("\n\n")
 
     try {
