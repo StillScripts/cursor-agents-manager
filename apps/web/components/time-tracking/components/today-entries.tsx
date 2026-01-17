@@ -3,6 +3,8 @@
 import { formatDuration, formatTime } from "helpers"
 import { Clock, Sparkles } from "lucide-react"
 import { useMemo, useState } from "react"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -122,10 +124,19 @@ export function TodayEntries() {
             </DialogDescription>
           </DialogHeader>
           {summary && (
-            <div className="mt-4">
-              <p className="text-sm whitespace-pre-wrap leading-relaxed">
+            <div className="mt-4 prose prose-sm dark:prose-invert max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-code:text-foreground prose-pre:bg-muted prose-pre:text-foreground prose-a:text-primary prose-blockquote:text-muted-foreground prose-ul:text-foreground prose-ol:text-foreground prose-li:text-foreground prose-h1:text-foreground prose-h2:text-foreground prose-h3:text-foreground prose-h4:text-foreground prose-h5:text-foreground prose-h6:text-foreground prose-hr:border-border prose-table:text-foreground prose-th:text-foreground prose-td:text-foreground">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  a: ({ children, href }) => (
+                    <a href={href} target="_blank" rel="noopener noreferrer">
+                      {children}
+                    </a>
+                  ),
+                }}
+              >
                 {summary}
-              </p>
+              </ReactMarkdown>
             </div>
           )}
         </DialogContent>
