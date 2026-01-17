@@ -52,14 +52,9 @@ function dbAgentToApiFormat(dbAgent: {
   }
 }
 
-export function useAgent(
-  id: string,
-  initialData?: (Agent & { simulation: boolean }) | null
-) {
+export function useAgent(id: string, initialData?: Agent | null) {
   const [initialSyncDone, setInitialSyncDone] = useState(false)
-  const [actionData, setActionData] = useState<
-    (Agent & { simulation: boolean }) | null
-  >(null)
+  const [actionData, setActionData] = useState<Agent | null>(null)
   const [syncError, setSyncError] = useState<string | null>(null)
 
   // Convex query for reactive database updates
@@ -77,7 +72,7 @@ export function useAgent(
         setSyncError(null)
         const result = await getAgentById({ agentId: id })
         if (result.agent) {
-          setActionData({ ...result.agent, simulation: result.simulation })
+          setActionData(result.agent)
         } else {
           setActionData(null)
         }
@@ -95,13 +90,11 @@ export function useAgent(
   }, [getAgentById, id, initialSyncDone])
 
   // Determine what data to show
-  // Prefer action data (from sync) as it includes simulation status
+  // Prefer action data (from sync)
   // Fall back to database query result
-  const data: (Agent & { simulation: boolean }) | null =
+  const data: Agent | null =
     actionData ??
-    (dbResult
-      ? { ...dbAgentToApiFormat(dbResult), simulation: false }
-      : (initialData ?? null))
+    (dbResult ? dbAgentToApiFormat(dbResult) : (initialData ?? null))
 
   // Return in the same format as the old hook
   return {
@@ -113,9 +106,7 @@ export function useAgent(
 
 export function useAgentConversation(id: string) {
   const [initialSyncDone, setInitialSyncDone] = useState(false)
-  const [actionData, setActionData] = useState<
-    (AgentConversation & { simulation: boolean }) | null
-  >(null)
+  const [actionData, setActionData] = useState<AgentConversation | null>(null)
   const [syncError, setSyncError] = useState<string | null>(null)
 
   // Convex query for reactive database updates
@@ -139,10 +130,7 @@ export function useAgentConversation(id: string) {
         setSyncError(null)
         const result = await getConversation({ agentId: id })
         if (result.conversation) {
-          setActionData({
-            ...result.conversation,
-            simulation: result.simulation,
-          })
+          setActionData(result.conversation)
         } else {
           setActionData(null)
         }
@@ -220,9 +208,8 @@ export function useAgentConversationWithCursor(
     enabled?: boolean
   }
 ) {
-  const [conversationData, setConversationData] = useState<
-    (AgentConversation & { simulation: boolean }) | null
-  >(null)
+  const [conversationData, setConversationData] =
+    useState<AgentConversation | null>(null)
   const [nextCursor, setNextCursor] = useState<string | undefined>(undefined)
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
@@ -250,10 +237,7 @@ export function useAgentConversationWithCursor(
         })
         if (!cancelled) {
           if (result.conversation) {
-            setConversationData({
-              ...result.conversation,
-              simulation: result.simulation,
-            })
+            setConversationData(result.conversation)
             setNextCursor(result.nextCursor)
           } else {
             setConversationData(null)
@@ -298,10 +282,7 @@ export function useAgentConversationWithCursor(
         // Merge new messages with existing ones
         setConversationData((prev) => {
           if (!prev) {
-            return {
-              ...result.conversation!,
-              simulation: result.simulation,
-            }
+            return result.conversation!
           }
 
           // Combine messages, avoiding duplicates
@@ -313,7 +294,6 @@ export function useAgentConversationWithCursor(
           return {
             ...prev,
             messages: [...prev.messages, ...newMessages],
-            simulation: result.simulation,
           }
         })
         setNextCursor(result.nextCursor)

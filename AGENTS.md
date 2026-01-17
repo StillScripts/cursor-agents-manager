@@ -1,6 +1,6 @@
 # Project Overview
 
-Cursor Agent Manager is a web app with Progressive Web App (PWA) support. It is powered by Bun, Next.js 16 (with modern features like `cacheComponents` and the `proxy.ts` file which replaces `middleware.ts`), React 19, Biome, Better Auth, Convex, TailwindCSS and Base UI. It's purpose is to enable developers to manage their managing Cursor AI background agents on the go, particularly on their mobile phone as a PWA. The app provides a simulation mode (with mock data) for people to trial, or live mode (connected to the Cursor API).
+Cursor Agent Manager is a web app with Progressive Web App (PWA) support. It is powered by Bun, Next.js 16 (with modern features like `cacheComponents` and the `proxy.ts` file which replaces `middleware.ts`), React 19, Biome, Better Auth, Convex, TailwindCSS and Base UI. It's purpose is to enable developers to manage their managing Cursor AI background agents on the go, particularly on their mobile phone as a PWA. The app connects to the Cursor API to manage agents.
 
 ## Monorepo Structure
 
@@ -153,7 +153,6 @@ apps/web/app/
 │   │   ├── desktop-header.tsx    # Desktop header navigation
 │   │   ├── nav-items.ts          # Shared navigation items config
 │   │   ├── page-header.tsx       # Reusable page header
-│   │   ├── simulation-banner.tsx # Simulation mode indicator
 │   │   └── status-badge.tsx      # Agent status badge
 │   ├── page.tsx                  # Home: agent list view
 │   ├── new/page.tsx              # Launch new agent form
@@ -630,9 +629,9 @@ All API routes are protected by authentication (except `/api/auth/*`). Agent rou
 - `GET /api/user/time-logs` - Get time logs (optional taskId filter)
 - `POST /api/user/time-logs` - Save a time log
 
-**Agent API Routes** (simulation or live mode based on user's API key):
-1. **Simulation Mode** (user has no API key): Returns mock data from `lib/mock-data.ts`
-2. **Live Mode** (user has valid API key): Decrypts user's API key and proxies requests to `https://api.cursor.com/v0/agents`
+**Agent API Routes** (requires user's API key):
+- Decrypts user's API key and proxies requests to `https://api.cursor.com/v0/agents`
+- Returns an error if the user doesn't have a Cursor API key configured
 
 Agent API routes follow REST conventions:
 - `GET /api/agents?page=0&limit=20` - Paginated list
@@ -646,8 +645,6 @@ Agent API routes follow REST conventions:
 
 **Models API Route**:
 - `GET /api/models` - List available AI models
-
-All responses include a `simulation: boolean` field indicating the mode.
 
 ### `/components` Folder Structure
 
@@ -752,7 +749,6 @@ lib/
 ├── conversation-utils.ts    # Conversation formatting
 ├── formatting.ts            # Date/number formatting
 ├── formatting.test.ts
-├── mock-data.ts             # Simulation mode mock data
 ├── types.ts                 # Core TypeScript types
 ├── utils.ts                 # General utilities (cn, etc.)
 └── utils.test.ts
@@ -802,11 +798,7 @@ CURSOR_WEBHOOK_URL=https://your-app.com/api/webhooks/cursor
 CURSOR_WEBHOOK_SECRET=your-webhook-secret-min-32-chars
 ```
 
-**Simulation Mode**: The app automatically enters simulation mode (using mock data) when a user doesn't have a valid API key configured. Mode detection happens by:
-1. Checking the user's session from the request headers
-2. Querying the `user_api_keys` table for their encrypted API key
-3. Setting `simulationMode: true` if no API key exists or if it's invalid
-4. Setting `simulationMode: false` and `apiKey` if a valid key exists
+**API Key Requirement**: The app requires a Cursor API key to function. Users must add their API key in Account Settings. If no API key is configured, the app will show appropriate error messages directing users to add their API key.
 
 ## Important Configuration
 

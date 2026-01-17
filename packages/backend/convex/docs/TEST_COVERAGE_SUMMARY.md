@@ -152,17 +152,17 @@ A comprehensive test plan has been created for advanced features that require mo
 #### 1. Cursor Actions (`cursor.ts`)
 
 **Test Plan Includes**:
-- `getAgents` - Testing simulation mode, live mode, force refresh, error handling
+- `getAgents` - Testing API key requirement, force refresh, error handling
 - `getAgentById` - Testing database cache, API fallback, 404 handling
-- `launchAgent` - Testing simulation mode, live mode, payload construction, webhook config
-- `stopAgent` - Testing simulation mode, live mode, error handling
+- `launchAgent` - Testing API key requirement, payload construction, webhook config
+- `stopAgent` - Testing API key requirement, error handling
 - `deleteAgent` - Testing soft delete in both modes
 - `sendFollowUp` - Testing follow-up message sending
 - `getConversation` - Testing conversation fetching
 - `getModels` - Testing model caching with ActionCache
 
 **Key Testing Areas**:
-- Simulation vs Live mode behavior
+- API key requirement and error handling
 - API integration and error handling
 - Caching mechanisms
 - Data transformation
