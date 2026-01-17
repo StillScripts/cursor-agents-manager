@@ -97,7 +97,16 @@ export function AgentsTable() {
   // Show loading skeleton while query is loading (only on initial load)
   // After first load, useStableQuery will keep showing the last result
   if (rawQueryResult === undefined && !hasLoadedOnce.current) {
-    return <AgentListSkeleton />
+    return (
+      <>
+        <PageHeader title="Your Agents" />
+        <div className="flex-1 overflow-auto">
+          <div className="px-3 py-2">
+            <AgentListSkeleton />
+          </div>
+        </div>
+      </>
+    )
   }
 
   // Show loading state while checking API key status
@@ -148,7 +157,6 @@ export function AgentsTable() {
   return (
     <>
       <PageHeader title="Your Agents" />
-
       <div className="flex-1 overflow-auto">
         <div className="px-3 py-2">
           {showEmptyState && (
