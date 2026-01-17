@@ -115,4 +115,54 @@ export default defineSchema({
     .index("by_agent", ["agentId"])
     .index("by_user_agent", ["userId", "agentId"])
     .index("by_conversation", ["conversationId"]),
+
+  recurringJobs: defineTable({
+    userId: v.string(),
+    // Configuration for launching the agent (stored as JSON)
+    agentConfig: v.object({
+      prompt: v.object({
+        text: v.string(),
+        images: v.optional(
+          v.array(
+            v.object({
+              data: v.string(),
+              dimension: v.object({
+                width: v.number(),
+                height: v.number(),
+              }),
+            })
+          )
+        ),
+      }),
+      source: v.object({
+        repository: v.string(),
+        ref: v.optional(v.string()),
+      }),
+      model: v.optional(v.string()),
+      target: v.optional(
+        v.object({
+          autoCreatePr: v.boolean(),
+          openAsCursorGithubApp: v.optional(v.boolean()),
+          skipReviewerRequest: v.optional(v.boolean()),
+          branchName: v.optional(v.string()),
+        })
+      ),
+      taskId: v.optional(v.id("tasks")),
+    }),
+    // Interval in days between executions
+    intervalDays: v.number(),
+    // Total number of times to repeat (including the first execution)
+    repeatCount: v.number(),
+    // Current execution count (starts at 0, increments after each execution)
+    currentCount: v.number(),
+    // Next scheduled execution time (milliseconds since epoch)
+    nextRunAt: v.number(),
+    // Whether the job is active (false when completed or cancelled)
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_next_run", ["nextRunAt"])
+    .index("by_user_active", ["userId", "isActive"]),
 })

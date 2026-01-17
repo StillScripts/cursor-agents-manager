@@ -233,6 +233,11 @@ export function LaunchAgentForm() {
       branchName: "",
     },
     taskId: getDefaultTaskTitle(),
+    recurringJob: {
+      enabled: false,
+      intervalDays: undefined,
+      repeatCount: undefined,
+    },
   }
 
   // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
@@ -271,6 +276,15 @@ export function LaunchAgentForm() {
               }
             : undefined,
           taskId: actualTaskId,
+          ...(value.recurringJob?.enabled &&
+            value.recurringJob.intervalDays !== undefined &&
+            value.recurringJob.repeatCount !== undefined && {
+              recurringJob: {
+                enabled: true,
+                intervalDays: value.recurringJob.intervalDays,
+                repeatCount: value.recurringJob.repeatCount,
+              },
+            }),
         }
 
         // Launch the agent via Convex action
@@ -430,6 +444,72 @@ export function LaunchAgentForm() {
                       />
                     )}
                   </form.AppField>
+                </FieldGroup>
+              </FieldSet>
+
+              <FieldSeparator />
+
+              <FieldSet>
+                <FieldLegend>Recurring Job</FieldLegend>
+                <FieldDescription>
+                  Schedule this agent to run automatically at regular intervals.
+                </FieldDescription>
+                <FieldGroup>
+                  <form.AppField name="recurringJob.enabled">
+                    {(field) => (
+                      <field.ControlledSwitch
+                        field={field}
+                        label="Create Recurring Job"
+                        description="Enable to automatically run this agent on a schedule"
+                      />
+                    )}
+                  </form.AppField>
+
+                  {form.useFieldValue("recurringJob.enabled") && (
+                    <>
+                      <form.AppField name="recurringJob.intervalDays">
+                        {(field) => (
+                          <field.ControlledInput
+                            field={field}
+                            type="number"
+                            label="Interval (Days)"
+                            description="How many days between each execution"
+                            placeholder="7"
+                            min={1}
+                            max={365}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                              const value = e.currentTarget.value
+                              field.handleChange(
+                                value === "" ? undefined : Number.parseInt(value, 10)
+                              )
+                            }}
+                            value={field.state.value?.toString() || ""}
+                          />
+                        )}
+                      </form.AppField>
+
+                      <form.AppField name="recurringJob.repeatCount">
+                        {(field) => (
+                          <field.ControlledInput
+                            field={field}
+                            type="number"
+                            label="Repeat Count"
+                            description="Total number of times to run (including the initial execution)"
+                            placeholder="5"
+                            min={1}
+                            max={100}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                              const value = e.currentTarget.value
+                              field.handleChange(
+                                value === "" ? undefined : Number.parseInt(value, 10)
+                              )
+                            }}
+                            value={field.state.value?.toString() || ""}
+                          />
+                        )}
+                      </form.AppField>
+                    </>
+                  )}
                 </FieldGroup>
               </FieldSet>
             </FieldGroup>

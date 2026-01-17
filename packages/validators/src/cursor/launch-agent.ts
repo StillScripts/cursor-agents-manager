@@ -184,6 +184,35 @@ export const launchAgentFormSchema = launchAgentRequestSchema.extend({
     .string()
     .optional()
     .describe("Optional task ID to associate with this agent"),
+  recurringJob: z
+    .object({
+      enabled: z.boolean().default(false),
+      intervalDays: z
+        .number()
+        .int()
+        .min(1, "Interval must be at least 1 day")
+        .max(365, "Interval cannot exceed 365 days")
+        .optional(),
+      repeatCount: z
+        .number()
+        .int()
+        .min(1, "Repeat count must be at least 1")
+        .max(100, "Repeat count cannot exceed 100")
+        .optional(),
+    })
+    .optional()
+    .refine(
+      (data) => {
+        if (!data || !data.enabled) return true
+        return (
+          data.intervalDays !== undefined && data.repeatCount !== undefined
+        )
+      },
+      {
+        message:
+          "Interval days and repeat count are required when recurring job is enabled",
+      }
+    ),
 })
 
 export type LaunchAgentFormData = z.infer<typeof launchAgentFormSchema>

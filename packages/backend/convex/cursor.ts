@@ -446,6 +446,13 @@ export const launchAgent = action({
       })
     ),
     taskId: v.optional(v.id("tasks")),
+    recurringJob: v.optional(
+      v.object({
+        enabled: v.boolean(),
+        intervalDays: v.optional(v.number()),
+        repeatCount: v.optional(v.number()),
+      })
+    ),
   },
   handler: async (
     ctx,
@@ -496,6 +503,25 @@ export const launchAgent = action({
           createdAt,
         },
       })
+
+      // Create recurring job if enabled
+      if (
+        args.recurringJob?.enabled &&
+        args.recurringJob.intervalDays !== undefined &&
+        args.recurringJob.repeatCount !== undefined
+      ) {
+        await ctx.runMutation(api.recurringJobs.create, {
+          agentConfig: {
+            prompt: args.prompt,
+            source: args.source,
+            model: args.model,
+            target: args.target,
+            taskId: args.taskId,
+          },
+          intervalDays: args.recurringJob.intervalDays,
+          repeatCount: args.recurringJob.repeatCount,
+        })
+      }
 
       // Return the agent data in API format
       return {
@@ -584,6 +610,25 @@ export const launchAgent = action({
         },
       })
 
+      // Create recurring job if enabled
+      if (
+        args.recurringJob?.enabled &&
+        args.recurringJob.intervalDays !== undefined &&
+        args.recurringJob.repeatCount !== undefined
+      ) {
+        await ctx.runMutation(api.recurringJobs.create, {
+          agentConfig: {
+            prompt: args.prompt,
+            source: args.source,
+            model: args.model,
+            target: args.target,
+            taskId: args.taskId,
+          },
+          intervalDays: args.recurringJob.intervalDays,
+          repeatCount: args.recurringJob.repeatCount,
+        })
+      }
+
       // Return the agent data
       return {
         id: cursorAgent.id,
@@ -594,6 +639,185 @@ export const launchAgent = action({
     } catch (error) {
       console.error("[Convex launchAgent] Error launching agent:", error)
       throw error instanceof Error ? error : new Error("Failed to launch agent")
+    }
+  },
+})
+
+/**
+ * Internal action to launch an agent for a recurring job
+ * This allows launching agents on behalf of a specific user (by userId)
+ */
+export const launchAgentForRecurringJob = internalAction({
+  args: {
+    userId: v.string(),
+    agentConfig: v.object({
+      prompt: v.object({
+        text: v.string(),
+        images: v.optional(
+          v.array(
+            v.object({
+              data: v.string(),
+              dimension: v.object({
+                width: v.number(),
+                height: v.number(),
+              }),
+            })
+          )
+        ),
+      }),
+      source: v.object({
+        repository: v.string(),
+        ref: v.optional(v.string()),
+      }),
+      model: v.optional(v.string()),
+      target: v.optional(
+        v.object({
+          autoCreatePr: v.boolean(),
+          openAsCursorGithubApp: v.optional(v.boolean()),
+          skipReviewerRequest: v.optional(v.boolean()),
+          branchName: v.optional(v.string()),
+        })
+      ),
+      taskId: v.optional(v.id("tasks")),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const apiKey = await ctx.runAction(internal.cursor.getCursorApiKey, {
+      userId: args.userId,
+    })
+
+    await checkRateLimit(ctx, cursorRateLimiters.launchAgent, args.userId)
+
+    // Check if we're in simulation mode (no API key)
+    const simulationMode = !apiKey
+
+    if (simulationMode) {
+      // Create a simulated agent
+      const simulatedAgentId = `bc_${Math.random().toString(36).substr(2, 9)}`
+      const simulatedAgentName = `${args.agentConfig.prompt.text.substring(0, 50)}${args.agentConfig.prompt.text.length > 50 ? "..." : ""}`
+
+      const createdAt = new Date().toISOString()
+
+      // Create agent in Convex
+      await ctx.runMutation(api.agents.create, {
+        agentId: simulatedAgentId,
+        provider: "cursor" as const,
+        name: simulatedAgentName,
+        status: "CREATING" as const,
+        sourceRepository: args.agentConfig.source.repository,
+        sourceRef: args.agentConfig.source.ref,
+        targetBranchName: args.agentConfig.target?.branchName,
+        targetUrl: `https://cursor.com/agents?id=${simulatedAgentId}`,
+        targetPrUrl: undefined,
+        targetAutoCreatePr: args.agentConfig.target?.autoCreatePr ?? false,
+        model: args.agentConfig.model,
+        summary: undefined,
+        taskId: args.agentConfig.taskId,
+        providerData: {
+          simulation: true,
+          createdAt,
+        },
+      })
+
+      return {
+        id: simulatedAgentId,
+        name: simulatedAgentName,
+        status: "CREATING",
+        simulation: true,
+      }
+    }
+
+    // Live mode - call Cursor API
+    try {
+      // Build request body
+      const requestBody: LaunchAgentRequest = {
+        prompt: {
+          text: args.agentConfig.prompt.text,
+          ...(args.agentConfig.prompt.images &&
+            args.agentConfig.prompt.images.length > 0 && {
+              images: args.agentConfig.prompt.images,
+            }),
+        },
+        source: args.agentConfig.source,
+        ...(args.agentConfig.model && { model: args.agentConfig.model }),
+        ...(args.agentConfig.target && {
+          target: {
+            autoCreatePr: args.agentConfig.target.autoCreatePr,
+            openAsCursorGithubApp:
+              args.agentConfig.target.openAsCursorGithubApp ?? false,
+            skipReviewerRequest:
+              args.agentConfig.target.skipReviewerRequest ?? false,
+            ...(args.agentConfig.target.branchName && {
+              branchName: args.agentConfig.target.branchName,
+            }),
+          },
+        }),
+      }
+
+      // Add webhook from environment variables if configured
+      const webhookUrl = process.env.CURSOR_WEBHOOK_URL
+      const webhookSecret = process.env.CURSOR_WEBHOOK_SECRET
+
+      if (webhookUrl) {
+        requestBody.webhook = {
+          url: webhookUrl,
+          ...(webhookSecret && { secret: webhookSecret }),
+        }
+      }
+
+      // Call Cursor API
+      const response = await fetch(CURSOR_API_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Cursor API error: ${response.status} - ${errorText}`)
+      }
+
+      const data = await response.json()
+      const cursorAgent = data
+
+      // Save agent to Convex
+      await ctx.runMutation(api.agents.create, {
+        agentId: cursorAgent.id,
+        provider: "cursor" as const,
+        name: cursorAgent.name,
+        status: cursorAgent.status,
+        sourceRepository: cursorAgent.source.repository,
+        sourceRef: cursorAgent.source.ref,
+        targetBranchName: cursorAgent.target?.branchName,
+        targetUrl: cursorAgent.target?.url,
+        targetPrUrl: cursorAgent.target?.prUrl,
+        targetAutoCreatePr: cursorAgent.target?.autoCreatePr ?? false,
+        model: args.agentConfig.model,
+        summary: cursorAgent.summary,
+        taskId: args.agentConfig.taskId,
+        providerData: {
+          createdAt: cursorAgent.createdAt,
+          ...cursorAgent,
+        },
+      })
+
+      return {
+        id: cursorAgent.id,
+        name: cursorAgent.name,
+        status: cursorAgent.status,
+        simulation: false,
+      }
+    } catch (error) {
+      console.error(
+        "[Convex launchAgentForRecurringJob] Error launching agent:",
+        error
+      )
+      throw error instanceof Error
+        ? error
+        : new Error("Failed to launch agent for recurring job")
     }
   },
 })
