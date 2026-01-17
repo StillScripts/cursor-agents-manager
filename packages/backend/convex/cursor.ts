@@ -41,7 +41,6 @@ export const getCursorApiKey = internalAction({
         return null
       }
     }
-
     return null
   },
 })

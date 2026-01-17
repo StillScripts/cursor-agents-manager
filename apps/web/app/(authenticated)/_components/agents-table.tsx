@@ -1,14 +1,15 @@
 "use client"
 
 import { useAction, useQuery } from "convex/react"
-import { Bot, Key } from "lucide-react"
-import Link from "next/link"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { Bot } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 import { AgentCard } from "@/app/(authenticated)/_components/agent-card"
 import { AgentListSkeleton } from "@/app/(authenticated)/_components/agent-list-skeleton"
+import { NoCursorAccess } from "@/app/(authenticated)/_components/no-cursor-access"
 import { PageHeader } from "@/app/(authenticated)/_components/page-header"
 import { Button } from "@/components/ui/button"
 import { api } from "@/convex/_generated/api"
+import { useCursorKey } from "@/lib/hooks/use-cursor-key"
 import { useStableQuery } from "@/lib/hooks/use-stable-query"
 import type { Agent } from "@/lib/types"
 
@@ -16,37 +17,12 @@ export function AgentsTable() {
   const [limit, setLimit] = useState(10)
   const hasLoadedOnce = useRef(false)
   const hasSyncedOnce = useRef(false)
-  const [apiKeyStatus, setApiKeyStatus] = useState<{
-    hasKey: boolean
-    maskedKey: string | null
-  } | null>(null)
-  const [isLoadingApiKey, setIsLoadingApiKey] = useState(true)
+  const { hasCursorKey, isLoading: isLoadingCursorKey } = useCursorKey()
 
   // Use both useQuery (for loading state) and useStableQuery (for stable data)
   const rawQueryResult = useQuery(api.agents.listByUser, { limit })
   const dbResult = useStableQuery(api.agents.listByUser, { limit })
   const syncAgents = useAction(api.cursor.getAgents)
-  const getCursorApiKeyStatus = useAction(
-    api.apiKeysActions.getCursorApiKeyStatus
-  )
-
-  // Fetch API key status
-  const fetchApiKeyStatus = useCallback(async () => {
-    try {
-      setIsLoadingApiKey(true)
-      const status = await getCursorApiKeyStatus()
-      setApiKeyStatus(status)
-    } catch (err) {
-      console.error("Failed to fetch API key status:", err)
-      setApiKeyStatus({ hasKey: false, maskedKey: null })
-    } finally {
-      setIsLoadingApiKey(false)
-    }
-  }, [getCursorApiKeyStatus])
-
-  useEffect(() => {
-    fetchApiKeyStatus()
-  }, [fetchApiKeyStatus])
 
   // Track if we've ever received a successful query result
   useEffect(() => {
@@ -96,21 +72,10 @@ export function AgentsTable() {
 
   // Show loading skeleton while query is loading (only on initial load)
   // After first load, useStableQuery will keep showing the last result
-  if (rawQueryResult === undefined && !hasLoadedOnce.current) {
-    return (
-      <>
-        <PageHeader title="Your Agents" />
-        <div className="flex-1 overflow-auto">
-          <div className="px-3 py-2">
-            <AgentListSkeleton />
-          </div>
-        </div>
-      </>
-    )
-  }
-
-  // Show loading state while checking API key status
-  if (isLoadingApiKey) {
+  if (
+    (rawQueryResult === undefined && !hasLoadedOnce.current) ||
+    isLoadingCursorKey
+  ) {
     return (
       <>
         <PageHeader title="Your Agents" />
@@ -124,29 +89,8 @@ export function AgentsTable() {
   }
 
   // Show message if no cursor key is configured
-  if (apiKeyStatus && !apiKeyStatus.hasKey) {
-    return (
-      <>
-        <PageHeader title="Your Agents" />
-        <div className="flex-1 overflow-auto">
-          <div className="px-3 py-2">
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                <Key className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <p className="text-foreground font-medium mb-2">
-                You need a cursor key to use this feature.
-              </p>
-              <Link href="/account">
-                <Button variant="default" className="mt-2">
-                  Go to Account Settings
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </>
-    )
+  if (!hasCursorKey) {
+    return <NoCursorAccess title="Your Agents" />
   }
 
   // Only show "No agents yet" if we have a confirmed query result with no agents
