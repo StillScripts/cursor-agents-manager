@@ -31,6 +31,7 @@ export function TaskSummaryDialog({
   const [suggestedBranchName, setSuggestedBranchName] = useState<
     string | undefined
   >(undefined)
+  const [error, setError] = useState<string | null>(null)
 
   const improvePrompt = useImprovePrompt()
 
@@ -38,12 +39,18 @@ export function TaskSummaryDialog({
   const handleGenerateSummary = useCallback(async () => {
     if (!currentTask.trim()) return
 
+    setError(null)
     try {
       const result = await improvePrompt.mutateAsync({ text: currentTask })
       setImprovedSummary(result.text)
       setSuggestedBranchName(result.branchName)
     } catch (error) {
       console.error("Error generating summary:", error)
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to improve prompt. Please try again."
+      setError(errorMessage)
     }
   }, [currentTask, improvePrompt])
 
@@ -52,6 +59,7 @@ export function TaskSummaryDialog({
     if (open && currentTask.trim()) {
       setImprovedSummary(null)
       setSuggestedBranchName(undefined)
+      setError(null)
       handleGenerateSummary()
     }
   }, [open, currentTask, handleGenerateSummary])
@@ -102,6 +110,21 @@ export function TaskSummaryDialog({
               {improvedSummary ? (
                 <div className="p-3 bg-primary/5 rounded-lg text-sm border border-primary/20 max-h-40 overflow-y-auto">
                   {improvedSummary}
+                </div>
+              ) : error ? (
+                <div className="p-4 border border-destructive/50 rounded-lg bg-destructive/5 flex flex-col items-center gap-3">
+                  <span className="text-sm text-destructive text-center">
+                    {error}
+                  </span>
+                  <Button
+                    onClick={handleGenerateSummary}
+                    disabled={!currentTask.trim() || improvePrompt.isPending}
+                    size="sm"
+                    variant="outline"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Try Again
+                  </Button>
                 </div>
               ) : (
                 <div className="p-4 border border-dashed border-border rounded-lg flex flex-col items-center gap-3">
