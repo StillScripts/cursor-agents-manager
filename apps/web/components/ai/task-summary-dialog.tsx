@@ -34,14 +34,6 @@ export function TaskSummaryDialog({
 
   const improvePrompt = useImprovePrompt()
 
-  // Reset state when dialog opens
-  useEffect(() => {
-    if (open) {
-      setImprovedSummary(null)
-      setSuggestedBranchName(undefined)
-    }
-  }, [open])
-
   // Generate improved prompt
   const handleGenerateSummary = useCallback(async () => {
     if (!currentTask.trim()) return
@@ -54,6 +46,15 @@ export function TaskSummaryDialog({
       console.error("Error generating summary:", error)
     }
   }, [currentTask, improvePrompt])
+
+  // Reset state and auto-generate when dialog opens
+  useEffect(() => {
+    if (open && currentTask.trim()) {
+      setImprovedSummary(null)
+      setSuggestedBranchName(undefined)
+      handleGenerateSummary()
+    }
+  }, [open, currentTask, handleGenerateSummary])
 
   // Apply the improved task
   const handleApply = () => {
