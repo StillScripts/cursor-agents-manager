@@ -143,6 +143,7 @@ export const getActiveTimeLog = query({
         _id: task._id,
         title: task.title,
         description: task.description,
+        repositoryId: task.repositoryId,
       },
     }
   },

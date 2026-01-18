@@ -52,6 +52,7 @@ function RepositoriesForm({
       const validRepos = value.repositories.filter(
         (r) => r.url.trim() && r.name.trim()
       )
+      // @ts-expect-error likely needs more refining
       await onSaveRepositories(validRepos)
     },
   })
@@ -76,8 +77,8 @@ function RepositoriesForm({
           >
             <FieldSet>
               <FieldDescription>
-                Paste GitHub URLs to quickly add repositories for agent
-                launches.
+                Paste GitHub URLs to quickly add project codebases you want to
+                use for agent launches.
               </FieldDescription>
 
               <form.Field name="repositories" mode="array">
