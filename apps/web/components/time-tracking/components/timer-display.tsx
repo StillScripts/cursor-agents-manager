@@ -201,12 +201,12 @@ export function TimerDisplay() {
                 setSelectedRepositoryUrl(value || undefined)
               }
             >
-              <SelectTrigger className="h-12 text-base bg-secondary border-0 focus-visible:ring-primary">
+              <SelectTrigger className="h-12 w-full text-sm bg-secondary border-0 focus-visible:ring-primary">
                 {selectedRepositoryUrl ? (
                   <SelectValue />
                 ) : (
                   <span className="text-muted-foreground">
-                    Repository (optional)
+                    Project Codebase (optional)
                   </span>
                 )}
               </SelectTrigger>
