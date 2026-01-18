@@ -24,6 +24,7 @@ const modules = {
   "./webhookActions.ts": () => import("../convex/webhookActions"),
   "./rateLimiting.ts": () => import("../convex/rateLimiting"),
   "./users.ts": () => import("../convex/users"),
+  "./workSummaries.ts": () => import("../convex/workSummaries"),
 }
 
 /**

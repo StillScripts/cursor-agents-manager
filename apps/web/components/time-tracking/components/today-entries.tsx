@@ -1,7 +1,7 @@
 "use client"
 
 import { formatDuration, formatTime } from "helpers"
-import { Clock, Sparkles } from "lucide-react"
+import { Clock, Eye, Sparkles } from "lucide-react"
 import { useMemo, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import type { Id } from "@/convex/_generated/dataModel"
-import { useSummarizeTodayWork } from "@/lib/hooks/use-ai"
+import { useSummarizeTodayWork, useTodayWorkSummary } from "@/lib/hooks/use-ai"
 import { type Task, useTasks } from "@/lib/hooks/use-tasks"
 import { type TimeLog, useTodayTimeLogs } from "@/lib/hooks/use-time-logs"
 import { cn } from "@/lib/utils"
@@ -29,8 +29,9 @@ type TodayEntry = {
 export function TodayEntries() {
   const { tasks } = useTasks()
   const { timeLogs } = useTodayTimeLogs()
+  const { workSummary, hasSummary } = useTodayWorkSummary()
   const summarizeTodayWork = useSummarizeTodayWork()
-  const [summary, setSummary] = useState<string | null>(null)
+  const [generatedSummary, setGeneratedSummary] = useState<string | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   // Map time logs to entries with task titles
@@ -57,12 +58,19 @@ export function TodayEntries() {
   async function handleSummarize(): Promise<void> {
     try {
       const result = await summarizeTodayWork.mutateAsync()
-      setSummary(result.summary)
+      setGeneratedSummary(result.summary)
       setIsDialogOpen(true)
     } catch (error) {
       console.error("Failed to summarize today's work:", error)
     }
   }
+
+  function handleViewSummary(): void {
+    setIsDialogOpen(true)
+  }
+
+  // Get the summary to display - either from database or newly generated
+  const summaryToDisplay = workSummary?.summary ?? generatedSummary
 
   if (entries.length === 0) return null
 
@@ -74,22 +82,29 @@ export function TodayEntries() {
             <Clock className="w-4 h-4" />
             Today&apos;s Sessions
           </h3>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSummarize}
-            disabled={summarizeTodayWork.isPending}
-          >
-            <Sparkles
-              className={cn(
-                "w-3.5 h-3.5 mr-1.5",
-                summarizeTodayWork.isPending && "animate-pulse"
-              )}
-            />
-            {summarizeTodayWork.isPending
-              ? "Summarizing..."
-              : "Summarize Today's Work"}
-          </Button>
+          {hasSummary ? (
+            <Button variant="outline" size="sm" onClick={handleViewSummary}>
+              <Eye className="w-3.5 h-3.5 mr-1.5" />
+              View Today&apos;s Work Summary
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSummarize}
+              disabled={summarizeTodayWork.isPending}
+            >
+              <Sparkles
+                className={cn(
+                  "w-3.5 h-3.5 mr-1.5",
+                  summarizeTodayWork.isPending && "animate-pulse"
+                )}
+              />
+              {summarizeTodayWork.isPending
+                ? "Summarizing..."
+                : "Summarize Today's Work"}
+            </Button>
+          )}
         </div>
         <div className="space-y-2">
           {entries.slice(0, 5).map((entry) => (
@@ -116,14 +131,14 @@ export function TodayEntries() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Today&apos;s Work Summary</DialogTitle>
             <DialogDescription>
               AI-generated summary of your work sessions today
             </DialogDescription>
           </DialogHeader>
-          {summary && (
+          {summaryToDisplay && (
             <div className="mt-4 prose prose-sm dark:prose-invert max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-code:text-foreground prose-pre:bg-muted prose-pre:text-foreground prose-a:text-primary prose-blockquote:text-muted-foreground prose-ul:text-foreground prose-ol:text-foreground prose-li:text-foreground prose-h1:text-foreground prose-h2:text-foreground prose-h3:text-foreground prose-h4:text-foreground prose-h5:text-foreground prose-h6:text-foreground prose-hr:border-border prose-table:text-foreground prose-th:text-foreground prose-td:text-foreground">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
@@ -135,7 +150,7 @@ export function TodayEntries() {
                   ),
                 }}
               >
-                {summary}
+                {summaryToDisplay}
               </ReactMarkdown>
             </div>
           )}

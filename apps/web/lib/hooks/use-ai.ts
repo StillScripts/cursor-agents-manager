@@ -3,10 +3,19 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useAction } from "convex/react"
 import { api } from "@/convex/_generated/api"
+import type { Id } from "@/convex/_generated/dataModel"
+import { useStableQuery } from "@/lib/hooks/use-stable-query"
 
 export type PlanningMessage = {
   role: "user" | "assistant"
   content: string
+}
+
+export type WorkSummary = {
+  _id: Id<"workSummaries">
+  day: string
+  summary: string
+  createdAt: number
 }
 
 export function useSummarizeConversation() {
@@ -29,7 +38,18 @@ export function useSummarizeConversation() {
   })
 }
 
+export function useTodayWorkSummary() {
+  const workSummary = useStableQuery(api.workSummaries.getTodayWorkSummary)
+
+  return {
+    workSummary,
+    isLoading: workSummary === undefined,
+    hasSummary: workSummary !== null && workSummary !== undefined,
+  }
+}
+
 export function useSummarizeTodayWork() {
+  const queryClient = useQueryClient()
   const summarizeAction = useAction(api.openAI.summarizeTodayWork)
 
   return useMutation({
@@ -38,6 +58,10 @@ export function useSummarizeTodayWork() {
       return {
         summary: result.summary,
       }
+    },
+    onSuccess: () => {
+      // Invalidate work summary query to refetch the saved summary
+      queryClient.invalidateQueries({ queryKey: ["workSummaries"] })
     },
   })
 }
