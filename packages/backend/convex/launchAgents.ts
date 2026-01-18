@@ -1,4 +1,5 @@
 import { v } from "convex/values"
+import { internal } from "./_generated/api"
 import {
   internalAction,
   internalMutation,
@@ -6,7 +7,6 @@ import {
   mutation,
 } from "./_generated/server"
 import { getAuthenticatedUser } from "./auth"
-import { internal } from "./_generated/api"
 
 /**
  * Create a launch agent record
@@ -289,14 +289,17 @@ export const executeLaunchAgent = internalAction({
     }
 
     // Launch the agent using the stored configuration
-    const result = await ctx.runAction(internal.cursor.launchAgentForRecurringJob, {
-      userId: launchAgent.userId,
-      prompt: launchAgent.prompt,
-      source: launchAgent.source,
-      model: launchAgent.model,
-      target: launchAgent.target,
-      taskId: launchAgent.taskId,
-    })
+    const result = await ctx.runAction(
+      internal.cursor.launchAgentForRecurringJob,
+      {
+        userId: launchAgent.userId,
+        prompt: launchAgent.prompt,
+        source: launchAgent.source,
+        model: launchAgent.model,
+        target: launchAgent.target,
+        taskId: launchAgent.taskId,
+      }
+    )
 
     // Create a new launch agent record for this execution
     await ctx.runMutation(internal.launchAgents.createInternal, {
@@ -311,9 +314,12 @@ export const executeLaunchAgent = internalAction({
     })
 
     // Update the original launch agent after launching
-    await ctx.runMutation(internal.launchAgents.updateLaunchAgentAfterExecution, {
-      launchAgentId: args.launchAgentId,
-    })
+    await ctx.runMutation(
+      internal.launchAgents.updateLaunchAgentAfterExecution,
+      {
+        launchAgentId: args.launchAgentId,
+      }
+    )
 
     return { success: true, agentId: result.id }
   },

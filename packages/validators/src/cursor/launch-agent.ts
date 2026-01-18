@@ -204,9 +204,7 @@ export const launchAgentFormSchema = launchAgentRequestSchema.extend({
     .refine(
       (data) => {
         if (!data || !data.enabled) return true
-        return (
-          data.intervalDays !== undefined && data.repeatCount !== undefined
-        )
+        return data.intervalDays !== undefined && data.repeatCount !== undefined
       },
       {
         message:

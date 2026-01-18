@@ -477,10 +477,14 @@ export function LaunchAgentForm() {
                             placeholder="7"
                             min={1}
                             max={365}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>
+                            ) => {
                               const value = e.currentTarget.value
                               field.handleChange(
-                                value === "" ? undefined : Number.parseInt(value, 10)
+                                value === ""
+                                  ? undefined
+                                  : Number.parseInt(value, 10)
                               )
                             }}
                             value={field.state.value?.toString() || ""}
@@ -498,10 +502,14 @@ export function LaunchAgentForm() {
                             placeholder="5"
                             min={1}
                             max={100}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>
+                            ) => {
                               const value = e.currentTarget.value
                               field.handleChange(
-                                value === "" ? undefined : Number.parseInt(value, 10)
+                                value === ""
+                                  ? undefined
+                                  : Number.parseInt(value, 10)
                               )
                             }}
                             value={field.state.value?.toString() || ""}

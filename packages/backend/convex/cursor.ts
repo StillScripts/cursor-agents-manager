@@ -672,7 +672,7 @@ export const launchAgent = action({
     })
 
     // Create launch agent record
-    const launchAgentId = await ctx.runMutation(api.launchAgents.create, {
+    const _launchAgentId = await ctx.runMutation(api.launchAgents.create, {
       prompt: args.prompt,
       source: args.source,
       model: args.model,
