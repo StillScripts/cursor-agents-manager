@@ -280,12 +280,13 @@ export function LaunchAgentForm() {
             : undefined,
           taskId: actualTaskId,
           ...(value.recurringJob?.enabled &&
-            value.recurringJob.intervalDays !== undefined &&
-            value.recurringJob.repeatCount !== undefined && {
+            value.recurringJob.intervalDays !== undefined && {
               recurringJob: {
                 enabled: true,
                 intervalDays: value.recurringJob.intervalDays,
-                repeatCount: value.recurringJob.repeatCount,
+                ...(value.recurringJob.repeatCount !== undefined && {
+                  repeatCount: value.recurringJob.repeatCount,
+                }),
               },
             }),
         }
@@ -473,59 +474,67 @@ export function LaunchAgentForm() {
                     )}
                   </form.AppField>
 
-                  {form.useFieldValue("recurringJob.enabled") && (
-                    <>
-                      <form.AppField name="recurringJob.intervalDays">
-                        {(field) => (
-                          <field.ControlledInput
-                            field={field}
-                            type="number"
-                            label="Interval (Days)"
-                            description="How many days between each execution"
-                            placeholder="7"
-                            min={1}
-                            max={365}
-                            onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>
-                            ) => {
-                              const value = e.currentTarget.value
-                              field.handleChange(
-                                value === ""
-                                  ? undefined
-                                  : Number.parseInt(value, 10)
-                              )
-                            }}
-                            value={field.state.value?.toString() || ""}
-                          />
-                        )}
-                      </form.AppField>
+                  <form.Subscribe
+                    selector={(state) => [
+                      state.values.recurringJob?.enabled ?? false,
+                    ]}
+                  >
+                    {([isEnabled]) =>
+                      isEnabled ? (
+                        <>
+                          <form.AppField name="recurringJob.intervalDays">
+                            {(field) => (
+                              <field.ControlledInput
+                                field={field}
+                                type="number"
+                                label="Interval (Days)"
+                                description="How many days between each execution"
+                                placeholder="7"
+                                min={1}
+                                max={365}
+                                onChange={(
+                                  e: React.ChangeEvent<HTMLInputElement>
+                                ) => {
+                                  const value = e.currentTarget.value
+                                  field.handleChange(
+                                    value === ""
+                                      ? undefined
+                                      : Number.parseInt(value, 10)
+                                  )
+                                }}
+                                value={field.state.value?.toString() || ""}
+                              />
+                            )}
+                          </form.AppField>
 
-                      <form.AppField name="recurringJob.repeatCount">
-                        {(field) => (
-                          <field.ControlledInput
-                            field={field}
-                            type="number"
-                            label="Repeat Count"
-                            description="Total number of times to run (including the initial execution)"
-                            placeholder="5"
-                            min={1}
-                            max={100}
-                            onChange={(
-                              e: React.ChangeEvent<HTMLInputElement>
-                            ) => {
-                              const value = e.currentTarget.value
-                              field.handleChange(
-                                value === ""
-                                  ? undefined
-                                  : Number.parseInt(value, 10)
-                              )
-                            }}
-                            value={field.state.value?.toString() || ""}
-                          />
-                        )}
-                      </form.AppField>
-                    </>
-                  )}
+                          <form.AppField name="recurringJob.repeatCount">
+                            {(field) => (
+                              <field.ControlledInput
+                                field={field}
+                                type="number"
+                                label="Repeat Count (Optional)"
+                                description="Total number of times to run (including the initial execution). Leave empty to run forever."
+                                placeholder="Leave empty to run forever"
+                                min={1}
+                                max={100}
+                                onChange={(
+                                  e: React.ChangeEvent<HTMLInputElement>
+                                ) => {
+                                  const value = e.currentTarget.value
+                                  field.handleChange(
+                                    value === ""
+                                      ? undefined
+                                      : Number.parseInt(value, 10)
+                                  )
+                                }}
+                                value={field.state.value?.toString() || ""}
+                              />
+                            )}
+                          </form.AppField>
+                        </>
+                      ) : null
+                    }
+                  </form.Subscribe>
                 </FieldGroup>
               </FieldSet>
             </FieldGroup>

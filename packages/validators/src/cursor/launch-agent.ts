@@ -204,11 +204,11 @@ export const launchAgentFormSchema = launchAgentRequestSchema.extend({
     .refine(
       (data) => {
         if (!data || !data.enabled) return true
-        return data.intervalDays !== undefined && data.repeatCount !== undefined
+        // Only intervalDays is required when enabled, repeatCount is optional (runs forever if not provided)
+        return data.intervalDays !== undefined
       },
       {
-        message:
-          "Interval days and repeat count are required when recurring job is enabled",
+        message: "Interval days is required when recurring job is enabled",
       }
     ),
 })
