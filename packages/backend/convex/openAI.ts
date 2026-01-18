@@ -257,6 +257,12 @@ ${workSessionsText}
 Summary:`,
       })
 
+      // Save summary to database
+      await ctx.runMutation(internal.workSummaries.saveTodayWorkSummary, {
+        userId: authUser.userId,
+        summary,
+      })
+
       return { summary }
     } catch (error) {
       console.error("[Convex summarizeTodayWork] Error:", error)

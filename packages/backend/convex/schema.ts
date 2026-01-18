@@ -87,6 +87,15 @@ export default defineSchema({
     .index("by_user_task", ["userId", "taskId"])
     .index("by_user_created", ["userId", "createdAt"]),
 
+  workSummaries: defineTable({
+    userId: v.string(),
+    day: v.string(), // Date in readable format (e.g., "January 15, 2024" or "2024-01-15")
+    summary: v.string(), // AI-generated summary text
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_day", ["userId", "day"]), // Ensures one summary per user per day
+
   conversations: defineTable({
     // External agent ID from Cursor (e.g., bc-109be4f0-c6b3-4112-8a2e-4ef48e65486d)
     agentId: v.string(),

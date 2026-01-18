@@ -27,6 +27,7 @@ import type * as timeLogs from "../timeLogs.js";
 import type * as types from "../types.js";
 import type * as users from "../users.js";
 import type * as webhookActions from "../webhookActions.js";
+import type * as workSummaries from "../workSummaries.js";
 
 import type {
   ApiFromModules,
@@ -54,6 +55,7 @@ declare const fullApi: ApiFromModules<{
   types: typeof types;
   users: typeof users;
   webhookActions: typeof webhookActions;
+  workSummaries: typeof workSummaries;
 }>;
 
 /**
