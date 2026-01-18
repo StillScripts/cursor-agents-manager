@@ -3,7 +3,13 @@
 import { AlertCircle, RefreshCw } from "lucide-react"
 import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 
 export default function UnauthenticatedError({
   error,
@@ -35,8 +41,8 @@ export default function UnauthenticatedError({
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            We encountered an error while loading this page. Please try refreshing
-            or return to the home page.
+            We encountered an error while loading this page. Please try
+            refreshing or return to the home page.
           </p>
           {error.message && (
             <div className="rounded-lg bg-muted p-3">
