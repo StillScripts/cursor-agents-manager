@@ -26,7 +26,7 @@ export type ActiveTimeLog = {
     _id: Id<"tasks">
     title: string
     description?: string
-    repositoryUrl?: string
+    repositoryId?: Id<"repositories">
   }
 }
 

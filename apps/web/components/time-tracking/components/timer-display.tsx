@@ -68,13 +68,17 @@ export function TimerDisplay() {
     if (activeTimeLog) {
       setTaskInput(activeTimeLog.task.title)
       setDescriptionInput(activeTimeLog.task.description || "")
-      setSelectedRepositoryUrl(activeTimeLog.task.repositoryUrl)
+      // Find the repository URL from the repositoryId
+      const repo = repositories?.find(
+        (r) => r._id === activeTimeLog.task.repositoryId
+      )
+      setSelectedRepositoryUrl(repo?.url)
     } else {
       setTaskInput("")
       setDescriptionInput("")
       setSelectedRepositoryUrl(undefined)
     }
-  }, [activeTimeLog, setTaskInput, setDescriptionInput])
+  }, [activeTimeLog, setTaskInput, setDescriptionInput, repositories])
 
   const handleStart = async () => {
     if (!taskInput.trim() || isStarting || hasActiveTask) return
@@ -90,10 +94,15 @@ export function TimerDisplay() {
       if (existingTask) {
         taskId = existingTask._id
       } else {
+        // Map URL to repository ID
+        const repositoryId = selectedRepositoryUrl
+          ? repositories?.find((r) => r.url === selectedRepositoryUrl)?._id
+          : undefined
+
         taskId = await createTask({
           title,
           description,
-          repositoryUrl: selectedRepositoryUrl,
+          repositoryId,
         })
       }
 
@@ -187,13 +196,19 @@ export function TimerDisplay() {
           />
           {repositories && repositories.length > 0 && (
             <Select
-              value={selectedRepositoryUrl || null}
+              value={selectedRepositoryUrl || ""}
               onValueChange={(value) =>
                 setSelectedRepositoryUrl(value || undefined)
               }
             >
               <SelectTrigger className="h-12 text-base bg-secondary border-0 focus-visible:ring-primary">
-                <SelectValue placeholder="Repository (optional)" />
+                {selectedRepositoryUrl ? (
+                  <SelectValue />
+                ) : (
+                  <span className="text-muted-foreground">
+                    Repository (optional)
+                  </span>
+                )}
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">None</SelectItem>
