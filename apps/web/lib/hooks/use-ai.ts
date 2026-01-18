@@ -29,6 +29,19 @@ export function useSummarizeConversation() {
   })
 }
 
+export function useSummarizeTodayWork() {
+  const summarizeAction = useAction(api.openAI.summarizeTodayWork)
+
+  return useMutation({
+    mutationFn: async () => {
+      const result = await summarizeAction({})
+      return {
+        summary: result.summary,
+      }
+    },
+  })
+}
+
 export function usePlanTask() {
   const planTaskAction = useAction(api.openAI.planTask)
 

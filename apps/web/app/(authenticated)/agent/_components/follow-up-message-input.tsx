@@ -19,7 +19,7 @@ export function FollowUpMessageInput({
   initialAgent,
 }: {
   agentId: string
-  initialAgent?: (Agent & { simulation: boolean }) | null
+  initialAgent?: Agent | null
 }) {
   const [followUpMessage, setFollowUpMessage] = useState("")
 

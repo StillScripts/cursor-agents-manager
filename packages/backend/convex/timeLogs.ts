@@ -74,9 +74,15 @@ export const getTodayTimeLogs = query({
       return []
     }
 
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const todayStart = today.getTime()
+    // Calculate start of today in Brisbane timezone (UTC+10, no DST)
+    const brisbaneOffsetMs = 10 * 60 * 60 * 1000
+    const brisbaneNow = new Date(Date.now() + brisbaneOffsetMs)
+    const todayStart =
+      Date.UTC(
+        brisbaneNow.getUTCFullYear(),
+        brisbaneNow.getUTCMonth(),
+        brisbaneNow.getUTCDate()
+      ) - brisbaneOffsetMs
 
     const timeLogs = await ctx.db
       .query("timeLogs")
@@ -84,9 +90,11 @@ export const getTodayTimeLogs = query({
       .order("desc")
       .collect()
 
-    // Only return completed time logs (with endTime) from today
+    // Only return completed time logs (with endTime) from today (Brisbane timezone)
+    // Sort by createdAt descending (most recent first)
     return timeLogs
       .filter((log) => log.startTime >= todayStart && log.endTime !== undefined)
+      .sort((a, b) => b.createdAt - a.createdAt)
       .map((log) => ({
         _id: log._id,
         taskId: log.taskId,

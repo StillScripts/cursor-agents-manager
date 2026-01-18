@@ -10,6 +10,7 @@ import {
   launchAgentFormSchema,
   type Model,
 } from "validators/cursor/launch-agent"
+import { NoCursorAccess } from "@/app/(authenticated)/_components/no-cursor-access"
 import { PageHeader } from "@/app/(authenticated)/_components/page-header"
 import {
   extractErrorMessage,
@@ -27,6 +28,7 @@ import { ImageUpload } from "@/components/ui/image-upload"
 import { api } from "@/convex/_generated/api"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 import { useBranches } from "@/lib/hooks/use-branches"
+import { useCursorKey } from "@/lib/hooks/use-cursor-key"
 import { useModels } from "@/lib/hooks/use-models"
 import { useOpenAIKey } from "@/lib/hooks/use-openai-key"
 import { useRepositories } from "@/lib/hooks/use-repositories"
@@ -200,6 +202,7 @@ const TaskSelectField = ({ field }: { field: any }) => {
 export function LaunchAgentForm() {
   const router = useRouter()
   const launchAgentAction = useAction(api.cursor.launchAgent)
+  const { hasCursorKey, isLoading: isLoadingCursorKey } = useCursorKey()
   const { hasOpenAIKey } = useOpenAIKey()
   const { activeTimeLog } = useActiveTimeLog()
   const { tasks } = useTasks()
@@ -309,6 +312,11 @@ export function LaunchAgentForm() {
   const isGitHubAccessError = errorMessage?.includes(
     "lack access to repository"
   )
+
+  // Show message if no cursor key is configured
+  if (!isLoadingCursorKey && !hasCursorKey) {
+    return <NoCursorAccess title="Launch Agent" />
+  }
 
   return (
     <div className="flex flex-col flex-1 min-h-0">

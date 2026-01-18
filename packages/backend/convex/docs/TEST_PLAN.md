@@ -5,7 +5,7 @@ This document outlines a comprehensive test plan for the more complex components
 ## Overview
 
 The advanced features include:
-1. **Cursor Actions** (`cursor.ts`) - Complex integration with Cursor API including simulation mode, caching, and error handling
+1. **Cursor Actions** (`cursor.ts`) - Complex integration with Cursor API including caching and error handling
 2. **Webhook Actions** (`webhookActions.ts`) - Webhook signature verification and security
 
 ## 1. Cursor Actions Test Plan
@@ -13,7 +13,7 @@ The advanced features include:
 ### 1.1 Testing Objectives
 
 - Verify proper integration with Cursor API
-- Test simulation mode behavior when no API key is configured
+- Test error handling when no API key is configured
 - Validate caching mechanisms (ActionCache for models)
 - Test error handling and fallback scenarios
 - Ensure proper data transformation between API and database formats
@@ -26,12 +26,11 @@ The advanced features include:
 **Objective**: Test fetching agents list with various scenarios
 
 **Scenarios to Test**:
-1. **Simulation Mode (No API Key)**
-   - Returns empty array or existing DB agents
-   - Sets `simulation: true` in response
+1. **No API Key**
+   - Throws error requiring API key configuration
    - Does not make API calls
 
-2. **Live Mode (With API Key)**
+2. **With API Key**
    - Fetches from Cursor API when DB is empty
    - Returns cached DB agents when available and `forceRefresh: false`
    - Respects `limit` parameter
@@ -58,9 +57,9 @@ The advanced features include:
    - Preserves all required fields
 
 **Expected Outcomes**:
-- Simulation mode works without API key
-- Live mode fetches and caches data correctly
-- Error handling provides graceful degradation
+- Requires API key to function
+- Fetches and caches data correctly
+- Error handling provides clear error messages
 - Data transformations maintain data integrity
 
 #### 1.2.2 `getAgentById` Action
@@ -70,19 +69,18 @@ The advanced features include:
 **Scenarios to Test**:
 1. **Agent in Database**
    - Returns agent from database immediately
-   - Sets `simulation: false`
 
-2. **Agent Not in Database (Live Mode)**
+2. **Agent Not in Database**
    - Fetches from Cursor API
    - Syncs to database
    - Returns agent data
 
 3. **Agent Not Found (404)**
-   - Returns `{ agent: null, simulation: false }`
+   - Returns `{ agent: null }`
    - Does not throw error
 
-4. **Simulation Mode**
-   - Returns `{ agent: null, simulation: true }` when agent not in DB
+4. **No API Key**
+   - Throws error requiring API key configuration
 
 5. **Authentication**
    - Requires authenticated user
@@ -98,11 +96,8 @@ The advanced features include:
 **Objective**: Test launching new agents
 
 **Scenarios to Test**:
-1. **Simulation Mode**
-   - Creates simulated agent in database
-   - Generates unique agent ID
-   - Sets status to "CREATING"
-   - Returns simulation flag
+1. **No API Key**
+   - Throws error requiring API key configuration
 
 2. **Live Mode - Successful Launch**
    - Calls Cursor API with correct payload
@@ -126,21 +121,19 @@ The advanced features include:
    - Handles webhook secret correctly
 
 **Expected Outcomes**:
-- Simulation mode creates mock agents correctly
-- Live mode launches real agents via API
+- Launches real agents via API
 - Proper error handling prevents data corruption
+- Requires API key to function
 
 #### 1.2.4 `stopAgent` Action
 
 **Objective**: Test stopping running agents
 
 **Scenarios to Test**:
-1. **Simulation Mode**
-   - Updates status to "FINISHED" in database
-   - Returns `{ success: true, simulation: true }`
-   - Does not call API
+1. **No API Key**
+   - Throws error requiring API key configuration
 
-2. **Live Mode - Successful Stop**
+2. **Successful Stop**
    - Calls Cursor API stop endpoint
    - Updates database status
    - Returns success response
@@ -154,8 +147,8 @@ The advanced features include:
    - Provides meaningful error messages
 
 **Expected Outcomes**:
-- Both modes update database correctly
-- Live mode calls API appropriately
+- Updates database correctly
+- Calls API appropriately
 - Errors are handled gracefully
 
 #### 1.2.5 `deleteAgent` Action
@@ -163,11 +156,10 @@ The advanced features include:
 **Objective**: Test deleting agents
 
 **Scenarios to Test**:
-1. **Simulation Mode**
-   - Soft deletes in database
-   - Returns `{ success: true, simulation: true }`
+1. **No API Key**
+   - Throws error requiring API key configuration
 
-2. **Live Mode - Successful Delete**
+2. **Successful Delete**
    - Calls Cursor API delete endpoint
    - Soft deletes in database
    - Returns success response
@@ -180,8 +172,8 @@ The advanced features include:
    - Ensures database consistency
 
 **Expected Outcomes**:
-- Soft delete works in both modes
-- Live mode calls API correctly
+- Soft delete works correctly
+- Calls API correctly
 - Database remains consistent
 
 #### 1.2.6 `sendFollowUp` Action
@@ -189,11 +181,10 @@ The advanced features include:
 **Objective**: Test sending follow-up messages to agents
 
 **Scenarios to Test**:
-1. **Simulation Mode**
-   - Returns mock success response
-   - Does not call API
+1. **No API Key**
+   - Throws error requiring API key configuration
 
-2. **Live Mode - Successful Follow-up**
+2. **Successful Follow-up**
    - Calls Cursor API followup endpoint
    - Refreshes agent data in database
    - Returns response data
@@ -206,20 +197,19 @@ The advanced features include:
    - Provides meaningful error messages
 
 **Expected Outcomes**:
-- Simulation mode returns appropriate mock
-- Live mode sends messages correctly
+- Sends messages correctly
 - Agent data is refreshed after follow-up
+- Requires API key to function
 
 #### 1.2.7 `getConversation` Action
 
 **Objective**: Test fetching agent conversations
 
 **Scenarios to Test**:
-1. **Simulation Mode**
-   - Returns mock conversation
-   - Sets `simulation: true`
+1. **No API Key**
+   - Throws error requiring API key configuration
 
-2. **Live Mode - Successful Fetch**
+2. **Successful Fetch**
    - Calls Cursor API conversation endpoint
    - Returns conversation data
    - Handles 404 (no conversation) gracefully
@@ -229,20 +219,19 @@ The advanced features include:
    - Returns null conversation on 404
 
 **Expected Outcomes**:
-- Simulation mode provides helpful mock
-- Live mode fetches real conversations
+- Fetches real conversations
 - Errors are handled appropriately
+- Requires API key to function
 
 #### 1.2.8 `getModels` Action
 
 **Objective**: Test fetching available AI models
 
 **Scenarios to Test**:
-1. **Simulation Mode**
-   - Returns `SIMULATED_MODELS` array
-   - Sets `simulation: true`
+1. **No API Key**
+   - Throws error requiring API key configuration
 
-2. **Live Mode - Cached Fetch**
+2. **Cached Fetch**
    - Uses ActionCache for 24-hour caching
    - Fetches from API on cache miss
    - Returns models array
@@ -253,12 +242,12 @@ The advanced features include:
    - Cache key includes API key
 
 4. **Error Handling**
-   - Falls back to simulated models on error
+   - Throws error on API failure
    - Logs errors appropriately
 
 **Expected Outcomes**:
 - Caching reduces API calls
-- Fallback to simulated models on errors
+- Requires API key to function
 - Shared cache works correctly
 
 ### 1.3 Mocking Strategy
@@ -396,7 +385,7 @@ convex/_tests/
 - Group tests by action function
 - Use descriptive test names
 - Include both success and error cases
-- Test simulation and live modes separately
+- Test error handling when API key is missing
 
 ## 4. Success Criteria
 

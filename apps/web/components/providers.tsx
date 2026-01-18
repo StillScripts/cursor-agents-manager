@@ -8,6 +8,7 @@ import { ThemeProvider } from "next-themes"
 import type React from "react"
 import { useState } from "react"
 import { authClient } from "@/lib/better-auth/auth-client"
+import { CursorKeyProvider } from "@/lib/hooks/use-cursor-key"
 import { OpenAIKeyProvider } from "@/lib/hooks/use-openai-key"
 
 // Cache configuration constants
@@ -57,7 +58,9 @@ export function Providers({
           initialToken={initialToken}
         >
           <QueryClientProvider client={queryClient}>
-            <OpenAIKeyProvider>{children}</OpenAIKeyProvider>
+            <CursorKeyProvider>
+              <OpenAIKeyProvider>{children}</OpenAIKeyProvider>
+            </CursorKeyProvider>
           </QueryClientProvider>
         </ConvexBetterAuthProvider>
       </JotaiProvider>
