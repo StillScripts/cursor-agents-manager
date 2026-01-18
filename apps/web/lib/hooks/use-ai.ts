@@ -42,52 +42,6 @@ export function useSummarizeTodayWork() {
   })
 }
 
-export function usePlanTask() {
-  const planTaskAction = useAction(api.openAI.planTask)
-
-  return useMutation({
-    mutationFn: async ({
-      currentTask,
-      messages,
-      userMessage,
-    }: {
-      currentTask: string
-      messages: PlanningMessage[]
-      userMessage: string
-    }) => {
-      const result = await planTaskAction({
-        currentTask,
-        messages,
-        userMessage,
-      })
-      return result.response
-    },
-  })
-}
-
-export function useGenerateFinalTask() {
-  const generateFinalTaskAction = useAction(api.openAI.generateFinalTask)
-
-  return useMutation({
-    mutationFn: async ({
-      originalTask,
-      messages,
-    }: {
-      originalTask: string
-      messages: PlanningMessage[]
-    }) => {
-      const result = await generateFinalTaskAction({
-        originalTask,
-        messages,
-      })
-      return {
-        text: result.text,
-        branchName: result.branchName,
-      }
-    },
-  })
-}
-
 export function useTranscribeAudio() {
   const transcribeAction = useAction(api.openAI.transcribeAudio)
 
@@ -138,22 +92,16 @@ export function useImprovePrompt() {
   return useMutation({
     mutationFn: async ({
       text,
-      messages,
     }: {
       text: string
       messages?: PlanningMessage[]
     }) => {
       const result = await improvePromptAction({
         text,
-        messages: messages?.map((msg) => ({
-          role: msg.role,
-          content: msg.content,
-        })),
       })
       return {
         text: result.text,
         branchName: result.branchName,
-        questions: result.questions,
       }
     },
   })

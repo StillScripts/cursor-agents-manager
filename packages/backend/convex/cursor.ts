@@ -581,7 +581,6 @@ export const launchAgent = action({
     id: string
     name: string
     status: string
-    simulation: boolean
   }> => {
     const authUser = await ctx.runQuery(
       internal.auth.getAuthenticatedUserInternal
@@ -657,7 +656,14 @@ export const launchAgentForRecurringJob = internalAction({
     ),
     taskId: v.optional(v.id("tasks")),
   },
-  handler: async (ctx, args) => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    id: string
+    name: string
+    status: string
+  }> => {
     // Use the internal launch agent action
     return await ctx.runAction(internal.cursor.launchAgentInternal, {
       userId: args.userId,
