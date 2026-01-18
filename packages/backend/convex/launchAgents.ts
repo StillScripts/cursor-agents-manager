@@ -186,16 +186,29 @@ export const getLaunchAgentsDueToRun = internalQuery({
   },
   handler: async (ctx, args) => {
     // Get all launch agents where nextRunAt <= currentTime and has active recurring job
-    const launchAgents = await ctx.db
+    const allLaunchAgents = await ctx.db
       .query("launchAgents")
       .withIndex("by_next_run", (q) => q.lte("nextRunAt", args.currentTime))
       .filter((q) =>
         q.and(
           q.neq(q.field("recurringJob"), undefined),
-          q.eq(q.field("recurringJob.isActive"), true)
+          q.eq(q.field("recurringJob.isActive"), true),
+          // Ensure nextRunAt is defined (not null/undefined)
+          q.neq(q.field("nextRunAt"), undefined)
         )
       )
       .collect()
+
+    // Additional filtering in JavaScript to ensure repeatCount is respected
+    // This is necessary because Convex filters don't support comparing two fields
+    const launchAgents = allLaunchAgents.filter((launchAgent) => {
+      if (!launchAgent.recurringJob) return false
+      // Only include if currentCount < repeatCount (haven't exceeded limit)
+      return (
+        launchAgent.recurringJob.currentCount <
+        launchAgent.recurringJob.repeatCount
+      )
+    })
 
     return launchAgents
   },
@@ -269,7 +282,10 @@ export const executeLaunchAgent = internalAction({
   args: {
     launchAgentId: v.id("launchAgents"),
   },
-  handler: async (ctx, args) => {
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ success: boolean; agentId: string }> => {
     // Get the launch agent from the database
     const launchAgent = await ctx.runQuery(
       internal.launchAgents.getLaunchAgentByIdInternal,
@@ -288,9 +304,33 @@ export const executeLaunchAgent = internalAction({
       )
     }
 
+    // Double-check repeatCount before executing (defense against race conditions)
+    if (
+      launchAgent.recurringJob.currentCount >=
+      launchAgent.recurringJob.repeatCount
+    ) {
+      throw new Error(
+        `Launch agent recurring job has already reached repeat count: ${args.launchAgentId}`
+      )
+    }
+
+    // Double-check nextRunAt is defined and due
+    if (!launchAgent.nextRunAt) {
+      throw new Error(
+        `Launch agent recurring job has no nextRunAt: ${args.launchAgentId}`
+      )
+    }
+
+    const currentTime = Date.now()
+    if (launchAgent.nextRunAt > currentTime) {
+      throw new Error(
+        `Launch agent recurring job is not yet due: ${args.launchAgentId} (nextRunAt: ${launchAgent.nextRunAt}, currentTime: ${currentTime})`
+      )
+    }
+
     // Launch the agent using the stored configuration
-    const result = await ctx.runAction(
-      internal.cursor.launchAgentForRecurringJob,
+    const result: { id: string } = await ctx.runAction(
+      internal.cursor.launchAgentInternal,
       {
         userId: launchAgent.userId,
         prompt: launchAgent.prompt,
@@ -331,7 +371,7 @@ export const executeLaunchAgent = internalAction({
  */
 export const checkAndExecuteRecurringJobs = internalAction({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx): Promise<{ executed: number }> => {
     const currentTime = Date.now()
 
     // Get all launch agents with recurring jobs that are due to run
