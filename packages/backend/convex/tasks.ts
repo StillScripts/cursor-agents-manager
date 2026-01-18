@@ -20,6 +20,7 @@ export const getTasks = query({
       _id: task._id,
       title: task.title,
       description: task.description,
+      repositoryUrl: task.repositoryUrl,
       createdAt: task.createdAt,
     }))
   },
@@ -44,6 +45,7 @@ export const getTask = query({
       _id: task._id,
       title: task.title,
       description: task.description,
+      repositoryUrl: task.repositoryUrl,
       createdAt: task.createdAt,
     }
   },
@@ -53,6 +55,7 @@ export const createTask = mutation({
   args: {
     title: v.string(),
     description: v.optional(v.string()),
+    repositoryUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const authUser = await getAuthenticatedUser(ctx)
@@ -62,6 +65,7 @@ export const createTask = mutation({
       userId: authUser.userId,
       title: args.title.trim(),
       description: args.description?.trim() || undefined,
+      repositoryUrl: args.repositoryUrl?.trim() || undefined,
       createdAt: now,
     })
 

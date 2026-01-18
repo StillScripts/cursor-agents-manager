@@ -9,6 +9,7 @@ export interface Task {
   _id: Id<"tasks">
   title: string
   description?: string
+  repositoryUrl?: string
   createdAt: number
 }
 
@@ -21,8 +22,11 @@ export function useTasks() {
     tasks,
     isLoading: tasks === undefined,
     hasTasks: (tasks?.length ?? 0) > 0,
-    createTask: (data: { title: string; description?: string }) =>
-      createTask(data),
+    createTask: (data: {
+      title: string
+      description?: string
+      repositoryUrl?: string
+    }) => createTask(data),
     deleteTask: (taskId: Id<"tasks">) => deleteTask({ taskId }),
   }
 }

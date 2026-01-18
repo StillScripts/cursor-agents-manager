@@ -6,9 +6,17 @@ import { Clock, Play, Square } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import type { Id } from "@/convex/_generated/dataModel"
 import { descriptionInputAtom, taskInputAtom } from "@/lib/atoms"
+import { useRepositories } from "@/lib/hooks/use-repositories"
 import { useTasks } from "@/lib/hooks/use-tasks"
 import {
   useActiveTimeLog,
@@ -20,11 +28,15 @@ import {
 export function TimerDisplay() {
   const [taskInput, setTaskInput] = useAtom(taskInputAtom)
   const [descriptionInput, setDescriptionInput] = useAtom(descriptionInputAtom)
+  const [selectedRepositoryUrl, setSelectedRepositoryUrl] = useState<
+    string | undefined
+  >(undefined)
   const [elapsed, setElapsed] = useState(0)
   const [isStarting, setIsStarting] = useState(false)
   const [isStopping, setIsStopping] = useState(false)
 
   const { tasks, createTask } = useTasks()
+  const { repositories } = useRepositories()
   const { activeTimeLog, hasActiveTask } = useActiveTimeLog()
   const { saveTimeLog } = useSaveTimeLog()
   const { stopTimeLog } = useStopTimeLog()
@@ -56,9 +68,11 @@ export function TimerDisplay() {
     if (activeTimeLog) {
       setTaskInput(activeTimeLog.task.title)
       setDescriptionInput(activeTimeLog.task.description || "")
+      setSelectedRepositoryUrl(activeTimeLog.task.repositoryUrl)
     } else {
       setTaskInput("")
       setDescriptionInput("")
+      setSelectedRepositoryUrl(undefined)
     }
   }, [activeTimeLog, setTaskInput, setDescriptionInput])
 
@@ -76,7 +90,11 @@ export function TimerDisplay() {
       if (existingTask) {
         taskId = existingTask._id
       } else {
-        taskId = await createTask({ title, description })
+        taskId = await createTask({
+          title,
+          description,
+          repositoryUrl: selectedRepositoryUrl,
+        })
       }
 
       // Create time log in Convex (without endTime = ongoing task)
@@ -167,6 +185,26 @@ export function TimerDisplay() {
             rows={3}
             className="text-sm bg-secondary border-0 placeholder:text-muted-foreground/50 focus-visible:ring-primary resize-none"
           />
+          {repositories && repositories.length > 0 && (
+            <Select
+              value={selectedRepositoryUrl || null}
+              onValueChange={(value) =>
+                setSelectedRepositoryUrl(value || undefined)
+              }
+            >
+              <SelectTrigger className="h-12 text-base bg-secondary border-0 focus-visible:ring-primary">
+                <SelectValue placeholder="Repository (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {repositories.map((repo) => (
+                  <SelectItem key={repo.url} value={repo.url}>
+                    {repo.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       )}
 

@@ -69,6 +69,7 @@ export default defineSchema({
     userId: v.string(),
     title: v.string(),
     description: v.optional(v.string()),
+    repositoryUrl: v.optional(v.string()),
     createdAt: v.number(),
   })
     .index("by_user", ["userId"])
