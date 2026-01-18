@@ -236,6 +236,11 @@ export function LaunchAgentForm() {
       branchName: "",
     },
     taskId: getDefaultTaskTitle(),
+    recurringJob: {
+      enabled: false,
+      intervalDays: undefined,
+      repeatCount: undefined,
+    },
   }
 
   // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
@@ -274,6 +279,16 @@ export function LaunchAgentForm() {
               }
             : undefined,
           taskId: actualTaskId,
+          ...(value.recurringJob?.enabled &&
+            value.recurringJob.intervalDays !== undefined && {
+              recurringJob: {
+                enabled: true,
+                intervalDays: value.recurringJob.intervalDays,
+                ...(value.recurringJob.repeatCount !== undefined && {
+                  repeatCount: value.recurringJob.repeatCount,
+                }),
+              },
+            }),
         }
 
         // Launch the agent via Convex action
@@ -438,6 +453,62 @@ export function LaunchAgentForm() {
                       />
                     )}
                   </form.AppField>
+                </FieldGroup>
+              </FieldSet>
+
+              <FieldSeparator />
+
+              <FieldSet>
+                <FieldLegend>Recurring Job</FieldLegend>
+                <FieldDescription>
+                  Schedule this agent to run automatically at regular intervals.
+                </FieldDescription>
+                <FieldGroup>
+                  <form.AppField name="recurringJob.enabled">
+                    {(field) => (
+                      <field.ControlledSwitch
+                        field={field}
+                        label="Create Recurring Job"
+                        description="Enable to automatically run this agent on a schedule"
+                      />
+                    )}
+                  </form.AppField>
+
+                  <form.Subscribe
+                    selector={(state) => [
+                      state.values.recurringJob?.enabled ?? false,
+                    ]}
+                  >
+                    {([isEnabled]) =>
+                      isEnabled ? (
+                        <>
+                          <form.AppField name="recurringJob.intervalDays">
+                            {(field) => (
+                              <field.ControlledNumberInput
+                                field={field}
+                                label="Interval (Days)"
+                                description="How many days between each execution"
+                                min={1}
+                                max={365}
+                              />
+                            )}
+                          </form.AppField>
+
+                          <form.AppField name="recurringJob.repeatCount">
+                            {(field) => (
+                              <field.ControlledNumberInput
+                                field={field}
+                                label="Repeat Count (Optional)"
+                                description="Total number of times to run (including the initial execution). Leave empty to run forever."
+                                min={1}
+                                max={100}
+                              />
+                            )}
+                          </form.AppField>
+                        </>
+                      ) : null
+                    }
+                  </form.Subscribe>
                 </FieldGroup>
               </FieldSet>
             </FieldGroup>

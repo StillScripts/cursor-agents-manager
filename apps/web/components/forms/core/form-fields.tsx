@@ -12,6 +12,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { NumberInput } from "@/components/ui/number-input"
 import {
   Select,
   SelectContent,
@@ -348,6 +349,42 @@ export const ControlledSwitch = ({
         )}
       </FieldContent>
     </Field>
+  )
+}
+
+export const ControlledNumberInput = ({
+  field,
+  label,
+  description,
+  ...props
+}: FieldProps &
+  Omit<
+    ComponentProps<typeof NumberInput.Root>,
+    "value" | "onValueChange" | "id" | "name"
+  >) => {
+  const fieldProps = getFieldProps(field, description, label)
+  const value = field.state.value ?? undefined
+  const numValue =
+    typeof value === "number" ? value : value ? Number(value) : undefined
+
+  return (
+    <ControlledField {...fieldProps}>
+      <NumberInput.Root
+        {...props}
+        id={field.name}
+        value={numValue}
+        onValueChange={(value) => {
+          field.handleChange(value ?? undefined)
+        }}
+        onBlur={field.handleBlur}
+      >
+        <NumberInput.Group>
+          <NumberInput.Decrement />
+          <NumberInput.Input aria-invalid={fieldProps.isInvalid} />
+          <NumberInput.Increment />
+        </NumberInput.Group>
+      </NumberInput.Root>
+    </ControlledField>
   )
 }
 

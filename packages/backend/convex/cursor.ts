@@ -369,11 +369,13 @@ export const getAgentById = action({
 })
 
 /**
- * Launch a new agent via the Cursor API
+ * Internal action to launch a new agent via the Cursor API
  * If no API key is configured, creates a simulated agent instead
+ * This is called by the public launchAgent action and by recurring job execution
  */
-export const launchAgent = action({
+export const launchAgentInternal = internalAction({
   args: {
+    userId: v.string(),
     prompt: v.object({
       text: v.string(),
       images: v.optional(
@@ -417,15 +419,11 @@ export const launchAgent = action({
     name: string
     status: string
   }> => {
-    const authUser = await ctx.runQuery(
-      internal.auth.getAuthenticatedUserInternal
-    )
-
     const apiKey = await ctx.runAction(internal.cursor.getCursorApiKey, {
-      userId: authUser.userId,
+      userId: args.userId,
     })
 
-    await checkRateLimit(ctx, cursorRateLimiters.launchAgent, authUser.userId)
+    await checkRateLimit(ctx, cursorRateLimiters.launchAgent, args.userId)
 
     // Require API key - throw error if not configured
     if (!apiKey) {
@@ -519,9 +517,157 @@ export const launchAgent = action({
         status: cursorAgent.status,
       }
     } catch (error) {
-      console.error("[Convex launchAgent] Error launching agent:", error)
+      console.error(
+        "[Convex launchAgentInternal] Error launching agent:",
+        error
+      )
       throw error instanceof Error ? error : new Error("Failed to launch agent")
     }
+  },
+})
+
+/**
+ * Public action to launch a new agent
+ * Creates a launch agent record and calls the internal launch agent action
+ */
+export const launchAgent = action({
+  args: {
+    prompt: v.object({
+      text: v.string(),
+      images: v.optional(
+        v.array(
+          v.object({
+            data: v.string(),
+            dimension: v.object({
+              width: v.number(),
+              height: v.number(),
+            }),
+          })
+        )
+      ),
+    }),
+    source: v.object({
+      repository: v.string(),
+      ref: v.optional(v.string()),
+    }),
+    model: v.optional(v.string()),
+    target: v.optional(
+      v.object({
+        autoCreatePr: v.boolean(),
+        openAsCursorGithubApp: v.optional(v.boolean()),
+        skipReviewerRequest: v.optional(v.boolean()),
+        branchName: v.optional(v.string()),
+      })
+    ),
+    webhook: v.optional(
+      v.object({
+        url: v.string(),
+        secret: v.optional(v.string()),
+      })
+    ),
+    taskId: v.optional(v.id("tasks")),
+    recurringJob: v.optional(
+      v.object({
+        enabled: v.boolean(),
+        intervalDays: v.optional(v.number()),
+        repeatCount: v.optional(v.number()),
+      })
+    ),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    id: string
+    name: string
+    status: string
+    simulation: boolean
+  }> => {
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
+
+    // Launch the agent using the internal action
+    const result = await ctx.runAction(internal.cursor.launchAgentInternal, {
+      userId: authUser.userId,
+      prompt: args.prompt,
+      source: args.source,
+      model: args.model,
+      target: args.target,
+      webhook: args.webhook,
+      taskId: args.taskId,
+    })
+
+    // Create launch agent record
+    const _launchAgentId = await ctx.runMutation(api.launchAgents.create, {
+      prompt: args.prompt,
+      source: args.source,
+      model: args.model,
+      target: args.target,
+      taskId: args.taskId,
+      recurringJob:
+        args.recurringJob?.enabled &&
+        args.recurringJob.intervalDays !== undefined &&
+        args.recurringJob.repeatCount !== undefined
+          ? {
+              intervalDays: args.recurringJob.intervalDays,
+              repeatCount: args.recurringJob.repeatCount,
+            }
+          : undefined,
+      agentId: result.id,
+    })
+
+    return result
+  },
+})
+
+/**
+ * Internal action to launch an agent for a recurring job
+ * This is now just a wrapper around launchAgentInternal
+ */
+export const launchAgentForRecurringJob = internalAction({
+  args: {
+    userId: v.string(),
+    prompt: v.object({
+      text: v.string(),
+      images: v.optional(
+        v.array(
+          v.object({
+            data: v.string(),
+            dimension: v.object({
+              width: v.number(),
+              height: v.number(),
+            }),
+          })
+        )
+      ),
+    }),
+    source: v.object({
+      repository: v.string(),
+      ref: v.optional(v.string()),
+    }),
+    model: v.optional(v.string()),
+    target: v.optional(
+      v.object({
+        autoCreatePr: v.boolean(),
+        openAsCursorGithubApp: v.optional(v.boolean()),
+        skipReviewerRequest: v.optional(v.boolean()),
+        branchName: v.optional(v.string()),
+      })
+    ),
+    taskId: v.optional(v.id("tasks")),
+  },
+  handler: async (ctx, args) => {
+    // Use the internal launch agent action
+    return await ctx.runAction(internal.cursor.launchAgentInternal, {
+      userId: args.userId,
+      prompt: args.prompt,
+      source: args.source,
+      model: args.model,
+      target: args.target,
+      webhook: undefined,
+      taskId: args.taskId,
+    })
   },
 })
 
