@@ -1,7 +1,8 @@
 "use client"
 
 import { formatDuration, formatTime } from "helpers"
-import { Clock, Eye, Sparkles } from "lucide-react"
+import { useSetAtom } from "jotai"
+import { Clock, Eye, PlayCircle, Sparkles } from "lucide-react"
 import { useMemo, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -14,28 +15,32 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import type { Id } from "@/convex/_generated/dataModel"
+import { descriptionInputAtom, taskInputAtom, viewAtom } from "@/lib/atoms"
 import { useSummarizeTodayWork, useTodayWorkSummary } from "@/lib/hooks/use-ai"
+import {
+  useActiveTimeLog,
+  useSaveTimeLog,
+  type TimeLog,
+  useTodayTimeLogs,
+} from "@/lib/hooks/use-time-logs"
 import { type Task, useTasks } from "@/lib/hooks/use-tasks"
-import { type TimeLog, useTodayTimeLogs } from "@/lib/hooks/use-time-logs"
 import { cn } from "@/lib/utils"
-
-type TodayEntry = {
-  _id: Id<"timeLogs">
-  title: string
-  startTime: number
-  duration: number
-}
 
 export function TodayEntries() {
   const { tasks } = useTasks()
   const { timeLogs } = useTodayTimeLogs()
   const { workSummary, hasSummary } = useTodayWorkSummary()
   const summarizeTodayWork = useSummarizeTodayWork()
+  const { hasActiveTask } = useActiveTimeLog()
+  const { saveTimeLog } = useSaveTimeLog()
+  const setTaskInput = useSetAtom(taskInputAtom)
+  const setDescriptionInput = useSetAtom(descriptionInputAtom)
+  const setView = useSetAtom(viewAtom)
   const [generatedSummary, setGeneratedSummary] = useState<string | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-  // Map time logs to entries with task titles
-  const entries = useMemo((): TodayEntry[] => {
+  // Map time logs to entries with task titles and full task data
+  const entries = useMemo(() => {
     if (!timeLogs || !tasks) return []
 
     const taskMap = new Map<Id<"tasks">, Task>(
@@ -43,16 +48,18 @@ export function TodayEntries() {
     )
 
     return timeLogs
-      .map((log: TimeLog): TodayEntry => {
+      .map((log: TimeLog) => {
         const task = taskMap.get(log.taskId)
         return {
           _id: log._id,
           title: task?.title ?? "Unknown Task",
           startTime: log.startTime,
           duration: log.endTime - log.startTime,
+          taskId: log.taskId,
+          task: task,
         }
       })
-      .sort((a: TodayEntry, b: TodayEntry) => b.startTime - a.startTime)
+      .sort((a, b) => b.startTime - a.startTime)
   }, [timeLogs, tasks])
 
   async function handleSummarize(): Promise<void> {
@@ -69,6 +76,36 @@ export function TodayEntries() {
     setIsDialogOpen(true)
   }
 
+  const handleContinue = async (entry: {
+    taskId: Id<"tasks">
+    task?: Task
+  }) => {
+    if (hasActiveTask) return
+
+    const task = entry.task
+    if (!task) return
+
+    try {
+      // Create time log in Convex (without endTime = ongoing task)
+      await saveTimeLog({
+        taskId: entry.taskId,
+        startTime: Date.now(),
+        // No endTime = ongoing task
+      })
+      setTaskInput(task.title)
+      setDescriptionInput(task.description || "")
+      setView("timer")
+    } catch (error) {
+      console.error("Failed to start task:", error)
+      if (
+        error instanceof Error &&
+        error.message.includes("already have an active task")
+      ) {
+        alert(error.message)
+      }
+    }
+  }
+
   // Get the summary to display - either from database or newly generated
   const summaryToDisplay = workSummary?.summary ?? generatedSummary
 
@@ -76,7 +113,7 @@ export function TodayEntries() {
 
   return (
     <>
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-2xl">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
             <Clock className="w-4 h-4" />
@@ -117,13 +154,23 @@ export function TodayEntries() {
                   {entry.title}
                 </span>
               </div>
-              <div className="flex items-center gap-3 text-muted-foreground ml-4">
-                <span className="text-xs">
+              <div className="flex items-center gap-3 text-muted-foreground ml-4 shrink-0">
+                <span className="text-xs whitespace-nowrap">
                   {formatTime(new Date(entry.startTime))}
                 </span>
-                <span className="font-mono text-foreground">
+                <span className="font-mono text-foreground whitespace-nowrap">
                   {formatDuration(entry.duration)}
                 </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleContinue(entry)}
+                  disabled={hasActiveTask}
+                  className="h-7 w-7 text-primary hover:text-primary hover:bg-primary/10 disabled:opacity-30 shrink-0"
+                  title="Continue"
+                >
+                  <PlayCircle className="w-4 h-4" />
+                </Button>
               </div>
             </div>
           ))}
