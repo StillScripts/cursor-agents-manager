@@ -17,13 +17,13 @@ import {
 import type { Id } from "@/convex/_generated/dataModel"
 import { descriptionInputAtom, taskInputAtom, viewAtom } from "@/lib/atoms"
 import { useSummarizeTodayWork, useTodayWorkSummary } from "@/lib/hooks/use-ai"
+import { type Task, useTasks } from "@/lib/hooks/use-tasks"
 import {
+  type TimeLog,
   useActiveTimeLog,
   useSaveTimeLog,
-  type TimeLog,
   useTodayTimeLogs,
 } from "@/lib/hooks/use-time-logs"
-import { type Task, useTasks } from "@/lib/hooks/use-tasks"
 import { cn } from "@/lib/utils"
 
 export function TodayEntries() {
