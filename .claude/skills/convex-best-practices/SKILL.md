@@ -1,317 +1,334 @@
 ---
 name: convex-best-practices
-description: Guidelines for building with Convex including schema design, queries, mutations, actions, and function patterns. Use when working with Convex backend code, database operations, or API design.
+displayName: Convex Best Practices
+description: Guidelines for building production-ready Convex apps covering function organization, query patterns, validation, TypeScript usage, error handling, and the Zen of Convex design philosophy
+version: 1.0.0
+author: Convex
+tags: [convex, best-practices, typescript, production, error-handling]
 ---
 
 # Convex Best Practices
 
-Follow these guidelines when working with Convex projects.
+Build production-ready Convex applications by following established patterns for function organization, query optimization, validation, TypeScript usage, and error handling.
 
-## Function Syntax
+## Documentation Sources
 
-### New Function Registration
+Before implementing, do not assume; fetch the latest documentation:
 
-Always use the new function syntax with validators:
+- Primary: https://docs.convex.dev/understanding/best-practices/
+- Error Handling: https://docs.convex.dev/functions/error-handling
+- Write Conflicts: https://docs.convex.dev/error#1
+- For broader context: https://docs.convex.dev/llms.txt
+
+## Instructions
+
+### The Zen of Convex
+
+1. **Convex manages the hard parts** - Let Convex handle caching, real-time sync, and consistency
+2. **Functions are the API** - Design your functions as your application's interface
+3. **Schema is truth** - Define your data model explicitly in schema.ts
+4. **TypeScript everywhere** - Leverage end-to-end type safety
+5. **Queries are reactive** - Think in terms of subscriptions, not requests
+
+### Function Organization
+
+Organize your Convex functions by domain:
 
 ```typescript
-import { query } from "./_generated/server";
+// convex/users.ts - User-related functions
+import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
-export const f = query({
-  args: { name: v.string() },
-  returns: v.string(),
+export const get = query({
+  args: { userId: v.id("users") },
+  returns: v.union(v.object({
+    _id: v.id("users"),
+    _creationTime: v.number(),
+    name: v.string(),
+    email: v.string(),
+  }), v.null()),
   handler: async (ctx, args) => {
-    return "Hello " + args.name;
+    return await ctx.db.get(args.userId);
   },
 });
 ```
 
-### Validators
+### Argument and Return Validation
 
-- ALWAYS include `args` and `returns` validators for all functions
-- Use `v.null()` when a function doesn't return anything
-- Use `v.int64()` for signed 64-bit integers (not `v.bigint()`)
-- Use `v.id(tableName)` for document IDs
-- Use `v.record(keys, values)` for dynamic objects (not `v.map()` or `v.set()`)
-
-### Function Types
-
-**Public Functions:**
-- `query` - Read-only operations exposed to clients
-- `mutation` - Write operations exposed to clients
-- `action` - Long-running operations with external API calls
-
-**Internal Functions:**
-- `internalQuery` - Private read-only operations
-- `internalMutation` - Private write operations
-- `internalAction` - Private long-running operations
-
-Never use public functions for sensitive internal logic that should be kept private.
-
-## Function References and Calling
-
-### File-Based Routing
-
-- `api.example.f` - Public function `f` in `convex/example.ts`
-- `internal.example.g` - Internal function `g` in `convex/example.ts`
-- `api.messages.access.h` - Public function `h` in `convex/messages/access.ts`
-
-### Calling Functions
+Always define validators for arguments AND return types:
 
 ```typescript
-// From queries, mutations, or actions
-await ctx.runQuery(api.example.f, { name: "Bob" });
-
-// From mutations or actions
-await ctx.runMutation(api.example.g, { ... });
-
-// From actions only
-await ctx.runAction(internal.example.h, { ... });
-```
-
-**Important:**
-- Always pass `FunctionReference` objects (from `api` or `internal`)
-- Never pass function implementations directly
-- For same-file calls, add type annotations to avoid TypeScript circularity
-- Minimize action-to-query/mutation calls to avoid race conditions
-
-## Schema Design
-
-### Schema Definition
-
-```typescript
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
-
-export default defineSchema({
-  messages: defineTable({
-    channelId: v.id("channels"),
-    authorId: v.optional(v.id("users")),
-    content: v.string(),
-  })
-    .index("by_channel", ["channelId"])
-    .index("by_channel_and_author", ["channelId", "authorId"]),
+export const createTask = mutation({
+  args: {
+    title: v.string(),
+    description: v.optional(v.string()),
+    priority: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+  },
+  returns: v.id("tasks"),
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("tasks", {
+      title: args.title,
+      description: args.description,
+      priority: args.priority,
+      completed: false,
+      createdAt: Date.now(),
+    });
+  },
 });
 ```
 
-### Index Guidelines
+### Query Patterns
 
-- Include all index fields in the index name (e.g., `by_field1_and_field2`)
-- Query fields in the same order they're defined in the index
-- Create separate indexes for different query orders
-- System fields `_id` and `_creationTime` are added automatically
-
-## Query Patterns
-
-### Basic Queries
+Use indexes instead of filters for efficient queries:
 
 ```typescript
-// Use indexes, NOT filter
-const messages = await ctx.db
-  .query("messages")
-  .withIndex("by_channel", (q) => q.eq("channelId", channelId))
-  .order("desc")
-  .take(10);
-```
+// Schema with index
+export default defineSchema({
+  tasks: defineTable({
+    userId: v.id("users"),
+    status: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_status", ["userId", "status"]),
+});
 
-### Important Rules
-
-- DO NOT use `.filter()` - define indexes instead
-- Use `.unique()` to get a single document (throws if multiple found)
-- Queries don't support `.delete()` - use `.collect()` then iterate
-- Default order is ascending `_creationTime`
-- Use `.order("asc")` or `.order("desc")` to specify ordering
-
-### Full-Text Search
-
-```typescript
-const results = await ctx.db
-  .query("messages")
-  .withSearchIndex("search_body", (q) =>
-    q.search("body", "hello hi").eq("channel", "#general")
-  )
-  .take(10);
-```
-
-### Pagination
-
-```typescript
-import { paginationOptsValidator } from "convex/server";
-
-export const list = query({
-  args: { paginationOpts: paginationOptsValidator, author: v.string() },
+// Query using index
+export const getTasksByUser = query({
+  args: { userId: v.id("users") },
+  returns: v.array(v.object({
+    _id: v.id("tasks"),
+    _creationTime: v.number(),
+    userId: v.id("users"),
+    status: v.string(),
+    createdAt: v.number(),
+  })),
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("messages")
-      .withIndex("by_author", (q) => q.eq("author", args.author))
+      .query("tasks")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .order("desc")
-      .paginate(args.paginationOpts);
+      .collect();
   },
 });
 ```
 
-Returns: `{ page: Doc[], isDone: boolean, continueCursor: string }`
+### Error Handling
 
-## Mutations
-
-### Write Operations
+Use ConvexError for user-facing errors:
 
 ```typescript
-// Insert
-const id = await ctx.db.insert("tasks", { name: "Buy milk" });
+import { ConvexError } from "convex/values";
 
-// Patch (shallow merge)
-await ctx.db.patch(taskId, { completed: true });
-
-// Replace (full replacement)
-await ctx.db.replace(taskId, { name: "Buy milk", completed: false });
-
-// Delete
-await ctx.db.delete(taskId);
-```
-
-## Actions
-
-### Node.js Actions
-
-```typescript
-"use node";
-
-import { action } from "./_generated/server";
-
-export const fetchData = action({
-  args: {},
+export const updateTask = mutation({
+  args: {
+    taskId: v.id("tasks"),
+    title: v.string(),
+  },
   returns: v.null(),
   handler: async (ctx, args) => {
-    // Can use Node.js built-in modules
-    // Cannot use ctx.db
+    const task = await ctx.db.get(args.taskId);
+    
+    if (!task) {
+      throw new ConvexError({
+        code: "NOT_FOUND",
+        message: "Task not found",
+      });
+    }
+    
+    await ctx.db.patch(args.taskId, { title: args.title });
     return null;
   },
 });
 ```
 
-**Important:**
-- Add `"use node";` for Node.js built-in modules
-- Never use `ctx.db` in actions
-- Add `@types/node` to package.json when using Node modules
+### Avoiding Write Conflicts (Optimistic Concurrency Control)
 
-## TypeScript Guidelines
-
-### Type Safety
+Convex uses OCC. Follow these patterns to minimize conflicts:
 
 ```typescript
-import { Doc, Id } from "./_generated/dataModel";
-
-// Use Id<'tableName'> for document IDs
-const getUserById = async (userId: Id<"users">) => {
-  return await ctx.db.get(userId);
-};
-
-// Use Record with proper types
-const record: Record<Id<"users">, string> = {};
-
-// Use as const for discriminated unions
-type Result =
-  | { kind: "error" as const; message: string }
-  | { kind: "success" as const; value: number };
-```
-
-## File Storage
-
-```typescript
-// Get file URL
-const url = await ctx.storage.getUrl(fileId); // Returns null if not found
-
-// Get file metadata (query _storage table)
-type FileMetadata = {
-  _id: Id<"_storage">;
-  _creationTime: number;
-  contentType?: string;
-  sha256: string;
-  size: number;
-};
-
-const metadata: FileMetadata | null = await ctx.db.system.get(fileId);
-```
-
-## Scheduling
-
-### Cron Jobs
-
-```typescript
-import { cronJobs } from "convex/server";
-import { internal } from "./_generated/api";
-
-const crons = cronJobs();
-
-// Run every 2 hours
-crons.interval("cleanup", { hours: 2 }, internal.crons.cleanup, {});
-
-export default crons;
-```
-
-Only use `crons.interval` or `crons.cron` (not hourly/daily/weekly helpers).
-
-## HTTP Endpoints
-
-```typescript
-import { httpRouter } from "convex/server";
-import { httpAction } from "./_generated/server";
-
-const http = httpRouter();
-
-http.route({
-  path: "/api/echo",
-  method: "POST",
-  handler: httpAction(async (ctx, req) => {
-    const body = await req.bytes();
-    return new Response(body, { status: 200 });
-  }),
-});
-
-export default http;
-```
-
-## Common Patterns
-
-### AI Response Generation
-
-```typescript
-export const sendMessage = mutation({
-  args: { channelId: v.id("channels"), content: v.string() },
+// GOOD: Make mutations idempotent
+export const completeTask = mutation({
+  args: { taskId: v.id("tasks") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await ctx.db.insert("messages", { ...args });
-    // Schedule async processing
-    await ctx.scheduler.runAfter(0, internal.ai.generateResponse, {
-      channelId: args.channelId,
+    const task = await ctx.db.get(args.taskId);
+    
+    // Early return if already complete (idempotent)
+    if (!task || task.status === "completed") {
+      return null;
+    }
+    
+    await ctx.db.patch(args.taskId, {
+      status: "completed",
+      completedAt: Date.now(),
     });
     return null;
   },
 });
-```
 
-### Context Loading
-
-```typescript
-export const loadContext = internalQuery({
-  args: { channelId: v.id("channels") },
-  returns: v.array(v.object({ role: v.string(), content: v.string() })),
+// GOOD: Patch directly without reading first when possible
+export const updateNote = mutation({
+  args: { id: v.id("notes"), content: v.string() },
+  returns: v.null(),
   handler: async (ctx, args) => {
-    const messages = await ctx.db
-      .query("messages")
-      .withIndex("by_channel", (q) => q.eq("channelId", args.channelId))
-      .order("desc")
-      .take(10);
+    // Patch directly - ctx.db.patch throws if document doesn't exist
+    await ctx.db.patch(args.id, { content: args.content });
+    return null;
+  },
+});
 
-    return messages.map(m => ({
-      role: m.authorId ? "user" : "assistant",
-      content: m.content
-    }));
+// GOOD: Use Promise.all for parallel independent updates
+export const reorderItems = mutation({
+  args: { itemIds: v.array(v.id("items")) },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const updates = args.itemIds.map((id, index) =>
+      ctx.db.patch(id, { order: index })
+    );
+    await Promise.all(updates);
+    return null;
   },
 });
 ```
 
+### TypeScript Best Practices
+
+```typescript
+import { Id, Doc } from "./_generated/dataModel";
+
+// Use Id type for document references
+type UserId = Id<"users">;
+
+// Use Doc type for full documents
+type User = Doc<"users">;
+
+// Define Record types properly
+const userScores: Record<Id<"users">, number> = {};
+```
+
+### Internal vs Public Functions
+
+```typescript
+// Public function - exposed to clients
+export const getUser = query({
+  args: { userId: v.id("users") },
+  returns: v.union(v.null(), v.object({ /* ... */ })),
+  handler: async (ctx, args) => {
+    // ...
+  },
+});
+
+// Internal function - only callable from other Convex functions
+export const _updateUserStats = internalMutation({
+  args: { userId: v.id("users") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    // ...
+  },
+});
+```
+
+## Examples
+
+### Complete CRUD Pattern
+
+```typescript
+// convex/tasks.ts
+import { query, mutation } from "./_generated/server";
+import { v } from "convex/values";
+import { ConvexError } from "convex/values";
+
+const taskValidator = v.object({
+  _id: v.id("tasks"),
+  _creationTime: v.number(),
+  title: v.string(),
+  completed: v.boolean(),
+  userId: v.id("users"),
+});
+
+export const list = query({
+  args: { userId: v.id("users") },
+  returns: v.array(taskValidator),
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("tasks")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+  },
+});
+
+export const create = mutation({
+  args: {
+    title: v.string(),
+    userId: v.id("users"),
+  },
+  returns: v.id("tasks"),
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("tasks", {
+      title: args.title,
+      completed: false,
+      userId: args.userId,
+    });
+  },
+});
+
+export const update = mutation({
+  args: {
+    taskId: v.id("tasks"),
+    title: v.optional(v.string()),
+    completed: v.optional(v.boolean()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const { taskId, ...updates } = args;
+    
+    // Remove undefined values
+    const cleanUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, v]) => v !== undefined)
+    );
+    
+    if (Object.keys(cleanUpdates).length > 0) {
+      await ctx.db.patch(taskId, cleanUpdates);
+    }
+    return null;
+  },
+});
+
+export const remove = mutation({
+  args: { taskId: v.id("tasks") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.taskId);
+    return null;
+  },
+});
+```
+
+## Best Practices
+
+- Never run `npx convex deploy` unless explicitly instructed
+- Never run any git commands unless explicitly instructed
+- Always define return validators for functions
+- Use indexes for all queries that filter data
+- Make mutations idempotent to handle retries gracefully
+- Use ConvexError for user-facing error messages
+- Organize functions by domain (users.ts, tasks.ts, etc.)
+- Use internal functions for sensitive operations
+- Leverage TypeScript's Id and Doc types
+
+## Common Pitfalls
+
+1. **Using filter instead of withIndex** - Always define indexes and use withIndex
+2. **Missing return validators** - Always specify the returns field
+3. **Non-idempotent mutations** - Check current state before updating
+4. **Reading before patching unnecessarily** - Patch directly when possible
+5. **Not handling null returns** - Document IDs might not exist
+
 ## References
 
-Built with professional engineering practices.
+- Convex Documentation: https://docs.convex.dev/
+- Convex LLMs.txt: https://docs.convex.dev/llms.txt
+- Best Practices: https://docs.convex.dev/understanding/best-practices/
+- Error Handling: https://docs.convex.dev/functions/error-handling
+- Write Conflicts: https://docs.convex.dev/error#1
