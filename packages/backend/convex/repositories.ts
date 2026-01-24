@@ -16,6 +16,7 @@ export const getRepositories = query({
       .collect()
 
     return repositories.map((r) => ({
+      _id: r._id,
       url: r.url,
       name: r.name,
     }))

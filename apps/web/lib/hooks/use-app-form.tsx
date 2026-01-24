@@ -2,6 +2,7 @@ import { createFormHook, createFormHookContexts } from "@tanstack/react-form"
 import {
   ControlledArrayField,
   ControlledInput,
+  ControlledNumberInput,
   ControlledSelect,
   ControlledSwitch,
   ControlledTextarea,
@@ -23,6 +24,7 @@ const { useAppForm } = createFormHook({
     ControlledTextareaWithVoice,
     ControlledSelect,
     ControlledSwitch,
+    ControlledNumberInput,
     ControlledArrayField,
   },
   formComponents: {

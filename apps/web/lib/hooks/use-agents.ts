@@ -1,11 +1,7 @@
 "use client"
 
 import { useMutation } from "@tanstack/react-query"
-import {
-  useAction,
-  useMutation as useConvexMutation,
-  useQuery,
-} from "convex/react"
+import { useAction, useMutation as useConvexMutation } from "convex/react"
 import { useEffect, useState } from "react"
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
@@ -56,14 +52,9 @@ function dbAgentToApiFormat(dbAgent: {
   }
 }
 
-export function useAgent(
-  id: string,
-  initialData?: (Agent & { simulation: boolean }) | null
-) {
+export function useAgent(id: string, initialData?: Agent | null) {
   const [initialSyncDone, setInitialSyncDone] = useState(false)
-  const [actionData, setActionData] = useState<
-    (Agent & { simulation: boolean }) | null
-  >(null)
+  const [actionData, setActionData] = useState<Agent | null>(null)
   const [syncError, setSyncError] = useState<string | null>(null)
 
   // Convex query for reactive database updates
@@ -81,7 +72,7 @@ export function useAgent(
         setSyncError(null)
         const result = await getAgentById({ agentId: id })
         if (result.agent) {
-          setActionData({ ...result.agent, simulation: result.simulation })
+          setActionData(result.agent)
         } else {
           setActionData(null)
         }
@@ -99,13 +90,11 @@ export function useAgent(
   }, [getAgentById, id, initialSyncDone])
 
   // Determine what data to show
-  // Prefer action data (from sync) as it includes simulation status
+  // Prefer action data (from sync)
   // Fall back to database query result
-  const data: (Agent & { simulation: boolean }) | null =
+  const data: Agent | null =
     actionData ??
-    (dbResult
-      ? { ...dbAgentToApiFormat(dbResult), simulation: false }
-      : (initialData ?? null))
+    (dbResult ? dbAgentToApiFormat(dbResult) : (initialData ?? null))
 
   // Return in the same format as the old hook
   return {
@@ -116,14 +105,77 @@ export function useAgent(
 }
 
 export function useAgentConversation(id: string) {
-  const conversationData = useQuery(api.conversations.getByAgentId, {
+  const [initialSyncDone, setInitialSyncDone] = useState(false)
+  const [actionData, setActionData] = useState<AgentConversation | null>(null)
+  const [syncError, setSyncError] = useState<string | null>(null)
+
+  // Convex query for reactive database updates
+  const dbResult = useStableQuery(api.conversations.getByAgentId, {
     agentId: id,
   })
 
+  // Convex action for syncing from Cursor API
+  const getConversation = useAction(api.cursor.getConversation)
+
+  // Initial sync on mount (if no data in DB, fetches from Cursor API)
+  useEffect(() => {
+    if (initialSyncDone || !id) return
+
+    // Only try to fetch from API if database query has finished and returned null
+    // useStableQuery returns undefined while loading, null when done with no result
+    if (dbResult === undefined) return // Still loading from DB
+
+    const doInitialSync = async () => {
+      try {
+        setSyncError(null)
+        const result = await getConversation({ agentId: id })
+        if (result.conversation) {
+          setActionData(result.conversation)
+        } else {
+          setActionData(null)
+        }
+        setInitialSyncDone(true)
+      } catch (err) {
+        console.error("Failed to sync conversation:", err)
+        setSyncError(
+          err instanceof Error ? err.message : "Failed to sync conversation"
+        )
+        setActionData(null)
+        setInitialSyncDone(true)
+      }
+    }
+
+    // Only fetch from API if DB query returned null (no conversation found)
+    if (dbResult === null) {
+      void doInitialSync()
+    } else {
+      // We have data from DB, mark sync as done
+      setInitialSyncDone(true)
+    }
+  }, [getConversation, id, initialSyncDone, dbResult])
+
+  // Determine what data to show
+  // Prefer database result (reactive updates), fall back to action data
+  const conversation: AgentConversation | null = dbResult
+    ? {
+        id: dbResult.conversationId,
+        messages: dbResult.messages,
+      }
+    : actionData
+      ? {
+          id: actionData.id,
+          messages: actionData.messages,
+        }
+      : null
+
+  // Loading state: loading if DB query is still loading OR if we're waiting for API sync
+  const isLoading =
+    dbResult === undefined || (!initialSyncDone && dbResult === null)
+
   return {
-    data: conversationData,
-    isLoading: !conversationData,
-    error: null,
+    data: conversation,
+    isLoading,
+    error: syncError,
   }
 }
 
@@ -156,9 +208,8 @@ export function useAgentConversationWithCursor(
     enabled?: boolean
   }
 ) {
-  const [conversationData, setConversationData] = useState<
-    (AgentConversation & { simulation: boolean }) | null
-  >(null)
+  const [conversationData, setConversationData] =
+    useState<AgentConversation | null>(null)
   const [nextCursor, setNextCursor] = useState<string | undefined>(undefined)
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
@@ -186,10 +237,7 @@ export function useAgentConversationWithCursor(
         })
         if (!cancelled) {
           if (result.conversation) {
-            setConversationData({
-              ...result.conversation,
-              simulation: result.simulation,
-            })
+            setConversationData(result.conversation)
             setNextCursor(result.nextCursor)
           } else {
             setConversationData(null)
@@ -234,10 +282,7 @@ export function useAgentConversationWithCursor(
         // Merge new messages with existing ones
         setConversationData((prev) => {
           if (!prev) {
-            return {
-              ...result.conversation!,
-              simulation: result.simulation,
-            }
+            return result.conversation!
           }
 
           // Combine messages, avoiding duplicates
@@ -249,7 +294,6 @@ export function useAgentConversationWithCursor(
           return {
             ...prev,
             messages: [...prev.messages, ...newMessages],
-            simulation: result.simulation,
           }
         })
         setNextCursor(result.nextCursor)

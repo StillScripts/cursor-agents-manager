@@ -16,7 +16,6 @@ import { useEffect, useRef, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { PageHeader } from "@/app/(authenticated)/_components/page-header"
-import { SimulationBanner } from "@/app/(authenticated)/_components/simulation-banner"
 import { StatusBadge } from "@/app/(authenticated)/_components/status-badge"
 import { ConversationSection } from "@/app/(authenticated)/agent/_components/conversation-section"
 import { FollowUpMessageInput } from "@/app/(authenticated)/agent/_components/follow-up-message-input"
@@ -49,7 +48,7 @@ export function AgentDetail({
   initialAgent,
 }: {
   agentId: string
-  initialAgent?: (Agent & { simulation: boolean }) | null
+  initialAgent?: Agent | null
 }) {
   const router = useRouter()
   const [openItems, setOpenItems] = useState<string[]>(["summary"])
@@ -169,7 +168,6 @@ export function AgentDetail({
   return (
     <>
       <PageHeader title={agent.name} showBack expandable />
-      {agent.simulation && <SimulationBanner />}
 
       <div className="p-4 space-y-4">
         <Accordion value={openItems} onValueChange={setOpenItems}>

@@ -6,26 +6,40 @@ import { Clock, Play, Square } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import type { Id } from "@/convex/_generated/dataModel"
-import {
-  activeTimerAtom,
-  descriptionInputAtom,
-  taskInputAtom,
-} from "@/lib/atoms"
+import { descriptionInputAtom, taskInputAtom } from "@/lib/atoms"
+import { useRepositories } from "@/lib/hooks/use-repositories"
 import { useTasks } from "@/lib/hooks/use-tasks"
-import { useSaveTimeLog, useTodayTimeLogs } from "@/lib/hooks/use-time-logs"
+import {
+  useActiveTimeLog,
+  useSaveTimeLog,
+  useStopTimeLog,
+  useTodayTimeLogs,
+} from "@/lib/hooks/use-time-logs"
 
 export function TimerDisplay() {
-  const [activeTimer, setActiveTimer] = useAtom(activeTimerAtom)
   const [taskInput, setTaskInput] = useAtom(taskInputAtom)
   const [descriptionInput, setDescriptionInput] = useAtom(descriptionInputAtom)
+  const [selectedRepositoryUrl, setSelectedRepositoryUrl] = useState<
+    string | undefined
+  >(undefined)
   const [elapsed, setElapsed] = useState(0)
   const [isStarting, setIsStarting] = useState(false)
   const [isStopping, setIsStopping] = useState(false)
 
   const { tasks, createTask } = useTasks()
+  const { repositories } = useRepositories()
+  const { activeTimeLog, hasActiveTask } = useActiveTimeLog()
   const { saveTimeLog } = useSaveTimeLog()
+  const { stopTimeLog } = useStopTimeLog()
   const { timeLogs: todayTimeLogs } = useTodayTimeLogs()
 
   // Calculate today's total from Convex timeLogs
@@ -35,21 +49,39 @@ export function TimerDisplay() {
       0
     ) ?? 0
 
+  // Update elapsed time based on active time log from Convex
   useEffect(() => {
-    if (!activeTimer) {
+    if (!activeTimeLog) {
       setElapsed(0)
       return
     }
 
     const interval = setInterval(() => {
-      setElapsed(Date.now() - activeTimer.startTime)
+      setElapsed(Date.now() - activeTimeLog.startTime)
     }, 100)
 
     return () => clearInterval(interval)
-  }, [activeTimer])
+  }, [activeTimeLog])
+
+  // Sync task input with active time log
+  useEffect(() => {
+    if (activeTimeLog) {
+      setTaskInput(activeTimeLog.task.title)
+      setDescriptionInput(activeTimeLog.task.description || "")
+      // Find the repository URL from the repositoryId
+      const repo = repositories?.find(
+        (r) => r._id === activeTimeLog.task.repositoryId
+      )
+      setSelectedRepositoryUrl(repo?.url)
+    } else {
+      setTaskInput("")
+      setDescriptionInput("")
+      setSelectedRepositoryUrl(undefined)
+    }
+  }, [activeTimeLog, setTaskInput, setDescriptionInput, repositories])
 
   const handleStart = async () => {
-    if (!taskInput.trim() || isStarting) return
+    if (!taskInput.trim() || isStarting || hasActiveTask) return
 
     setIsStarting(true)
     try {
@@ -62,46 +94,58 @@ export function TimerDisplay() {
       if (existingTask) {
         taskId = existingTask._id
       } else {
-        taskId = await createTask({ title, description })
+        // Map URL to repository ID
+        const repositoryId = selectedRepositoryUrl
+          ? repositories?.find((r) => r.url === selectedRepositoryUrl)?._id
+          : undefined
+
+        taskId = await createTask({
+          title,
+          description,
+          repositoryId,
+        })
       }
 
-      setActiveTimer({
-        title,
-        description,
-        startTime: Date.now(),
+      // Create time log in Convex (without endTime = ongoing task)
+      await saveTimeLog({
         taskId,
+        startTime: Date.now(),
+        // No endTime = ongoing task
       })
     } catch (error) {
       console.error("Failed to start timer:", error)
+      // Show error to user if they already have an active task
+      if (
+        error instanceof Error &&
+        error.message.includes("already have an active task")
+      ) {
+        alert(error.message)
+      }
     } finally {
       setIsStarting(false)
     }
   }
 
   const handleStop = async () => {
-    if (!activeTimer || !activeTimer.taskId || isStopping) return
+    if (!activeTimeLog || isStopping) return
 
     setIsStopping(true)
     try {
       const endTime = Date.now()
 
-      await saveTimeLog({
-        taskId: activeTimer.taskId as Id<"tasks">,
-        startTime: activeTimer.startTime,
+      // Stop the active time log by setting endTime
+      await stopTimeLog({
+        timeLogId: activeTimeLog._id,
         endTime,
       })
-
-      setActiveTimer(null)
-      setTaskInput("")
-      setDescriptionInput("")
     } catch (error) {
-      console.error("Failed to save time log:", error)
+      console.error("Failed to stop time log:", error)
     } finally {
       setIsStopping(false)
     }
   }
 
-  const isRunning = activeTimer !== null
+  const isRunning = hasActiveTask && activeTimeLog !== null
 
   return (
     <div className="flex flex-col items-center gap-8">
@@ -121,14 +165,14 @@ export function TimerDisplay() {
         )}
       </div>
 
-      {isRunning && (
+      {isRunning && activeTimeLog && (
         <div className="text-center animate-in fade-in slide-in-from-bottom-2">
           <p className="text-xl font-medium text-foreground">
-            {activeTimer.title}
+            {activeTimeLog.task.title}
           </p>
-          {activeTimer.description && (
+          {activeTimeLog.task.description && (
             <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
-              {activeTimer.description}
+              {activeTimeLog.task.description}
             </p>
           )}
         </div>
@@ -150,6 +194,32 @@ export function TimerDisplay() {
             rows={3}
             className="text-sm bg-secondary border-0 placeholder:text-muted-foreground/50 focus-visible:ring-primary resize-none"
           />
+          {repositories && repositories.length > 0 && (
+            <Select
+              value={selectedRepositoryUrl || ""}
+              onValueChange={(value) =>
+                setSelectedRepositoryUrl(value || undefined)
+              }
+            >
+              <SelectTrigger className="h-12 w-full text-sm bg-secondary border-0 focus-visible:ring-primary">
+                {selectedRepositoryUrl ? (
+                  <SelectValue />
+                ) : (
+                  <span className="text-muted-foreground">
+                    Project Codebase (optional)
+                  </span>
+                )}
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {repositories.map((repo) => (
+                  <SelectItem key={repo.url} value={repo.url}>
+                    {repo.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       )}
 
@@ -157,7 +227,11 @@ export function TimerDisplay() {
       <Button
         size="lg"
         onClick={isRunning ? handleStop : handleStart}
-        disabled={(!isRunning && !taskInput.trim()) || isStarting || isStopping}
+        disabled={
+          (!isRunning && (!taskInput.trim() || hasActiveTask)) ||
+          isStarting ||
+          isStopping
+        }
         className={`h-14 px-10 text-lg font-medium rounded-full transition-all ${
           isRunning
             ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground"

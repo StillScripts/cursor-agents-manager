@@ -15,4 +15,14 @@ crons.daily(
   internal.syncAgents.syncRecentAgents
 )
 
+// Run hourly to check and execute recurring jobs
+// This checks for launch agents with recurring jobs that are due to run and executes them
+crons.hourly(
+  "check-recurring-jobs",
+  {
+    minuteUTC: 0, // Run at the top of every hour
+  },
+  internal.launchAgents.checkAndExecuteRecurringJobs
+)
+
 export default crons

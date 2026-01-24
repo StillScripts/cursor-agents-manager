@@ -10,8 +10,36 @@ import {
   extractUserMessagesAndLastAssistant,
 } from "validators"
 import { api, internal } from "./_generated/api"
-import { action } from "./_generated/server"
+import { action, internalAction } from "./_generated/server"
 import { checkRateLimit, openAIRateLimiters } from "./rateLimiting"
+
+/**
+ * Internal action to get and decrypt OpenAI API key for a user
+ * Throws an error if no API key is configured or decryption fails
+ */
+export const getUserOpenAIKey = internalAction({
+  args: {
+    userId: v.string(),
+  },
+  handler: async (ctx, args): Promise<string> => {
+    const record = await ctx.runQuery(
+      internal.apiKeys.getApiKeysRecordInternal,
+      {
+        userId: args.userId,
+      }
+    )
+
+    if (!record?.encryptedOpenaiApiKey) {
+      throw new Error("OpenAI API key not configured")
+    }
+
+    try {
+      return decryptData(record.encryptedOpenaiApiKey) as string
+    } catch {
+      throw new Error("Failed to decrypt OpenAI API key")
+    }
+  },
+})
 
 /**
  * Summarize a conversation using OpenAI
@@ -33,23 +61,12 @@ export const summarizeConversation = action({
     )
 
     // Get OpenAI API key
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
+    const openaiApiKey: string = await ctx.runAction(
+      internal.openAI.getUserOpenAIKey,
       {
         userId: authUser.userId,
       }
     )
-
-    if (!record?.encryptedOpenaiApiKey) {
-      throw new Error("OpenAI API key not configured")
-    }
-
-    let openaiApiKey: string
-    try {
-      openaiApiKey = decryptData(record.encryptedOpenaiApiKey)
-    } catch {
-      throw new Error("Failed to decrypt OpenAI API key")
-    }
 
     // Get conversation (the action handles API key internally)
     const conversationData = await ctx.runAction(api.cursor.getConversation, {
@@ -69,15 +86,6 @@ export const summarizeConversation = action({
       conversation.messages.length === 0
     ) {
       throw new Error("No conversation messages to summarize")
-    }
-
-    // Check if this is a placeholder conversation (simulation mode only)
-    if (
-      conversationData.simulation &&
-      conversation.messages.length === 1 &&
-      conversation.messages[0]?.id === "msg_placeholder"
-    ) {
-      throw new Error("Conversation not found")
     }
 
     // Extract only user messages and last assistant message from each turn
@@ -143,6 +151,135 @@ Summary:`,
 })
 
 /**
+ * Summarize today's work session using OpenAI
+ * Analyzes all time logs from today (Australia/Brisbane timezone) and generates a summary
+ */
+export const summarizeTodayWork = action({
+  args: {},
+  handler: async (ctx): Promise<{ summary: string }> => {
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
+
+    // Check rate limit before calling OpenAI API
+    await checkRateLimit(
+      ctx,
+      openAIRateLimiters.summarizeTodayWork,
+      authUser.userId
+    )
+
+    // Get OpenAI API key
+    const openaiApiKey: string = await ctx.runAction(
+      internal.openAI.getUserOpenAIKey,
+      {
+        userId: authUser.userId,
+      }
+    )
+
+    // Get today's time logs (already filtered by Brisbane timezone)
+    const todayTimeLogs = await ctx.runQuery(api.timeLogs.getTodayTimeLogs)
+
+    if (!todayTimeLogs || todayTimeLogs.length === 0) {
+      throw new Error("No time logs found for today")
+    }
+
+    // Get all tasks to map task IDs to task information
+    const tasks = await ctx.runQuery(api.tasks.getTasks)
+    type Task = (typeof tasks)[number]
+
+    const taskMap = new Map(
+      tasks.map((task: Task) => [task._id, task] as const)
+    ) as Map<string, Task>
+
+    // Format time logs with task information
+    const workSessions = todayTimeLogs.map(
+      (log: (typeof todayTimeLogs)[number]) => {
+        const task = taskMap.get(log.taskId)
+        const duration = log.endTime - log.startTime
+        const durationMinutes = Math.round(duration / 60000)
+        const startDate = new Date(log.startTime)
+        const endDate = new Date(log.endTime)
+
+        return {
+          task: task?.title ?? "Unknown Task",
+          description: task?.description,
+          startTime: startDate.toISOString(),
+          endTime: endDate.toISOString(),
+          duration: `${durationMinutes} minutes`,
+          activityType: log.activityType,
+        }
+      }
+    )
+
+    // Calculate total time
+    const totalMinutes = todayTimeLogs.reduce(
+      (sum: number, log: (typeof todayTimeLogs)[number]) =>
+        sum + Math.round((log.endTime - log.startTime) / 60000),
+      0
+    )
+    const totalHours = Math.floor(totalMinutes / 60)
+    const remainingMinutes = totalMinutes % 60
+
+    // Format work sessions for AI
+    const workSessionsText = workSessions
+      .map((session: (typeof workSessions)[number], index: number) => {
+        const lines = [
+          `Session ${index + 1}:`,
+          `- Task: ${session.task}`,
+          session.description ? `- Description: ${session.description}` : null,
+          `- Start: ${session.startTime}`,
+          `- End: ${session.endTime}`,
+          `- Duration: ${session.duration}`,
+          session.activityType
+            ? `- Activity Type: ${session.activityType}`
+            : null,
+        ]
+        return lines.filter(Boolean).join("\n")
+      })
+      .join("\n\n")
+
+    try {
+      // Generate summary using AI SDK with user's API key
+      const openaiProvider = createOpenAI({ apiKey: openaiApiKey })
+      const { text: summary } = await generateText({
+        model: openaiProvider("gpt-4o-mini"),
+        prompt: `Please provide a concise summary of today's work sessions. Focus on:
+- Overall productivity and accomplishments
+- Main tasks worked on
+- Time distribution across different tasks
+- Any patterns or insights about the work day
+
+Total time worked today: ${totalHours} hours and ${remainingMinutes} minutes
+
+Work Sessions:
+${workSessionsText}
+
+Summary:`,
+      })
+
+      // Save summary to database
+      await ctx.runMutation(internal.workSummaries.saveTodayWorkSummary, {
+        userId: authUser.userId,
+        summary,
+      })
+
+      return { summary }
+    } catch (error) {
+      console.error("[Convex summarizeTodayWork] Error:", error)
+      if (error instanceof OpenAI.APIError) {
+        if (error.status === 401) {
+          throw new Error("Invalid OpenAI API key")
+        }
+        if (error.status === 429) {
+          throw new Error("OpenAI rate limit exceeded")
+        }
+      }
+      throw new Error("Failed to generate summary")
+    }
+  },
+})
+
+/**
  * Transcribe audio using OpenAI Whisper
  */
 export const transcribeAudio = action({
@@ -163,23 +300,12 @@ export const transcribeAudio = action({
     )
 
     // Get OpenAI API key
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
+    const openaiApiKey: string = await ctx.runAction(
+      internal.openAI.getUserOpenAIKey,
       {
         userId: authUser.userId,
       }
     )
-
-    if (!record?.encryptedOpenaiApiKey) {
-      throw new Error("OpenAI API key not configured")
-    }
-
-    let openaiApiKey: string
-    try {
-      openaiApiKey = decryptData(record.encryptedOpenaiApiKey)
-    } catch {
-      throw new Error("Failed to decrypt OpenAI API key")
-    }
 
     try {
       // Convert base64 to buffer
@@ -256,23 +382,12 @@ export const textToSpeech = action({
     await checkRateLimit(ctx, openAIRateLimiters.textToSpeech, authUser.userId)
 
     // Get OpenAI API key
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
+    const openaiApiKey: string = await ctx.runAction(
+      internal.openAI.getUserOpenAIKey,
       {
         userId: authUser.userId,
       }
     )
-
-    if (!record?.encryptedOpenaiApiKey) {
-      throw new Error("OpenAI API key not configured")
-    }
-
-    let openaiApiKey: string
-    try {
-      openaiApiKey = decryptData(record.encryptedOpenaiApiKey)
-    } catch {
-      throw new Error("Failed to decrypt OpenAI API key")
-    }
 
     try {
       const openai = new OpenAI({ apiKey: openaiApiKey })
@@ -321,27 +436,13 @@ export const improvePrompt = action({
       internal.auth.getAuthenticatedUserInternal
     )
 
-    // Check rate limit before calling OpenAI API
-    await checkRateLimit(ctx, openAIRateLimiters.improvePrompt, authUser.userId)
-
     // Get OpenAI API key
-    const record = await ctx.runQuery(
-      internal.apiKeys.getApiKeysRecordInternal,
+    const openaiApiKey: string = await ctx.runAction(
+      internal.openAI.getUserOpenAIKey,
       {
         userId: authUser.userId,
       }
     )
-
-    if (!record?.encryptedOpenaiApiKey) {
-      throw new Error("OpenAI API key not configured")
-    }
-
-    let openaiApiKey: string
-    try {
-      openaiApiKey = decryptData(record.encryptedOpenaiApiKey)
-    } catch {
-      throw new Error("Failed to decrypt OpenAI API key")
-    }
 
     // Validate input
     if (!args.text || args.text.trim().length === 0) {
@@ -368,7 +469,6 @@ For the branch name:
 - If this is a bug fix, use format: hotfix/slug (e.g., hotfix/fix-login-error)
 - Create a short, descriptive slug (lowercase, use hyphens instead of spaces)
 - The slug should be 2-4 words that summarize the task
-- If a Jira ticket is provided, use the ticket number in the slug (e.g., feature/BE-2708-tablet-design-improvements)
 
 Original task description:
 ${args.text}

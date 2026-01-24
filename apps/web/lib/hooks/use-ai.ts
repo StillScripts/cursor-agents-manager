@@ -3,6 +3,20 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useAction } from "convex/react"
 import { api } from "@/convex/_generated/api"
+import type { Id } from "@/convex/_generated/dataModel"
+import { useStableQuery } from "@/lib/hooks/use-stable-query"
+
+export type PlanningMessage = {
+  role: "user" | "assistant"
+  content: string
+}
+
+export type WorkSummary = {
+  _id: Id<"workSummaries">
+  day: string
+  summary: string
+  createdAt: number
+}
 
 export function useSummarizeConversation() {
   const queryClient = useQueryClient()
@@ -20,6 +34,34 @@ export function useSummarizeConversation() {
     onSuccess: () => {
       // Invalidate queries to refetch agent data with new summary and audio
       queryClient.invalidateQueries({ queryKey: ["agents"] })
+    },
+  })
+}
+
+export function useTodayWorkSummary() {
+  const workSummary = useStableQuery(api.workSummaries.getTodayWorkSummary)
+
+  return {
+    workSummary,
+    isLoading: workSummary === undefined,
+    hasSummary: workSummary !== null && workSummary !== undefined,
+  }
+}
+
+export function useSummarizeTodayWork() {
+  const queryClient = useQueryClient()
+  const summarizeAction = useAction(api.openAI.summarizeTodayWork)
+
+  return useMutation({
+    mutationFn: async () => {
+      const result = await summarizeAction({})
+      return {
+        summary: result.summary,
+      }
+    },
+    onSuccess: () => {
+      // Invalidate work summary query to refetch the saved summary
+      queryClient.invalidateQueries({ queryKey: ["workSummaries"] })
     },
   })
 }
@@ -72,8 +114,15 @@ export function useImprovePrompt() {
   const improvePromptAction = useAction(api.openAI.improvePrompt)
 
   return useMutation({
-    mutationFn: async (text: string) => {
-      const result = await improvePromptAction({ text })
+    mutationFn: async ({
+      text,
+    }: {
+      text: string
+      messages?: PlanningMessage[]
+    }) => {
+      const result = await improvePromptAction({
+        text,
+      })
       return {
         text: result.text,
         branchName: result.branchName,

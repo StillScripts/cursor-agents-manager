@@ -69,6 +69,7 @@ export default defineSchema({
     userId: v.string(),
     title: v.string(),
     description: v.optional(v.string()),
+    repositoryId: v.optional(v.id("repositories")),
     createdAt: v.number(),
   })
     .index("by_user", ["userId"])
@@ -79,13 +80,22 @@ export default defineSchema({
     taskId: v.id("tasks"),
     activityType: v.optional(v.string()),
     startTime: v.number(),
-    endTime: v.number(),
+    endTime: v.optional(v.number()), // Optional - null means task is ongoing
     createdAt: v.number(),
   })
     .index("by_user", ["userId"])
     .index("by_task", ["taskId"])
     .index("by_user_task", ["userId", "taskId"])
     .index("by_user_created", ["userId", "createdAt"]),
+
+  workSummaries: defineTable({
+    userId: v.string(),
+    day: v.string(), // Date in readable format (e.g., "January 15, 2024" or "2024-01-15")
+    summary: v.string(), // AI-generated summary text
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_day", ["userId", "day"]), // Ensures one summary per user per day
 
   conversations: defineTable({
     // External agent ID from Cursor (e.g., bc-109be4f0-c6b3-4112-8a2e-4ef48e65486d)
@@ -115,4 +125,59 @@ export default defineSchema({
     .index("by_agent", ["agentId"])
     .index("by_user_agent", ["userId", "agentId"])
     .index("by_conversation", ["conversationId"]),
+
+  launchAgents: defineTable({
+    userId: v.string(),
+    // Agent configuration for launching
+    prompt: v.object({
+      text: v.string(),
+      images: v.optional(
+        v.array(
+          v.object({
+            data: v.string(),
+            dimension: v.object({
+              width: v.number(),
+              height: v.number(),
+            }),
+          })
+        )
+      ),
+    }),
+    source: v.object({
+      repository: v.string(),
+      ref: v.optional(v.string()),
+    }),
+    model: v.optional(v.string()),
+    target: v.optional(
+      v.object({
+        autoCreatePr: v.boolean(),
+        openAsCursorGithubApp: v.optional(v.boolean()),
+        skipReviewerRequest: v.optional(v.boolean()),
+        branchName: v.optional(v.string()),
+      })
+    ),
+    taskId: v.optional(v.id("tasks")),
+    // Recurring job parameters (only present if this is a recurring job)
+    recurringJob: v.optional(
+      v.object({
+        // Interval in days between executions
+        intervalDays: v.number(),
+        // Total number of times to repeat (including the first execution)
+        repeatCount: v.number(),
+        // Current execution count (starts at 1, increments after each execution)
+        currentCount: v.number(),
+        // Whether the job is active (false when completed or cancelled)
+        isActive: v.boolean(),
+      })
+    ),
+    // Next scheduled execution time (milliseconds since epoch)
+    // Only set for recurring jobs, null otherwise
+    nextRunAt: v.optional(v.number()),
+    // The agent ID that was created from this launch (if successful)
+    agentId: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_next_run", ["nextRunAt"])
+    .index("by_user_created", ["userId", "createdAt"]),
 })

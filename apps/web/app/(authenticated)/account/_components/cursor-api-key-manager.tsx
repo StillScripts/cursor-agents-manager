@@ -120,7 +120,7 @@ export function CursorApiKeyManager() {
         <CardDescription>
           {apiKeyStatus.hasKey
             ? "Your API key is configured. The app will use live data from Cursor."
-            : "Add your Cursor API key to connect to live data. Without it, the app runs in simulation mode."}
+            : "Add your Cursor API key to connect to live data from Cursor."}
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-0 space-y-3">

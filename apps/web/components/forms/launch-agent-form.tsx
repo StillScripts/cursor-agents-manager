@@ -1,7 +1,6 @@
 "use client"
 
 import { useAction } from "convex/react"
-import { useAtomValue } from "jotai"
 import { AlertCircle, ExternalLink, Rocket, Settings } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -11,6 +10,7 @@ import {
   launchAgentFormSchema,
   type Model,
 } from "validators/cursor/launch-agent"
+import { NoCursorAccess } from "@/app/(authenticated)/_components/no-cursor-access"
 import { PageHeader } from "@/app/(authenticated)/_components/page-header"
 import {
   extractErrorMessage,
@@ -26,14 +26,14 @@ import {
 } from "@/components/ui/field"
 import { ImageUpload } from "@/components/ui/image-upload"
 import { api } from "@/convex/_generated/api"
-import type { Id } from "@/convex/_generated/dataModel"
-import { activeTimerAtom } from "@/lib/atoms"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 import { useBranches } from "@/lib/hooks/use-branches"
+import { useCursorKey } from "@/lib/hooks/use-cursor-key"
 import { useModels } from "@/lib/hooks/use-models"
 import { useOpenAIKey } from "@/lib/hooks/use-openai-key"
 import { useRepositories } from "@/lib/hooks/use-repositories"
 import { useTasks } from "@/lib/hooks/use-tasks"
+import { useActiveTimeLog } from "@/lib/hooks/use-time-logs"
 
 const RepositorySelectField = ({ field }: { field: any }) => {
   const { repositories, isLoading, hasRepositories } = useRepositories()
@@ -202,8 +202,9 @@ const TaskSelectField = ({ field }: { field: any }) => {
 export function LaunchAgentForm() {
   const router = useRouter()
   const launchAgentAction = useAction(api.cursor.launchAgent)
+  const { hasCursorKey, isLoading: isLoadingCursorKey } = useCursorKey()
   const { hasOpenAIKey } = useOpenAIKey()
-  const activeTimer = useAtomValue(activeTimerAtom)
+  const { activeTimeLog } = useActiveTimeLog()
   const { tasks } = useTasks()
 
   // Error state
@@ -211,19 +212,10 @@ export function LaunchAgentForm() {
 
   // Find matching task for active timer
   const getDefaultTaskTitle = (): string | undefined => {
-    if (!activeTimer || !tasks) return undefined
+    if (!activeTimeLog || !tasks) return undefined
 
-    // First try to match by taskId if available
-    if (activeTimer.taskId) {
-      const taskById = tasks.find(
-        (t) => t._id === (activeTimer.taskId as Id<"tasks">)
-      )
-      if (taskById) return taskById.title
-    }
-
-    // Otherwise match by title
-    const taskByTitle = tasks.find((t) => t.title === activeTimer.title)
-    return taskByTitle?.title
+    // Use the task from activeTimeLog
+    return activeTimeLog.task.title
   }
 
   // Default values for form reset
@@ -244,6 +236,11 @@ export function LaunchAgentForm() {
       branchName: "",
     },
     taskId: getDefaultTaskTitle(),
+    recurringJob: {
+      enabled: false,
+      intervalDays: undefined,
+      repeatCount: undefined,
+    },
   }
 
   // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
@@ -282,6 +279,16 @@ export function LaunchAgentForm() {
               }
             : undefined,
           taskId: actualTaskId,
+          ...(value.recurringJob?.enabled &&
+            value.recurringJob.intervalDays !== undefined && {
+              recurringJob: {
+                enabled: true,
+                intervalDays: value.recurringJob.intervalDays,
+                ...(value.recurringJob.repeatCount !== undefined && {
+                  repeatCount: value.recurringJob.repeatCount,
+                }),
+              },
+            }),
         }
 
         // Launch the agent via Convex action
@@ -306,6 +313,11 @@ export function LaunchAgentForm() {
   const isGitHubAccessError = errorMessage?.includes(
     "lack access to repository"
   )
+
+  // Show message if no cursor key is configured
+  if (!isLoadingCursorKey && !hasCursorKey) {
+    return <NoCursorAccess title="Launch Agent" />
+  }
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
@@ -441,6 +453,62 @@ export function LaunchAgentForm() {
                       />
                     )}
                   </form.AppField>
+                </FieldGroup>
+              </FieldSet>
+
+              <FieldSeparator />
+
+              <FieldSet>
+                <FieldLegend>Recurring Job</FieldLegend>
+                <FieldDescription>
+                  Schedule this agent to run automatically at regular intervals.
+                </FieldDescription>
+                <FieldGroup>
+                  <form.AppField name="recurringJob.enabled">
+                    {(field) => (
+                      <field.ControlledSwitch
+                        field={field}
+                        label="Create Recurring Job"
+                        description="Enable to automatically run this agent on a schedule"
+                      />
+                    )}
+                  </form.AppField>
+
+                  <form.Subscribe
+                    selector={(state) => [
+                      state.values.recurringJob?.enabled ?? false,
+                    ]}
+                  >
+                    {([isEnabled]) =>
+                      isEnabled ? (
+                        <>
+                          <form.AppField name="recurringJob.intervalDays">
+                            {(field) => (
+                              <field.ControlledNumberInput
+                                field={field}
+                                label="Interval (Days)"
+                                description="How many days between each execution"
+                                min={1}
+                                max={365}
+                              />
+                            )}
+                          </form.AppField>
+
+                          <form.AppField name="recurringJob.repeatCount">
+                            {(field) => (
+                              <field.ControlledNumberInput
+                                field={field}
+                                label="Repeat Count (Optional)"
+                                description="Total number of times to run (including the initial execution). Leave empty to run forever."
+                                min={1}
+                                max={100}
+                              />
+                            )}
+                          </form.AppField>
+                        </>
+                      ) : null
+                    }
+                  </form.Subscribe>
                 </FieldGroup>
               </FieldSet>
             </FieldGroup>

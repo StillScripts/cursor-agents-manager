@@ -6,6 +6,20 @@ import {
 } from "../../lib/convex-test-helpers"
 import { api } from "../_generated/api"
 
+// Helper function to calculate start of today in Brisbane timezone (UTC+10, no DST)
+// This matches the logic in getTodayTimeLogs
+function getBrisbaneTodayStart(): number {
+  const brisbaneOffsetMs = 10 * 60 * 60 * 1000
+  const brisbaneNow = new Date(Date.now() + brisbaneOffsetMs)
+  return (
+    Date.UTC(
+      brisbaneNow.getUTCFullYear(),
+      brisbaneNow.getUTCMonth(),
+      brisbaneNow.getUTCDate()
+    ) - brisbaneOffsetMs
+  )
+}
+
 describe("timeLogs", () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -61,7 +75,7 @@ describe("timeLogs", () => {
       expect(timeLogs).toEqual([])
     })
 
-    it("returns time logs for a specific task", async () => {
+    it("returns time logs for a specific task (only completed)", async () => {
       const asUser = createTestWithUser()
 
       // Create a task
@@ -69,7 +83,7 @@ describe("timeLogs", () => {
         title: "Test Task",
       })
 
-      // Create time logs
+      // Create completed time logs
       const now = Date.now()
       await asUser.mutation(api.timeLogs.saveTimeLog, {
         taskId,
@@ -85,7 +99,14 @@ describe("timeLogs", () => {
         activityType: "review",
       })
 
-      // Query time logs for the task
+      // Create an ongoing time log (should be filtered out)
+      await asUser.mutation(api.timeLogs.saveTimeLog, {
+        taskId,
+        startTime: now - 1800000,
+        // No endTime = ongoing
+      })
+
+      // Query time logs for the task - should only return completed ones
       const timeLogs = await asUser.query(api.timeLogs.getTimeLogsByTask, {
         taskId,
       })
@@ -93,6 +114,9 @@ describe("timeLogs", () => {
       expect(timeLogs).toHaveLength(2)
       expect(timeLogs[0].taskId).toBe(taskId)
       expect(timeLogs[1].taskId).toBe(taskId)
+      // Verify all returned logs have endTime
+      expect(timeLogs[0].endTime).toBeDefined()
+      expect(timeLogs[1].endTime).toBeDefined()
     })
 
     it("returns time logs ordered by createdAt descending", async () => {
@@ -164,7 +188,7 @@ describe("timeLogs", () => {
       expect(timeLogs).toEqual([])
     })
 
-    it("returns all time logs for authenticated user", async () => {
+    it("returns all time logs for authenticated user (only completed)", async () => {
       const asUser = createTestWithUser()
 
       // Create tasks
@@ -175,7 +199,7 @@ describe("timeLogs", () => {
         title: "Task 2",
       })
 
-      // Create time logs for different tasks
+      // Create completed time logs for different tasks
       const now = Date.now()
       await asUser.mutation(api.timeLogs.saveTimeLog, {
         taskId: task1,
@@ -191,12 +215,22 @@ describe("timeLogs", () => {
         activityType: "review",
       })
 
-      // Query all time logs
+      // Create an ongoing time log (should be filtered out)
+      await asUser.mutation(api.timeLogs.saveTimeLog, {
+        taskId: task1,
+        startTime: now - 1800000,
+        // No endTime = ongoing
+      })
+
+      // Query all time logs - should only return completed ones
       const timeLogs = await asUser.query(api.timeLogs.getAllTimeLogs)
 
       expect(timeLogs).toHaveLength(2)
       expect(timeLogs[0].taskId).toBe(task2)
       expect(timeLogs[1].taskId).toBe(task1)
+      // Verify all returned logs have endTime
+      expect(timeLogs[0].endTime).toBeDefined()
+      expect(timeLogs[1].endTime).toBeDefined()
     })
 
     it("returns time logs ordered by createdAt descending", async () => {
@@ -281,7 +315,7 @@ describe("timeLogs", () => {
       expect(timeLogs).toEqual([])
     })
 
-    it("returns only time logs from today", async () => {
+    it("returns only completed time logs from today", async () => {
       const asUser = createTestWithUser()
 
       // Create a task
@@ -289,16 +323,22 @@ describe("timeLogs", () => {
         title: "Test Task",
       })
 
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const todayStart = today.getTime()
+      // Use Brisbane timezone calculation to match implementation
+      const todayStart = getBrisbaneTodayStart()
 
-      // Create a time log from today
+      // Create a completed time log from today
       await asUser.mutation(api.timeLogs.saveTimeLog, {
         taskId,
         startTime: todayStart + 3600000, // 1 hour after midnight
         endTime: todayStart + 7200000, // 2 hours after midnight
         activityType: "coding",
+      })
+
+      // Create an ongoing time log from today (should be filtered out)
+      await asUser.mutation(api.timeLogs.saveTimeLog, {
+        taskId,
+        startTime: todayStart + 10800000, // 3 hours after midnight
+        // No endTime = ongoing
       })
 
       // Create a time log from yesterday
@@ -310,11 +350,12 @@ describe("timeLogs", () => {
         activityType: "review",
       })
 
-      // Query today's time logs
+      // Query today's time logs - should only return completed ones from today
       const todayLogs = await asUser.query(api.timeLogs.getTodayTimeLogs)
 
       expect(todayLogs).toHaveLength(1)
       expect(todayLogs[0].activityType).toBe("coding")
+      expect(todayLogs[0].endTime).toBeDefined()
     })
 
     it("returns empty array when no time logs from today exist", async () => {
@@ -325,10 +366,9 @@ describe("timeLogs", () => {
         title: "Test Task",
       })
 
-      // Create a time log from yesterday
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const yesterdayStart = today.getTime() - 24 * 60 * 60 * 1000
+      // Create a time log from yesterday (using Brisbane timezone)
+      const todayStart = getBrisbaneTodayStart()
+      const yesterdayStart = todayStart - 24 * 60 * 60 * 1000
 
       await asUser.mutation(api.timeLogs.saveTimeLog, {
         taskId,
@@ -349,9 +389,8 @@ describe("timeLogs", () => {
         title: "Test Task",
       })
 
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const todayStart = today.getTime()
+      // Use Brisbane timezone calculation to match implementation
+      const todayStart = getBrisbaneTodayStart()
 
       // Create first time log
       await asUser.mutation(api.timeLogs.saveTimeLog, {
@@ -374,14 +413,14 @@ describe("timeLogs", () => {
       const todayLogs = await asUser.query(api.timeLogs.getTodayTimeLogs)
 
       expect(todayLogs).toHaveLength(2)
-      // Most recently created should be first
+      // Most recently created should be first (ordered by createdAt descending)
       expect(todayLogs[0].endTime).toBe(todayStart + 7200000)
       expect(todayLogs[1].endTime).toBe(todayStart + 5400000)
     })
   })
 
   describe("saveTimeLog", () => {
-    it("saves a time log for authenticated user", async () => {
+    it("saves a completed time log for authenticated user", async () => {
       const asUser = createTestWithUser()
 
       // Create a task
@@ -410,6 +449,67 @@ describe("timeLogs", () => {
         endTime: now,
         activityType: "coding",
       })
+    })
+
+    it("saves an ongoing time log (without endTime)", async () => {
+      const asUser = createTestWithUser()
+
+      // Create a task
+      const taskId = await asUser.mutation(api.tasks.createTask, {
+        title: "Test Task",
+      })
+
+      const now = Date.now()
+      const timeLogId = await asUser.mutation(api.timeLogs.saveTimeLog, {
+        taskId,
+        startTime: now,
+        // No endTime = ongoing task
+      })
+
+      expect(timeLogId).toBeDefined()
+
+      // Verify active time log can be retrieved
+      const activeLog = await asUser.query(api.timeLogs.getActiveTimeLog)
+      expect(activeLog).not.toBeNull()
+      expect(activeLog?._id).toBe(timeLogId)
+      expect(activeLog?.taskId).toBe(taskId)
+      expect(activeLog?.startTime).toBe(now)
+
+      // Verify it's not in completed logs
+      const completedLogs = await asUser.query(api.timeLogs.getTimeLogsByTask, {
+        taskId,
+      })
+      expect(completedLogs).toHaveLength(0)
+    })
+
+    it("prevents creating multiple active tasks", async () => {
+      const asUser = createTestWithUser()
+
+      // Create tasks
+      const task1 = await asUser.mutation(api.tasks.createTask, {
+        title: "Task 1",
+      })
+      const task2 = await asUser.mutation(api.tasks.createTask, {
+        title: "Task 2",
+      })
+
+      const now = Date.now()
+
+      // Create first ongoing task
+      await asUser.mutation(api.timeLogs.saveTimeLog, {
+        taskId: task1,
+        startTime: now,
+        // No endTime = ongoing
+      })
+
+      // Try to create second ongoing task - should fail
+      await expect(
+        asUser.mutation(api.timeLogs.saveTimeLog, {
+          taskId: task2,
+          startTime: now + 1000,
+          // No endTime = ongoing
+        })
+      ).rejects.toThrow("already have an active task")
     })
 
     it("saves time log without activityType", async () => {
@@ -520,6 +620,205 @@ describe("timeLogs", () => {
       })
       expect(timeLogs[0].createdAt).toBeGreaterThanOrEqual(beforeTime)
       expect(timeLogs[0].createdAt).toBeLessThanOrEqual(afterTime)
+    })
+  })
+
+  describe("getActiveTimeLog", () => {
+    it("returns null when not authenticated", async () => {
+      const t = createTestInstance()
+      const activeLog = await t.query(api.timeLogs.getActiveTimeLog)
+      expect(activeLog).toBeNull()
+    })
+
+    it("returns null when no active task exists", async () => {
+      const asUser = createTestWithUser()
+      const activeLog = await asUser.query(api.timeLogs.getActiveTimeLog)
+      expect(activeLog).toBeNull()
+    })
+
+    it("returns active time log when one exists", async () => {
+      const asUser = createTestWithUser()
+
+      // Create a task
+      const taskId = await asUser.mutation(api.tasks.createTask, {
+        title: "Test Task",
+        description: "Test Description",
+      })
+
+      const now = Date.now()
+      const timeLogId = await asUser.mutation(api.timeLogs.saveTimeLog, {
+        taskId,
+        startTime: now,
+        // No endTime = ongoing
+      })
+
+      const activeLog = await asUser.query(api.timeLogs.getActiveTimeLog)
+      expect(activeLog).not.toBeNull()
+      expect(activeLog?._id).toBe(timeLogId)
+      expect(activeLog?.taskId).toBe(taskId)
+      expect(activeLog?.startTime).toBe(now)
+      expect(activeLog?.task.title).toBe("Test Task")
+      expect(activeLog?.task.description).toBe("Test Description")
+    })
+
+    it("returns null when task is deleted", async () => {
+      const asUser = createTestWithUser()
+
+      // Create a task and active time log
+      const taskId = await asUser.mutation(api.tasks.createTask, {
+        title: "Test Task",
+      })
+
+      await asUser.mutation(api.timeLogs.saveTimeLog, {
+        taskId,
+        startTime: Date.now(),
+        // No endTime = ongoing
+      })
+
+      // Delete the task
+      await asUser.mutation(api.tasks.deleteTask, { taskId })
+
+      // Active log should return null since task is deleted
+      const activeLog = await asUser.query(api.timeLogs.getActiveTimeLog)
+      expect(activeLog).toBeNull()
+    })
+  })
+
+  describe("stopTimeLog", () => {
+    it("stops an active time log", async () => {
+      const asUser = createTestWithUser()
+
+      // Create a task
+      const taskId = await asUser.mutation(api.tasks.createTask, {
+        title: "Test Task",
+      })
+
+      const startTime = Date.now()
+      const timeLogId = await asUser.mutation(api.timeLogs.saveTimeLog, {
+        taskId,
+        startTime,
+        // No endTime = ongoing
+      })
+
+      // Verify it's active
+      const activeBefore = await asUser.query(api.timeLogs.getActiveTimeLog)
+      expect(activeBefore).not.toBeNull()
+
+      // Stop the time log
+      const endTime = Date.now()
+      const result = await asUser.mutation(api.timeLogs.stopTimeLog, {
+        timeLogId,
+        endTime,
+      })
+
+      expect(result).toEqual({ success: true })
+
+      // Verify it's no longer active
+      const activeAfter = await asUser.query(api.timeLogs.getActiveTimeLog)
+      expect(activeAfter).toBeNull()
+
+      // Verify it appears in completed logs
+      const completedLogs = await asUser.query(api.timeLogs.getTimeLogsByTask, {
+        taskId,
+      })
+      expect(completedLogs).toHaveLength(1)
+      expect(completedLogs[0].endTime).toBe(endTime)
+    })
+
+    it("throws error when time log does not exist", async () => {
+      const asUser = createTestWithUser()
+
+      // Create a task and time log to get a valid ID format
+      const taskId = await asUser.mutation(api.tasks.createTask, {
+        title: "Test Task",
+      })
+      const timeLogId = await asUser.mutation(api.timeLogs.saveTimeLog, {
+        taskId,
+        startTime: Date.now(),
+        endTime: Date.now(),
+      })
+
+      // Delete the time log
+      await asUser.mutation(api.timeLogs.deleteTimeLog, { timeLogId })
+
+      // Try to stop deleted time log
+      await expect(
+        asUser.mutation(api.timeLogs.stopTimeLog, {
+          timeLogId,
+          endTime: Date.now(),
+        })
+      ).rejects.toThrow("Time log not found or unauthorized")
+    })
+
+    it("throws error when time log belongs to different user", async () => {
+      const [asUser1, asUser2] = createTestUsers([
+        { name: "User 1" },
+        { name: "User 2" },
+      ])
+
+      // User 1 creates a task and active time log
+      const taskId = await asUser1.mutation(api.tasks.createTask, {
+        title: "User 1 Task",
+      })
+      const timeLogId = await asUser1.mutation(api.timeLogs.saveTimeLog, {
+        taskId,
+        startTime: Date.now(),
+        // No endTime = ongoing
+      })
+
+      // User 2 tries to stop User 1's time log
+      await expect(
+        asUser2.mutation(api.timeLogs.stopTimeLog, {
+          timeLogId,
+          endTime: Date.now(),
+        })
+      ).rejects.toThrow("Time log not found or unauthorized")
+    })
+
+    it("throws error when time log is already completed", async () => {
+      const asUser = createTestWithUser()
+
+      // Create a task and completed time log
+      const taskId = await asUser.mutation(api.tasks.createTask, {
+        title: "Test Task",
+      })
+      const now = Date.now()
+      const timeLogId = await asUser.mutation(api.timeLogs.saveTimeLog, {
+        taskId,
+        startTime: now - 3600000,
+        endTime: now,
+      })
+
+      // Try to stop already completed time log
+      await expect(
+        asUser.mutation(api.timeLogs.stopTimeLog, {
+          timeLogId,
+          endTime: Date.now(),
+        })
+      ).rejects.toThrow("Time log is already completed")
+    })
+
+    it("throws error when not authenticated", async () => {
+      const t = createTestInstance()
+      const asUser = createTestWithUser()
+
+      // Create a task and active time log
+      const taskId = await asUser.mutation(api.tasks.createTask, {
+        title: "Test Task",
+      })
+      const timeLogId = await asUser.mutation(api.timeLogs.saveTimeLog, {
+        taskId,
+        startTime: Date.now(),
+        // No endTime = ongoing
+      })
+
+      // Try to stop without authentication
+      await expect(
+        t.mutation(api.timeLogs.stopTimeLog, {
+          timeLogId,
+          endTime: Date.now(),
+        })
+      ).rejects.toThrow()
     })
   })
 

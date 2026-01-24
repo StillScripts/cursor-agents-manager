@@ -16,14 +16,6 @@ import { checkRateLimit, cursorRateLimiters } from "./rateLimiting"
 const CURSOR_API_URL = "https://api.cursor.com/v0/agents"
 const CURSOR_MODELS_API_URL = "https://api.cursor.com/v0/models"
 
-const SIMULATED_MODELS = [
-  "claude-3-5-sonnet-20241022",
-  "claude-3-5-haiku-20241022",
-  "gpt-4o",
-  "gpt-4o-mini",
-  "o1-preview",
-]
-
 /**
  * Internal action to get and decrypt Cursor API key for a user
  * Returns null if no API key is configured or decryption fails
@@ -49,7 +41,6 @@ export const getCursorApiKey = internalAction({
         return null
       }
     }
-
     return null
   },
 })
@@ -168,7 +159,6 @@ export const getAgents = action({
     agents: Agent[]
     total: number
     hasMore: boolean
-    simulation: boolean
   }> => {
     const limit = args.limit ?? 20
     const forceRefresh = args.forceRefresh ?? false
@@ -193,7 +183,6 @@ export const getAgents = action({
         agents: dbAgents.map(dbAgentToApiFormat),
         total: dbAgents.length,
         hasMore: dbAgents.length >= limit,
-        simulation: false,
       }
     }
 
@@ -202,28 +191,11 @@ export const getAgents = action({
       userId: authUser.userId,
     })
 
-    const simulationMode = !apiKey
-
-    // If we have agents in DB and not forcing refresh, return them
-    if (dbAgents.length > 0 && !forceRefresh) {
-      const agents = dbAgents.map(dbAgentToApiFormat)
-      return {
-        agents,
-        total: agents.length,
-        hasMore: agents.length >= limit,
-        simulation: simulationMode,
-      }
-    }
-
-    // If no API key (simulation mode), return empty or existing DB agents
-    if (simulationMode) {
-      const agents = dbAgents.map(dbAgentToApiFormat)
-      return {
-        agents,
-        total: agents.length,
-        hasMore: false,
-        simulation: true,
-      }
+    // Require API key - throw error if not configured
+    if (!apiKey) {
+      throw new Error(
+        "Cursor API key not configured. Please add your API key in Account Settings."
+      )
     }
 
     // Fetch from Cursor API
@@ -252,7 +224,6 @@ export const getAgents = action({
             agents,
             total: agents.length,
             hasMore: agents.length >= limit,
-            simulation: false,
           }
         }
 
@@ -274,7 +245,6 @@ export const getAgents = action({
         agents: cursorAgents,
         total: cursorAgents.length,
         hasMore,
-        simulation: false,
       }
     } catch (error) {
       console.error("[Convex getAgents] Error fetching agents:", error)
@@ -286,7 +256,6 @@ export const getAgents = action({
           agents,
           total: agents.length,
           hasMore: agents.length >= limit,
-          simulation: false,
         }
       }
 
@@ -310,7 +279,6 @@ export const getAgentById = action({
     args
   ): Promise<{
     agent: Agent | null
-    simulation: boolean
   }> => {
     // Get authenticated user
     const authUser = await ctx.runQuery(
@@ -327,7 +295,6 @@ export const getAgentById = action({
     if (dbAgent) {
       return {
         agent: dbAgentToApiFormat(dbAgent),
-        simulation: false,
       }
     }
 
@@ -338,14 +305,11 @@ export const getAgentById = action({
 
     await checkRateLimit(ctx, cursorRateLimiters.getAgentById, authUser.userId)
 
-    const simulationMode = !apiKey
-
-    // If no API key (simulation mode), return null
-    if (simulationMode) {
-      return {
-        agent: null,
-        simulation: true,
-      }
+    // Require API key - throw error if not configured
+    if (!apiKey) {
+      throw new Error(
+        "Cursor API key not configured. Please add your API key in Account Settings."
+      )
     }
 
     // Fetch from Cursor API
@@ -360,7 +324,6 @@ export const getAgentById = action({
         if (response.status === 404) {
           return {
             agent: null,
-            simulation: false,
           }
         }
 
@@ -397,7 +360,6 @@ export const getAgentById = action({
 
       return {
         agent: cursorAgent,
-        simulation: false,
       }
     } catch (error) {
       console.error("[Convex getAgentById] Error fetching agent:", error)
@@ -407,11 +369,13 @@ export const getAgentById = action({
 })
 
 /**
- * Launch a new agent via the Cursor API
+ * Internal action to launch a new agent via the Cursor API
  * If no API key is configured, creates a simulated agent instead
+ * This is called by the public launchAgent action and by recurring job execution
  */
-export const launchAgent = action({
+export const launchAgentInternal = internalAction({
   args: {
+    userId: v.string(),
     prompt: v.object({
       text: v.string(),
       images: v.optional(
@@ -454,56 +418,18 @@ export const launchAgent = action({
     id: string
     name: string
     status: string
-    simulation: boolean
   }> => {
-    const authUser = await ctx.runQuery(
-      internal.auth.getAuthenticatedUserInternal
-    )
-
     const apiKey = await ctx.runAction(internal.cursor.getCursorApiKey, {
-      userId: authUser.userId,
+      userId: args.userId,
     })
 
-    await checkRateLimit(ctx, cursorRateLimiters.launchAgent, authUser.userId)
+    await checkRateLimit(ctx, cursorRateLimiters.launchAgent, args.userId)
 
-    // Check if we're in simulation mode (no API key)
-    const simulationMode = !apiKey
-
-    if (simulationMode) {
-      // Create a simulated agent
-      const simulatedAgentId = `bc_${Math.random().toString(36).substr(2, 9)}`
-      const simulatedAgentName = `${args.prompt.text.substring(0, 50)}${args.prompt.text.length > 50 ? "..." : ""}`
-
-      const createdAt = new Date().toISOString()
-
-      // Create agent in Convex
-      await ctx.runMutation(api.agents.create, {
-        agentId: simulatedAgentId,
-        provider: "cursor" as const,
-        name: simulatedAgentName,
-        status: "CREATING" as const,
-        sourceRepository: args.source.repository,
-        sourceRef: args.source.ref,
-        targetBranchName: args.target?.branchName,
-        targetUrl: `https://cursor.com/agents?id=${simulatedAgentId}`,
-        targetPrUrl: undefined,
-        targetAutoCreatePr: args.target?.autoCreatePr ?? false,
-        model: args.model,
-        summary: undefined,
-        taskId: args.taskId,
-        providerData: {
-          simulation: true,
-          createdAt,
-        },
-      })
-
-      // Return the agent data in API format
-      return {
-        id: simulatedAgentId,
-        name: simulatedAgentName,
-        status: "CREATING",
-        simulation: true,
-      }
+    // Require API key - throw error if not configured
+    if (!apiKey) {
+      throw new Error(
+        "Cursor API key not configured. Please add your API key in Account Settings."
+      )
     }
 
     // Live mode - call Cursor API
@@ -589,12 +515,165 @@ export const launchAgent = action({
         id: cursorAgent.id,
         name: cursorAgent.name,
         status: cursorAgent.status,
-        simulation: false,
       }
     } catch (error) {
-      console.error("[Convex launchAgent] Error launching agent:", error)
+      console.error(
+        "[Convex launchAgentInternal] Error launching agent:",
+        error
+      )
       throw error instanceof Error ? error : new Error("Failed to launch agent")
     }
+  },
+})
+
+/**
+ * Public action to launch a new agent
+ * Creates a launch agent record and calls the internal launch agent action
+ */
+export const launchAgent = action({
+  args: {
+    prompt: v.object({
+      text: v.string(),
+      images: v.optional(
+        v.array(
+          v.object({
+            data: v.string(),
+            dimension: v.object({
+              width: v.number(),
+              height: v.number(),
+            }),
+          })
+        )
+      ),
+    }),
+    source: v.object({
+      repository: v.string(),
+      ref: v.optional(v.string()),
+    }),
+    model: v.optional(v.string()),
+    target: v.optional(
+      v.object({
+        autoCreatePr: v.boolean(),
+        openAsCursorGithubApp: v.optional(v.boolean()),
+        skipReviewerRequest: v.optional(v.boolean()),
+        branchName: v.optional(v.string()),
+      })
+    ),
+    webhook: v.optional(
+      v.object({
+        url: v.string(),
+        secret: v.optional(v.string()),
+      })
+    ),
+    taskId: v.optional(v.id("tasks")),
+    recurringJob: v.optional(
+      v.object({
+        enabled: v.boolean(),
+        intervalDays: v.optional(v.number()),
+        repeatCount: v.optional(v.number()),
+      })
+    ),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    id: string
+    name: string
+    status: string
+  }> => {
+    const authUser = await ctx.runQuery(
+      internal.auth.getAuthenticatedUserInternal
+    )
+
+    // Launch the agent using the internal action
+    const result = await ctx.runAction(internal.cursor.launchAgentInternal, {
+      userId: authUser.userId,
+      prompt: args.prompt,
+      source: args.source,
+      model: args.model,
+      target: args.target,
+      webhook: args.webhook,
+      taskId: args.taskId,
+    })
+
+    // Create launch agent record
+    const _launchAgentId = await ctx.runMutation(api.launchAgents.create, {
+      prompt: args.prompt,
+      source: args.source,
+      model: args.model,
+      target: args.target,
+      taskId: args.taskId,
+      recurringJob:
+        args.recurringJob?.enabled &&
+        args.recurringJob.intervalDays !== undefined &&
+        args.recurringJob.repeatCount !== undefined
+          ? {
+              intervalDays: args.recurringJob.intervalDays,
+              repeatCount: args.recurringJob.repeatCount,
+            }
+          : undefined,
+      agentId: result.id,
+    })
+
+    return result
+  },
+})
+
+/**
+ * Internal action to launch an agent for a recurring job
+ * This is now just a wrapper around launchAgentInternal
+ */
+export const launchAgentForRecurringJob = internalAction({
+  args: {
+    userId: v.string(),
+    prompt: v.object({
+      text: v.string(),
+      images: v.optional(
+        v.array(
+          v.object({
+            data: v.string(),
+            dimension: v.object({
+              width: v.number(),
+              height: v.number(),
+            }),
+          })
+        )
+      ),
+    }),
+    source: v.object({
+      repository: v.string(),
+      ref: v.optional(v.string()),
+    }),
+    model: v.optional(v.string()),
+    target: v.optional(
+      v.object({
+        autoCreatePr: v.boolean(),
+        openAsCursorGithubApp: v.optional(v.boolean()),
+        skipReviewerRequest: v.optional(v.boolean()),
+        branchName: v.optional(v.string()),
+      })
+    ),
+    taskId: v.optional(v.id("tasks")),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    id: string
+    name: string
+    status: string
+  }> => {
+    // Use the internal launch agent action
+    return await ctx.runAction(internal.cursor.launchAgentInternal, {
+      userId: args.userId,
+      prompt: args.prompt,
+      source: args.source,
+      model: args.model,
+      target: args.target,
+      webhook: undefined,
+      taskId: args.taskId,
+    })
   },
 })
 
@@ -628,15 +707,11 @@ export const stopAgent = action({
       userId: authUser.userId,
     })
 
-    const simulationMode = !apiKey
-
-    if (simulationMode) {
-      // In simulation mode, just update the status in the database
-      await ctx.runMutation(api.agents.updateStatus, {
-        agentId: args.agentId,
-        status: "FINISHED",
-      })
-      return { success: true, simulation: true }
+    // Require API key - throw error if not configured
+    if (!apiKey) {
+      throw new Error(
+        "Cursor API key not configured. Please add your API key in Account Settings."
+      )
     }
 
     // Live mode - call Cursor API
@@ -659,7 +734,7 @@ export const stopAgent = action({
         status: "FINISHED",
       })
 
-      return { success: true, simulation: false }
+      return { success: true }
     } catch (error) {
       console.error("[Convex stopAgent] Error stopping agent:", error)
       throw error instanceof Error ? error : new Error("Failed to stop agent")
@@ -697,14 +772,11 @@ export const deleteAgent = action({
       userId: authUser.userId,
     })
 
-    const simulationMode = !apiKey
-
-    if (simulationMode) {
-      // In simulation mode, just soft delete in the database
-      await ctx.runMutation(api.agents.softDelete, {
-        agentId: args.agentId,
-      })
-      return { success: true, simulation: true }
+    // Require API key - throw error if not configured
+    if (!apiKey) {
+      throw new Error(
+        "Cursor API key not configured. Please add your API key in Account Settings."
+      )
     }
 
     // Live mode - call Cursor API
@@ -726,7 +798,7 @@ export const deleteAgent = action({
         agentId: args.agentId,
       })
 
-      return { success: true, simulation: false }
+      return { success: true }
     } catch (error) {
       console.error("[Convex deleteAgent] Error deleting agent:", error)
       throw error instanceof Error ? error : new Error("Failed to delete agent")
@@ -748,7 +820,6 @@ export const sendFollowUp = action({
   ): Promise<
     {
       success: boolean
-      simulation: boolean
       message?: string
     } & Record<string, unknown>
   > => {
@@ -777,15 +848,11 @@ export const sendFollowUp = action({
       }
     )
 
-    const simulationMode = !apiKey
-
-    if (simulationMode) {
-      // In simulation mode, return a mock response
-      return {
-        success: true,
-        simulation: true,
-        message: "Follow-up message sent (simulation mode)",
-      }
+    // Require API key - throw error if not configured
+    if (!apiKey) {
+      throw new Error(
+        "Cursor API key not configured. Please add your API key in Account Settings."
+      )
     }
 
     // Live mode - call Cursor API
@@ -818,7 +885,6 @@ export const sendFollowUp = action({
 
       return {
         success: true,
-        simulation: false,
         ...data,
       }
     } catch (error) {
@@ -842,7 +908,6 @@ export const getConversation = action({
     args
   ): Promise<{
     conversation: AgentConversation | null
-    simulation: boolean
   }> => {
     const authUser = await ctx.runQuery(
       internal.auth.getAuthenticatedUserInternal
@@ -859,23 +924,11 @@ export const getConversation = action({
       authUser.userId
     )
 
-    const simulationMode = !apiKey
-
-    if (simulationMode) {
-      // Return mock conversation for simulation mode
-      return {
-        conversation: {
-          id: args.agentId,
-          messages: [
-            {
-              id: "msg_placeholder",
-              type: "assistant_message",
-              text: "This is a simulated conversation. Add your Cursor API key to see real conversations.",
-            },
-          ],
-        },
-        simulation: true,
-      }
+    // Require API key - throw error if not configured
+    if (!apiKey) {
+      throw new Error(
+        "Cursor API key not configured. Please add your API key in Account Settings."
+      )
     }
 
     // Live mode - call Cursor API
@@ -893,7 +946,6 @@ export const getConversation = action({
         if (response.status === 404) {
           return {
             conversation: null,
-            simulation: false,
           }
         }
 
@@ -919,7 +971,6 @@ export const getConversation = action({
 
       return {
         conversation,
-        simulation: false,
       }
     } catch (error) {
       console.error(
@@ -950,7 +1001,6 @@ export const getConversationWithCursor = action({
   ): Promise<{
     conversation: AgentConversation | null
     nextCursor?: string
-    simulation: boolean
   }> => {
     const authUser = await ctx.runQuery(
       internal.auth.getAuthenticatedUserInternal
@@ -967,23 +1017,11 @@ export const getConversationWithCursor = action({
       authUser.userId
     )
 
-    const simulationMode = !apiKey
-
-    if (simulationMode) {
-      // Return mock conversation for simulation mode
-      return {
-        conversation: {
-          id: args.agentId,
-          messages: [
-            {
-              id: "msg_placeholder",
-              type: "assistant_message",
-              text: "This is a simulated conversation. Add your Cursor API key to see real conversations.",
-            },
-          ],
-        },
-        simulation: true,
-      }
+    // Require API key - throw error if not configured
+    if (!apiKey) {
+      throw new Error(
+        "Cursor API key not configured. Please add your API key in Account Settings."
+      )
     }
 
     // Live mode - call Cursor API with pagination support
@@ -1010,7 +1048,6 @@ export const getConversationWithCursor = action({
         if (response.status === 404) {
           return {
             conversation: null,
-            simulation: false,
           }
         }
 
@@ -1066,7 +1103,6 @@ export const getConversationWithCursor = action({
       return {
         conversation,
         nextCursor,
-        simulation: false,
       }
     } catch (error) {
       console.error(
@@ -1096,7 +1132,7 @@ export const syncConversationFromWebhook = internalAction({
         userId: args.userId,
       })
 
-      // If no API key, skip syncing (user might be in simulation mode)
+      // If no API key, skip syncing
       if (!apiKey) {
         return { success: false, error: "No API key configured" }
       }
@@ -1165,7 +1201,6 @@ export const getModels = action({
     ctx
   ): Promise<{
     models: string[]
-    simulation: boolean
   }> => {
     const authUser = await ctx.runQuery(
       internal.auth.getAuthenticatedUserInternal
@@ -1177,30 +1212,22 @@ export const getModels = action({
 
     await checkRateLimit(ctx, cursorRateLimiters.getModels, authUser.userId)
 
-    const simulationMode = !apiKey
-
-    if (simulationMode) {
-      return {
-        models: SIMULATED_MODELS,
-        simulation: true,
-      }
+    // Require API key - throw error if not configured
+    if (!apiKey) {
+      throw new Error(
+        "Cursor API key not configured. Please add your API key in Account Settings."
+      )
     }
 
-    // Live mode - use ActionCache to fetch and cache models
+    // Use ActionCache to fetch and cache models
     try {
-      const result = await modelsCache.fetch(ctx, { apiKey: apiKey ?? "" })
+      const result = await modelsCache.fetch(ctx, { apiKey })
       return {
         models: result.models,
-        simulation: false,
       }
     } catch (error) {
       console.error("[Convex getModels] Error fetching models:", error)
-
-      // Fallback to simulated models on error
-      return {
-        models: SIMULATED_MODELS,
-        simulation: true,
-      }
+      throw new Error("Failed to fetch models from Cursor API")
     }
   },
 })
