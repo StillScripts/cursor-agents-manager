@@ -210,6 +210,29 @@ export const openAIRateLimiters = {
 }
 
 /**
+ * Rate limiting configuration for GitHub API endpoints
+ *
+ * Limits are based on realistic usage patterns:
+ * - Merge PR: 5 RPM (users might merge a few PRs quickly, but not 10+)
+ */
+const githubRateLimiter = new RateLimiter(rateLimiterComponent, {
+  "github:merge-pr": {
+    kind: "token bucket",
+    rate: 5,
+    period: MINUTE,
+    capacity: 3,
+  },
+})
+
+export const githubRateLimiters = {
+  mergePr: {
+    limiter: githubRateLimiter,
+    name: "github:merge-pr" as const,
+    requestsPerMinute: 5,
+  },
+}
+
+/**
  * Helper function to check rate limit and throw if exceeded
  * @param ctx - Action context
  * @param rateLimiterConfig - Rate limiter configuration object with limiter, name, and requestsPerMinute

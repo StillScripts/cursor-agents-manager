@@ -16,6 +16,7 @@ import type * as branches from "../branches.js";
 import type * as conversations from "../conversations.js";
 import type * as crons from "../crons.js";
 import type * as cursor from "../cursor.js";
+import type * as github from "../github.js";
 import type * as http from "../http.js";
 import type * as launchAgents from "../launchAgents.js";
 import type * as openAI from "../openAI.js";
@@ -44,6 +45,7 @@ declare const fullApi: ApiFromModules<{
   conversations: typeof conversations;
   crons: typeof crons;
   cursor: typeof cursor;
+  github: typeof github;
   http: typeof http;
   launchAgents: typeof launchAgents;
   openAI: typeof openAI;
