@@ -14,7 +14,8 @@ export default defineConfig({
       projects: ["./tsconfig.json"],
     }),
     tanstackStart({
-      srcDirectory: "src/routes",
+      srcDirectory: "src",
+      routeFileIgnorePattern: "/_components/",
     }),
     viteReact(),
   ],

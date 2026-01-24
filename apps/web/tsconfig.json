@@ -14,7 +14,7 @@
     "jsx": "react-jsx",
     "incremental": true,
     "paths": {
-      "@/*": ["./*"],
+      "@/*": ["./src/*"],
       "@/convex/*": ["../../packages/backend/convex/*"],
       "validators": ["../../packages/validators/index.ts"],
       "validators/*": ["../../packages/validators/src/*"],
