@@ -63,7 +63,10 @@ describe("githubPrUrlSchema", () => {
   const invalidUrls = [
     { url: "", description: "empty string" },
     { url: "not-a-url", description: "not a URL" },
-    { url: "https://gitlab.com/owner/repo/pull/123", description: "GitLab URL" },
+    {
+      url: "https://gitlab.com/owner/repo/pull/123",
+      description: "GitLab URL",
+    },
     {
       url: "https://github.com/owner/repo/issues/123",
       description: "issue URL not PR",
@@ -81,7 +84,9 @@ describe("githubPrUrlSchema", () => {
     { url: "https://github.com/owner//pull/123", description: "missing repo" },
   ]
 
-  it.each(invalidUrls)("rejects invalid URL ($description): $url", ({ url }) => {
+  it.each(invalidUrls)("rejects invalid URL ($description): $url", ({
+    url,
+  }) => {
     const result = githubPrUrlSchema.safeParse(url)
     expect(result.success).toBe(false)
   })
@@ -106,9 +111,7 @@ describe("parseGithubPrUrl", () => {
 
 describe("validateGithubPrUrl", () => {
   it("returns parsed data for valid URL", () => {
-    const result = validateGithubPrUrl(
-      "https://github.com/owner/repo/pull/123"
-    )
+    const result = validateGithubPrUrl("https://github.com/owner/repo/pull/123")
     expect(result).toEqual({ owner: "owner", repo: "repo", prNumber: 123 })
   })
 

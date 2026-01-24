@@ -3,7 +3,7 @@
 import { v } from "convex/values"
 import { decryptData } from "encryption"
 import { parseGithubPrUrl } from "validators"
-import { internal } from "./_generated/api"
+import { api, internal } from "./_generated/api"
 import { action, internalAction } from "./_generated/server"
 import { checkRateLimit, githubRateLimiters } from "./rateLimiting"
 
@@ -26,6 +26,102 @@ export const getGithubToken = internalAction({
       return decryptData(record.encryptedGithubToken)
     } catch {
       return null
+    }
+  },
+})
+
+interface TokenValidationResult {
+  valid: boolean
+  username?: string
+  avatarUrl?: string
+  expiresAt?: string | null
+  scopes?: string[]
+  error?: string
+}
+
+/**
+ * Check if the GitHub token is valid and get user info
+ * Also retrieves token expiration if available (for fine-grained tokens)
+ */
+export const checkGithubToken = action({
+  args: {},
+  handler: async (ctx): Promise<TokenValidationResult> => {
+    // Get the token status first to check if one exists
+    const record = await ctx.runQuery(api.apiKeys.getApiKeysRecord)
+
+    if (!record?.encryptedGithubToken || record.encryptedGithubToken === "") {
+      return { valid: false, error: "No GitHub token configured" }
+    }
+
+    let githubToken: string
+    try {
+      githubToken = decryptData(record.encryptedGithubToken)
+    } catch {
+      return { valid: false, error: "Failed to decrypt token" }
+    }
+
+    // Call GitHub API to verify the token and get user info
+    const response = await fetch("https://api.github.com/user", {
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${githubToken}`,
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    })
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        return { valid: false, error: "Token is invalid or expired" }
+      }
+      if (response.status === 403) {
+        return { valid: false, error: "Token has insufficient permissions" }
+      }
+      return {
+        valid: false,
+        error: `GitHub API error: ${response.status}`,
+      }
+    }
+
+    const userData = await response.json()
+
+    // Extract token metadata from response headers
+    // GitHub returns OAuth scopes in the X-OAuth-Scopes header (for classic tokens)
+    const scopesHeader = response.headers.get("X-OAuth-Scopes")
+    const scopes = scopesHeader
+      ? scopesHeader.split(",").map((s) => s.trim())
+      : undefined
+
+    // For fine-grained tokens, check expiration via a separate API call
+    // The /rate_limit endpoint returns token expiration in headers for fine-grained tokens
+    let expiresAt: string | null = null
+    try {
+      const rateLimitResponse = await fetch(
+        "https://api.github.com/rate_limit",
+        {
+          headers: {
+            Accept: "application/vnd.github+json",
+            Authorization: `Bearer ${githubToken}`,
+            "X-GitHub-Api-Version": "2022-11-28",
+          },
+        }
+      )
+      // GitHub returns token expiration in the GitHub-Authentication-Token-Expiration header
+      const expirationHeader = rateLimitResponse.headers.get(
+        "GitHub-Authentication-Token-Expiration"
+      )
+      if (expirationHeader) {
+        expiresAt = expirationHeader
+      }
+    } catch {
+      // Ignore errors checking expiration
+    }
+
+    return {
+      valid: true,
+      username: userData.login,
+      avatarUrl: userData.avatar_url,
+      expiresAt,
+      scopes,
     }
   },
 })
@@ -127,7 +223,9 @@ export const mergePullRequest = action({
       case 422:
         throw new Error(`Validation failed: ${errorMessage}`)
       default:
-        throw new Error(`GitHub API error (${response.status}): ${errorMessage}`)
+        throw new Error(
+          `GitHub API error (${response.status}): ${errorMessage}`
+        )
     }
   },
 })
