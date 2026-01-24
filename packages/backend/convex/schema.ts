@@ -50,6 +50,7 @@ export default defineSchema({
     userId: v.string(),
     encryptedCursorApiKey: v.string(),
     encryptedOpenaiApiKey: v.string(),
+    encryptedGithubToken: v.optional(v.string()),
   }).index("by_user", ["userId"]),
 
   branches: defineTable({

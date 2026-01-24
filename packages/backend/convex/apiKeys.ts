@@ -205,6 +205,94 @@ export const deleteOpenaiApiKey = mutation({
 })
 
 /**
+ * Check if user has a GitHub token configured
+ * Returns { hasKey: boolean, maskedKey: string | null }
+ * Note: This doesn't decrypt the token, so masking is generic
+ */
+export const getGithubTokenStatus = query({
+  args: {},
+  handler: async (
+    ctx
+  ): Promise<{ hasKey: boolean; maskedKey: string | null }> => {
+    const authUser = await getAuthenticatedUserOrNull(ctx)
+    if (!authUser) {
+      return { hasKey: false, maskedKey: null }
+    }
+
+    const record = await ctx.db
+      .query("apiKeys")
+      .withIndex("by_user", (q) => q.eq("userId", authUser.userId))
+      .first()
+
+    if (!record?.encryptedGithubToken || record.encryptedGithubToken === "") {
+      return { hasKey: false, maskedKey: null }
+    }
+
+    // Return generic mask without decrypting (decryption requires Node.js)
+    return { hasKey: true, maskedKey: "****" }
+  },
+})
+
+/**
+ * Save/update GitHub token (encrypted value)
+ * Note: Encryption must be done client-side or via action before calling this
+ */
+export const saveGithubToken = mutation({
+  args: { encryptedToken: v.string() },
+  handler: async (ctx, args) => {
+    const authUser = await getAuthenticatedUserOrNull(ctx)
+    if (!authUser) {
+      throw new Error("Unauthorized")
+    }
+
+    const existing = await ctx.db
+      .query("apiKeys")
+      .withIndex("by_user", (q) => q.eq("userId", authUser.userId))
+      .first()
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        encryptedGithubToken: args.encryptedToken,
+      })
+      return { success: true }
+    }
+
+    await ctx.db.insert("apiKeys", {
+      userId: authUser.userId,
+      encryptedCursorApiKey: "",
+      encryptedOpenaiApiKey: "",
+      encryptedGithubToken: args.encryptedToken,
+    })
+
+    return { success: true }
+  },
+})
+
+/**
+ * Delete GitHub token
+ */
+export const deleteGithubToken = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const authUser = await getAuthenticatedUserOrNull(ctx)
+    if (!authUser) {
+      throw new Error("Unauthorized")
+    }
+
+    const existing = await ctx.db
+      .query("apiKeys")
+      .withIndex("by_user", (q) => q.eq("userId", authUser.userId))
+      .first()
+
+    if (existing) {
+      await ctx.db.patch(existing._id, { encryptedGithubToken: "" })
+    }
+
+    return { success: true }
+  },
+})
+
+/**
  * Delete all API keys for user
  */
 export const deleteAllApiKeys = mutation({
