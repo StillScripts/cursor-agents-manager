@@ -1,17 +1,18 @@
 "use client"
 
+import { useNavigate } from "@tanstack/react-router"
 import { LogOut } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { signOut } from "@/lib/better-auth/auth-client"
 
 export function SignOutButton() {
-  const router = useRouter()
+  const navigate = useNavigate()
 
   const handleSignOut = async () => {
     await signOut()
-    router.push("/login")
-    router.refresh()
+    navigate({ to: "/login" })
+    // Force a full page reload to clear all auth state
+    window.location.href = "/login"
   }
 
   return (

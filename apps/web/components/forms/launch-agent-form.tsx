@@ -1,9 +1,8 @@
 "use client"
 
+import { Link, useNavigate } from "@tanstack/react-router"
 import { useAction } from "convex/react"
 import { AlertCircle, ExternalLink, Rocket, Settings } from "lucide-react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
 import {
   type LaunchAgentFormData,
@@ -54,7 +53,7 @@ const RepositorySelectField = ({ field }: { field: any }) => {
           disabled
         />
         <Link
-          href="/settings"
+          to="/settings"
           className="text-primary hover:underline inline-flex items-center gap-1"
         >
           <Settings className="h-3 w-3" />
@@ -101,7 +100,7 @@ const BranchSelectField = ({ field }: { field: any }) => {
           disabled
         />
         <Link
-          href="/settings"
+          to="/settings"
           className="text-primary hover:underline inline-flex items-center gap-1"
         >
           <Settings className="h-3 w-3" />
@@ -200,7 +199,7 @@ const TaskSelectField = ({ field }: { field: any }) => {
 }
 
 export function LaunchAgentForm() {
-  const router = useRouter()
+  const navigate = useNavigate()
   const launchAgentAction = useAction(api.cursor.launchAgent)
   const { hasCursorKey, isLoading: isLoadingCursorKey } = useCursorKey()
   const { hasOpenAIKey } = useOpenAIKey()
@@ -299,7 +298,7 @@ export function LaunchAgentForm() {
         // the form is clean and doesn't show previous submission data
         form.reset(defaultFormValues)
 
-        router.push("/agents")
+        navigate({ to: "/agents" })
       } catch (err) {
         setError(
           err instanceof Error ? err : new Error("Failed to launch agent")

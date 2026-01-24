@@ -1,8 +1,8 @@
 "use client"
 
+import { useNavigate } from "@tanstack/react-router"
 import { useMutation } from "convex/react"
 import { AlertTriangle, Trash2 } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
 import {
   type DeleteAccountFormData,
@@ -26,7 +26,7 @@ import { deleteUser, signOut } from "@/lib/better-auth/auth-client"
 import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 
 export function DeleteAccountButton() {
-  const router = useRouter()
+  const navigate = useNavigate()
   const deleteAccountMutation = useMutation(api.users.deleteAccount)
   const [isOpen, setIsOpen] = useState(false)
   const [error, setError] = useState<Error | null>(null)
@@ -56,8 +56,9 @@ export function DeleteAccountButton() {
           console.error("Failed to sign out:", error)
         }
         // In case the callbackURL fails...
-        router.push("/")
-        router.refresh()
+        navigate({ to: "/" })
+        // Force a full page reload
+        window.location.href = "/"
       } catch (err) {
         setError(
           err instanceof Error ? err : new Error("Failed to delete account")

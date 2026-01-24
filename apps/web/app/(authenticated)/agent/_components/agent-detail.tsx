@@ -12,7 +12,7 @@ import {
   Trash2,
   Volume2,
 } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useNavigate } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -53,7 +53,7 @@ export function AgentDetail({
   agentId: string
   initialAgent?: Agent | null
 }) {
-  const router = useRouter()
+  const navigate = useNavigate()
   const [openItems, setOpenItems] = useState<string[]>(["summary"])
   const [aiSummary, setAiSummary] = useState<string | null>(null)
   const [showSummary, setShowSummary] = useState(false)
@@ -110,7 +110,7 @@ export function AgentDetail({
 
   const handleDelete = async () => {
     await deleteAgent.mutateAsync(agentId)
-    router.push("/agents")
+    navigate({ to: "/agents" })
   }
 
   const handleSummarize = async () => {

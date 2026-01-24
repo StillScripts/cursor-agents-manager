@@ -1,14 +1,14 @@
 "use client"
 
+import { Link, useRouterState } from "@tanstack/react-router"
 import { formatDuration } from "helpers"
 import { Clock } from "lucide-react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useActiveTimeLog } from "@/lib/hooks/use-time-logs"
 
 export function GlobalTimerBanner() {
-  const pathname = usePathname()
+  const routerState = useRouterState()
+  const pathname = routerState.location.pathname
   const { activeTimeLog, hasActiveTask } = useActiveTimeLog()
   const [elapsed, setElapsed] = useState(0)
 
@@ -33,7 +33,7 @@ export function GlobalTimerBanner() {
 
   return (
     <Link
-      href="/tasks"
+      to="/tasks"
       className="bg-primary/10 mb-2 rounded px-4 py-2 flex items-center gap-3 hover:bg-primary/15 transition-colors"
     >
       <Clock className="h-4 w-4 text-primary shrink-0" />

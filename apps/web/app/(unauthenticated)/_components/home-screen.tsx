@@ -1,7 +1,6 @@
 "use client"
+import { Link } from "@tanstack/react-router"
 import { ArrowRight } from "lucide-react"
-import Image from "next/image"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { GithubIcon as Github } from "@/components/ui/icons"
 import { useSession } from "@/lib/hooks/use-session"
@@ -13,8 +12,8 @@ function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2">
-          <Image
+        <Link to="/" className="flex items-center gap-2">
+          <img
             src="/android-chrome-512x512.png"
             alt="Cursor Agents Manager"
             width={48}
@@ -28,19 +27,19 @@ function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
 
         <nav className="hidden items-center gap-6 md:flex">
           <Link
-            href="#features"
+            to="#features"
             className="text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             Features
           </Link>
           <Link
-            href="#how-it-works"
+            to="#how-it-works"
             className="text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             How It Works
           </Link>
           <Link
-            href="#screenshots"
+            to="#screenshots"
             className="text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             Screenshots
@@ -49,12 +48,12 @@ function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
 
         <div className="flex items-center gap-3">
           {isAuthenticated ? (
-            <Link href="/agents" className="hidden sm:inline-flex">
+            <Link to="/agents" className="hidden sm:inline-flex">
               <Button>Go to Agents</Button>
             </Link>
           ) : (
             <>
-              <Link
+              <a
                 href="https://github.com/StillScripts/cursor-agents-manager"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -63,11 +62,9 @@ function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
                   <Github className="h-5 w-5" />
                   <span className="sr-only">GitHub</span>
                 </Button>
-              </Link>
+              </a>
               <Link
-                href="/signup"
-                target="_blank"
-                rel="noopener noreferrer"
+                to="/signup"
                 className="hidden sm:inline-flex"
               >
                 <Button>Get Started</Button>
@@ -121,7 +118,7 @@ function HeroSection({ isAuthenticated }: { isAuthenticated: boolean }) {
           {/* CTA Buttons */}
           {isAuthenticated ? (
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link href="/agents">
+              <Link to="/agents">
                 <Button size="lg" className="gap-2">
                   Go to Agents
                   <ArrowRight className="h-4 w-4" />
@@ -130,7 +127,7 @@ function HeroSection({ isAuthenticated }: { isAuthenticated: boolean }) {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link
+              <a
                 href="https://github.com/StillScripts/cursor-agents-manager"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -139,8 +136,8 @@ function HeroSection({ isAuthenticated }: { isAuthenticated: boolean }) {
                   <Github className="h-5 w-5" />
                   View on GitHub
                 </Button>
-              </Link>
-              <Link href="/signup">
+              </a>
+              <Link to="/signup">
                 <Button
                   size="lg"
                   variant="outline"
@@ -153,7 +150,7 @@ function HeroSection({ isAuthenticated }: { isAuthenticated: boolean }) {
             </div>
           )}
 
-          <Image
+          <img
             src="/images/app-screenshot.png"
             alt="Terminal"
             width={1536}
@@ -446,7 +443,7 @@ function ScreenshotsSection() {
           {screenshots.map((screenshot) => (
             <div key={screenshot.title} className="group flex flex-col">
               <div className="relative mb-4 overflow-hidden rounded-xl border border-border/50 bg-background transition-all group-hover:border-primary/50">
-                <Image
+                <img
                   src={screenshot.src || "/placeholder.svg"}
                   alt={screenshot.title}
                   width={1255}
@@ -492,7 +489,7 @@ function CtaSection({ isAuthenticated }: { isAuthenticated: boolean }) {
             it, modify it, or contribute to make it better.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link
+            <a
               href="https://github.com/StillScripts/cursor-agents-manager"
               target="_blank"
               rel="noopener noreferrer"
@@ -501,8 +498,8 @@ function CtaSection({ isAuthenticated }: { isAuthenticated: boolean }) {
                 <Github className="h-5 w-5" />
                 Star on GitHub
               </Button>
-            </Link>
-            <Link href="/signup" target="_blank" rel="noopener noreferrer">
+            </a>
+            <Link to="/signup">
               <Button
                 size="lg"
                 variant="outline"
@@ -530,17 +527,17 @@ function Footer() {
           <span>Built with</span>
           <span className="text-primary">♥</span>
           <span>by</span>
-          <Link
+          <a
             href="https://github.com/StillScripts"
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium text-foreground transition-colors hover:text-primary"
           >
             StillScripts
-          </Link>
+          </a>
         </div>
         <div className="flex items-center gap-4">
-          <Link
+          <a
             href="https://github.com/StillScripts/cursor-agents-manager"
             target="_blank"
             rel="noopener noreferrer"
@@ -548,7 +545,7 @@ function Footer() {
           >
             <Github className="h-4 w-4" />
             <span>GitHub</span>
-          </Link>
+          </a>
         </div>
       </div>
     </footer>

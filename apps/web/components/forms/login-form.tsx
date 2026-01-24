@@ -1,7 +1,6 @@
 "use client"
 
-import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
+import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 import { Suspense, useState } from "react"
 import { type SignInFormData, signInFormSchema } from "validators/auth"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -18,9 +17,9 @@ import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 
 function LoginFormContent() {
   const [error, setError] = useState("")
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get("callbackUrl") || "/agents"
+  const navigate = useNavigate()
+  const search = useSearch({ strict: false }) as { callbackUrl?: string }
+  const callbackUrl = search.callbackUrl || "/agents"
 
   // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
   const form = useAppForm<SignInFormData>({
@@ -46,8 +45,7 @@ function LoginFormContent() {
           return
         }
 
-        router.push(callbackUrl)
-        router.refresh()
+        navigate({ to: callbackUrl })
       } catch (_err) {
         setError("An unexpected error occurred")
       }
@@ -115,7 +113,7 @@ function LoginFormContent() {
           </FormProvider>
           <p className="mt-4 text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="text-primary hover:underline">
+            <Link to="/signup" className="text-primary hover:underline">
               Sign up
             </Link>
           </p>

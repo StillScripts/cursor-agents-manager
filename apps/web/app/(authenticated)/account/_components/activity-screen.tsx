@@ -1,5 +1,6 @@
 "use client"
 
+import { Link } from "@tanstack/react-router"
 import {
   formatActivityType,
   formatDateTime,
@@ -7,7 +8,6 @@ import {
   formatDurationMs,
 } from "helpers"
 import { Clock, FileText } from "lucide-react"
-import Link from "next/link"
 import { PageHeader } from "@/app/(authenticated)/_components/page-header"
 import { Card, CardContent } from "@/components/ui/card"
 import { SkeletonCard } from "@/components/ui/skeleton-card"
@@ -62,7 +62,7 @@ function TaskActivityGroup({ group }: { group: GroupedLogs }) {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <Link
-          href="/tasks"
+          to="/tasks"
           className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
         >
           {displayName}

@@ -1,12 +1,12 @@
 "use client"
 
+import { Link } from "@tanstack/react-router"
 import { ChevronRight, Settings } from "lucide-react"
-import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 
 export function SettingsLinkCard() {
   return (
-    <Link href="/settings">
+    <Link to="/settings">
       <Card className="bg-card border-border hover:bg-accent/50 transition-colors cursor-pointer active:scale-[0.98]">
         <CardContent className="p-4">
           <div className="flex items-center gap-3">

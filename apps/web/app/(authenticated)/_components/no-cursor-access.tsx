@@ -1,7 +1,7 @@
 "use client"
 
+import { Link } from "@tanstack/react-router"
 import { Key } from "lucide-react"
-import Link from "next/link"
 import { PageHeader } from "@/app/(authenticated)/_components/page-header"
 import { Button } from "@/components/ui/button"
 
@@ -22,7 +22,7 @@ export function NoCursorAccess({ title }: NoCursorAccessProps) {
             <p className="text-foreground font-medium mb-2">
               You need a cursor key to use this feature.
             </p>
-            <Link href="/account">
+            <Link to="/account">
               <Button variant="default" className="mt-2">
                 Go to Account Settings
               </Button>

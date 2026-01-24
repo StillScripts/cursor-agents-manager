@@ -1,12 +1,12 @@
 "use client"
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { Link, useRouterState } from "@tanstack/react-router"
 import { navItems } from "@/app/(authenticated)/_components/nav-items"
 import { cn } from "@/lib/utils"
 
 export function BottomNav() {
-  const pathname = usePathname()
+  const routerState = useRouterState()
+  const pathname = routerState.location.pathname
 
   return (
     <nav className="fixed md:hidden bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border safe-area-bottom z-50">
@@ -14,12 +14,12 @@ export function BottomNav() {
         {navItems.map((item) => {
           const isActive =
             item.href === "/agents"
-              ? pathname === "/agents" || pathname.startsWith("/agent")
+              ? pathname === "/agents" || pathname.startsWith("/agents/")
               : pathname === item.href
           return (
             <Link
               key={item.href}
-              href={item.href}
+              to={item.href}
               className={cn(
                 "flex flex-col items-center justify-center gap-1 w-20 h-full transition-colors",
                 isActive

@@ -1,8 +1,8 @@
 "use client"
 
+import { Link } from "@tanstack/react-router"
 import { formatRelativeTime } from "helpers"
 import { ChevronRight, GitBranch } from "lucide-react"
-import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import type { Agent } from "@/lib/types"
 import { StatusBadge } from "./status-badge"
@@ -15,7 +15,7 @@ export function AgentCard({ agent }: AgentCardProps) {
   const repoName = agent.source.repository.split("/").slice(-2).join("/")
 
   return (
-    <Link href={`/agent/${agent.id}`}>
+    <Link to={`/agents/${agent.id}`}>
       <Card className="bg-card border-border hover:bg-accent/50 transition-colors active:scale-[0.98]">
         <CardContent className="p-3">
           <div className="flex items-start justify-between gap-2">

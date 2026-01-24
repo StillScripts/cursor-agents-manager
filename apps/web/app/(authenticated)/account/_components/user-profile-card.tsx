@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+import { Link } from "@tanstack/react-router"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { SkeletonCard } from "@/components/ui/skeleton-card"
@@ -46,7 +46,7 @@ export function UserProfileCard() {
           </div>
         </div>
         <div className="mt-4 pt-4 border-t border-border">
-          <Link href="/account/activity">
+          <Link to="/account/activity">
             <Button variant="outline" className="w-full">
               Your Activity
             </Button>

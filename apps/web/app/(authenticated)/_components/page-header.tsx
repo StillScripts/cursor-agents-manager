@@ -1,7 +1,7 @@
 "use client"
 
+import { useRouter } from "@tanstack/react-router"
 import { ChevronLeft } from "lucide-react"
-import { useRouter } from "next/navigation"
 import type React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -39,7 +39,7 @@ export function PageHeader({
               variant="ghost"
               size="icon"
               className="h-8 w-8 -ml-2 shrink-0"
-              onClick={() => router.back()}
+              onClick={() => router.history.back()}
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>

@@ -12,7 +12,7 @@ import {
   Rocket,
   Trash2,
 } from "lucide-react"
-import Link from "next/link"
+import { Link } from "@tanstack/react-router"
 import type React from "react"
 import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -88,7 +88,7 @@ function TaskAgentsList({ taskId }: { taskId: Id<"tasks"> }) {
       {agents.map((agent) => (
         <Link
           key={agent._id}
-          href={`/agent/${agent.agentId}`}
+          to={`/agents/${agent.agentId}`}
           className="group/agent flex items-center gap-3 px-4 py-3 border-b border-border/30 last:border-b-0 hover:bg-secondary/30 transition-colors"
         >
           <Rocket className="w-4 h-4 text-muted-foreground/60 shrink-0" />
