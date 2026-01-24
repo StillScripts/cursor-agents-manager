@@ -9,6 +9,7 @@
     "./cursor/*": "./src/cursor/*.ts",
     "./ai": "./src/ai.ts",
     "./auth": "./src/auth.ts",
+    "./github": "./src/github.ts",
     "./settings": "./src/settings.ts"
   },
   "devDependencies": {

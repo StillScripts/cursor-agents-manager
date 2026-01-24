@@ -6,6 +6,7 @@ import {
   Eye,
   EyeOff,
   GitBranch,
+  GitMerge,
   Sparkles,
   StopCircle,
   Trash2,
@@ -40,6 +41,8 @@ import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { useAgent, useDeleteAgent, useStopAgent } from "@/lib/hooks/use-agents"
 import { useSummarizeConversation, useTextToSpeech } from "@/lib/hooks/use-ai"
+import { useGithubKey } from "@/lib/hooks/use-github-key"
+import { useMergePullRequest } from "@/lib/hooks/use-merge-pr"
 import { useOpenAIKey } from "@/lib/hooks/use-openai-key"
 import type { Agent } from "@/lib/types"
 
@@ -64,6 +67,13 @@ export function AgentDetail({
   const summarizeConversation = useSummarizeConversation()
   const textToSpeech = useTextToSpeech()
   const { hasOpenAIKey } = useOpenAIKey()
+  const { hasGithubKey } = useGithubKey()
+  const {
+    mergePr,
+    isPending: isMerging,
+    error: mergeError,
+    result: mergeResult,
+  } = useMergePullRequest()
 
   // Audio player state
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
@@ -206,15 +216,42 @@ export function AgentDetail({
                   </div>
 
                   {agent.target.prUrl && (
-                    <a
-                      href={agent.target.prUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-primary"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      View Pull Request
-                    </a>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <a
+                        href={agent.target.prUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm text-primary"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        View Pull Request
+                      </a>
+                      {hasGithubKey && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => mergePr(agent.target.prUrl!, "squash")}
+                          disabled={isMerging || mergeResult?.success}
+                        >
+                          {isMerging ? (
+                            <Spinner className="h-4 w-4 mr-2" />
+                          ) : mergeResult?.success ? (
+                            <GitMerge className="h-4 w-4 mr-2 text-green-500" />
+                          ) : (
+                            <GitMerge className="h-4 w-4 mr-2" />
+                          )}
+                          {mergeResult?.success ? "Merged" : "Merge PR"}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  {mergeError && (
+                    <p className="text-sm text-destructive">{mergeError}</p>
+                  )}
+                  {mergeResult?.success && (
+                    <p className="text-sm text-green-500">
+                      {mergeResult.message}
+                    </p>
                   )}
                 </div>
 

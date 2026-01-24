@@ -1,4 +1,5 @@
 export * from "./ai"
 export * from "./auth"
 export * from "./cursor"
+export * from "./github"
 export * from "./settings"
