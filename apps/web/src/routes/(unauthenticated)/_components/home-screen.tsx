@@ -26,24 +26,24 @@ function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
         </Link>
 
         <nav className="hidden items-center gap-6 md:flex">
-          <Link
-            to="#features"
+          <a
+            href="#features"
             className="text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             Features
-          </Link>
-          <Link
-            to="#how-it-works"
+          </a>
+          <a
+            href="#how-it-works"
             className="text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             How It Works
-          </Link>
-          <Link
-            to="#screenshots"
+          </a>
+          <a
+            href="#screenshots"
             className="text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             Screenshots
-          </Link>
+          </a>
         </nav>
 
         <div className="flex items-center gap-3">
@@ -63,10 +63,7 @@ function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
                   <span className="sr-only">GitHub</span>
                 </Button>
               </a>
-              <Link
-                to="/signup"
-                className="hidden sm:inline-flex"
-              >
+              <Link to="/signup" className="hidden sm:inline-flex">
                 <Button>Get Started</Button>
               </Link>
             </>

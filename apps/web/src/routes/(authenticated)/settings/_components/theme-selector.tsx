@@ -1,9 +1,9 @@
 "use client"
 
 import { Monitor, Moon, Sun } from "lucide-react"
-import { useTheme } from "next-themes"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { useTheme } from "@/lib/theme-provider"
 
 const themeOptions = [
   { value: "light", label: "Light", icon: Sun },

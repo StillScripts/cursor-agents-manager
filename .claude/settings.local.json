@@ -67,7 +67,12 @@
       "Skill(convex-best-practices)",
       "Skill(vercel-react-best-practices)",
       "Skill(web-design-guidelines)",
-      "Bash(bun run:*)"
+      "Bash(bun run:*)",
+      "WebFetch(domain:blog.logrocket.com)",
+      "WebFetch(domain:convex-better-auth.netlify.app)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(curl:*)",
+      "WebFetch(domain:www.npmjs.com)"
     ]
   }
 }
