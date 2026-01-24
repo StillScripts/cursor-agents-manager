@@ -9,6 +9,7 @@ import type React from "react"
 import { useState } from "react"
 import { authClient } from "@/lib/better-auth/auth-client"
 import { CursorKeyProvider } from "@/lib/hooks/use-cursor-key"
+import { GithubKeyProvider } from "@/lib/hooks/use-github-key"
 import { OpenAIKeyProvider } from "@/lib/hooks/use-openai-key"
 
 // Cache configuration constants
@@ -59,7 +60,9 @@ export function Providers({
         >
           <QueryClientProvider client={queryClient}>
             <CursorKeyProvider>
-              <OpenAIKeyProvider>{children}</OpenAIKeyProvider>
+              <OpenAIKeyProvider>
+                <GithubKeyProvider>{children}</GithubKeyProvider>
+              </OpenAIKeyProvider>
             </CursorKeyProvider>
           </QueryClientProvider>
         </ConvexBetterAuthProvider>
