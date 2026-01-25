@@ -1,4 +1,4 @@
-import { mutation } from "./_generated/server"
+import { mutation } from "better-convex/server"
 import { getAuthenticatedUser } from "./auth"
 
 /**

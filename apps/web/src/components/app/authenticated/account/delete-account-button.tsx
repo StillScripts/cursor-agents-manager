@@ -1,5 +1,5 @@
 import { useRouter } from "@tanstack/react-router"
-import { useMutation } from "convex/react"
+import { useConvexMutation } from "better-convex/react"
 import { AlertTriangle, Trash2 } from "lucide-react"
 import { useState } from "react"
 import {
@@ -25,7 +25,7 @@ import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 
 export function DeleteAccountButton() {
   const router = useRouter()
-  const deleteAccountMutation = useMutation(api.users.deleteAccount)
+  const deleteAccountMutation = useConvexMutation(api.users.deleteAccount)
   const [isOpen, setIsOpen] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 

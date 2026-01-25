@@ -1,4 +1,4 @@
-import { useMutation } from "convex/react"
+import { useConvexMutation } from "better-convex/react"
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
 import { useStableQuery } from "@/lib/hooks/use-stable-query"
@@ -69,7 +69,7 @@ export function useActiveTimeLog() {
 }
 
 export function useSaveTimeLog() {
-  const saveTimeLog = useMutation(api.timeLogs.saveTimeLog)
+  const saveTimeLog = useConvexMutation(api.timeLogs.saveTimeLog)
 
   return {
     saveTimeLog: (data: {
@@ -82,7 +82,7 @@ export function useSaveTimeLog() {
 }
 
 export function useStopTimeLog() {
-  const stopTimeLog = useMutation(api.timeLogs.stopTimeLog)
+  const stopTimeLog = useConvexMutation(api.timeLogs.stopTimeLog)
 
   return {
     stopTimeLog: (data: { timeLogId: Id<"timeLogs">; endTime: number }) =>
@@ -91,7 +91,7 @@ export function useStopTimeLog() {
 }
 
 export function useUpdateTimeLogEndTime() {
-  const updateTimeLogEndTime = useMutation(api.timeLogs.updateTimeLogEndTime)
+  const updateTimeLogEndTime = useConvexMutation(api.timeLogs.updateTimeLogEndTime)
 
   return {
     updateTimeLogEndTime: (data: {
@@ -102,7 +102,7 @@ export function useUpdateTimeLogEndTime() {
 }
 
 export function useDeleteTimeLog() {
-  const deleteTimeLog = useMutation(api.timeLogs.deleteTimeLog)
+  const deleteTimeLog = useConvexMutation(api.timeLogs.deleteTimeLog)
 
   return {
     deleteTimeLog: (timeLogId: Id<"timeLogs">) => deleteTimeLog({ timeLogId }),

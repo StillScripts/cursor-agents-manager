@@ -3,7 +3,7 @@
 import { decryptData } from "encryption"
 import type { Agent } from "validators"
 import { internal } from "./_generated/api"
-import { internalAction } from "./_generated/server"
+import { internalAction } from "better-convex/server"
 
 const CURSOR_API_URL = "https://api.cursor.com/v0/agents"
 

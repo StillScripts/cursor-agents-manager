@@ -1,4 +1,4 @@
-import { useAction } from "convex/react"
+import { useConvexAction } from "better-convex/react"
 import {
   AlertCircle,
   Check,
@@ -54,12 +54,12 @@ export function GithubTokenManager() {
   })
   const [validation, setValidation] = useState<TokenValidation | null>(null)
 
-  const getGithubTokenStatus = useAction(
+  const getGithubTokenStatus = useConvexAction(
     api.apiKeysActions.getGithubTokenStatus
   )
-  const saveGithubToken = useAction(api.apiKeysActions.saveGithubToken)
-  const deleteGithubToken = useAction(api.apiKeysActions.deleteGithubToken)
-  const checkGithubToken = useAction(api.github.checkGithubToken)
+  const saveGithubToken = useConvexAction(api.apiKeysActions.saveGithubToken)
+  const deleteGithubToken = useConvexAction(api.apiKeysActions.deleteGithubToken)
+  const checkGithubToken = useConvexAction(api.github.checkGithubToken)
 
   const fetchStatus = useCallback(async () => {
     try {

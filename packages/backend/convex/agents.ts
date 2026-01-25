@@ -5,7 +5,7 @@ import {
   internalQuery,
   mutation,
   query,
-} from "./_generated/server"
+} from "better-convex/server"
 import { getAuthenticatedUser } from "./auth"
 
 const agentStatusValidator = v.union(

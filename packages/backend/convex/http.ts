@@ -4,7 +4,7 @@ import {
   webhookPayloadSchema,
 } from "validators/cursor/webhook"
 import { api, internal } from "./_generated/api"
-import { httpAction } from "./_generated/server"
+import { httpAction } from "better-convex/server"
 import { authComponent, createAuth } from "./auth"
 
 const http = httpRouter()

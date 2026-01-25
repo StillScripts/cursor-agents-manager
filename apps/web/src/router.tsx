@@ -1,9 +1,9 @@
 import { QueryClient } from "@tanstack/react-query"
 import { createRouter } from "@tanstack/react-router"
-import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query"
 import { routeTree } from "./routeTree.gen"
 
 export function getRouter() {
+  // Create a QueryClient for router context (better-convex manages the actual one in Providers)
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -21,11 +21,6 @@ export function getRouter() {
     context: { queryClient },
     defaultPreload: "intent",
     scrollRestoration: true,
-  })
-
-  setupRouterSsrQueryIntegration({
-    router,
-    queryClient,
   })
 
   return router

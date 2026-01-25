@@ -1,4 +1,4 @@
-import { useQuery } from "convex/react"
+import { useConvexQuery } from "better-convex/react"
 import { createContext, type ReactNode, useContext } from "react"
 import { api } from "@/convex/_generated/api"
 
@@ -12,7 +12,7 @@ const CursorKeyContext = createContext<CursorKeyContextValue | undefined>(
 )
 
 export function CursorKeyProvider({ children }: { children: ReactNode }) {
-  const status = useQuery(api.apiKeys.getCursorApiKeyStatus)
+  const status = useConvexQuery(api.apiKeys.getCursorApiKeyStatus)
 
   return (
     <CursorKeyContext.Provider

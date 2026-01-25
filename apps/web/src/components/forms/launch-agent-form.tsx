@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router"
-import { useAction } from "convex/react"
+import { useConvexAction } from "better-convex/react"
 import { AlertCircle, ExternalLink, Rocket, Settings } from "lucide-react"
 import { useState } from "react"
 import {
@@ -198,7 +198,7 @@ const TaskSelectField = ({ field }: { field: any }) => {
 
 export function LaunchAgentForm() {
   const navigate = useNavigate()
-  const launchAgentAction = useAction(api.cursor.launchAgent)
+  const launchAgentAction = useConvexAction(api.cursor.launchAgent)
   const { hasCursorKey, isLoading: isLoadingCursorKey } = useCursorKey()
   const { hasOpenAIKey } = useOpenAIKey()
   const { activeTimeLog } = useActiveTimeLog()

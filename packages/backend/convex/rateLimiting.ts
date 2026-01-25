@@ -2,7 +2,7 @@
 
 import { MINUTE, RateLimiter } from "@convex-dev/rate-limiter"
 import { components } from "./_generated/api"
-import type { ActionCtx } from "./_generated/server"
+import type { ActionCtx } from "better-convex/server"
 
 // Type assertion needed until Convex regenerates types after component registration
 const rateLimiterComponent = (components as any).rateLimiter

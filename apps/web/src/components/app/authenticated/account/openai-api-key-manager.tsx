@@ -1,4 +1,4 @@
-import { useAction } from "convex/react"
+import { useConvexAction } from "better-convex/react"
 import {
   Brain,
   Check,
@@ -193,11 +193,11 @@ export function OpenAIApiKeyManager() {
     maskedKey: null,
   })
 
-  const getOpenaiApiKeyStatus = useAction(
+  const getOpenaiApiKeyStatus = useConvexAction(
     api.apiKeysActions.getOpenaiApiKeyStatus
   )
-  const saveOpenaiApiKey = useAction(api.apiKeysActions.saveOpenaiApiKey)
-  const deleteOpenaiApiKey = useAction(api.apiKeysActions.deleteOpenaiApiKey)
+  const saveOpenaiApiKey = useConvexAction(api.apiKeysActions.saveOpenaiApiKey)
+  const deleteOpenaiApiKey = useConvexAction(api.apiKeysActions.deleteOpenaiApiKey)
 
   const fetchStatus = useCallback(async () => {
     try {

@@ -1,4 +1,4 @@
-import { useMutation } from "convex/react"
+import { useConvexMutation } from "better-convex/react"
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
 import { useStableQuery } from "@/lib/hooks/use-stable-query"
@@ -13,8 +13,8 @@ export interface Task {
 
 export function useTasks() {
   const tasks = useStableQuery(api.tasks.getTasks)
-  const createTask = useMutation(api.tasks.createTask)
-  const deleteTask = useMutation(api.tasks.deleteTask)
+  const createTask = useConvexMutation(api.tasks.createTask)
+  const deleteTask = useConvexMutation(api.tasks.deleteTask)
 
   return {
     tasks,

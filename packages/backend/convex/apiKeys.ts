@@ -4,7 +4,7 @@ import {
   internalQuery,
   mutation,
   query,
-} from "./_generated/server"
+} from "better-convex/server"
 import { getAuthenticatedUserOrNull } from "./auth"
 
 // ============================================================================

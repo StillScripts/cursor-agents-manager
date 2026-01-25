@@ -1,4 +1,4 @@
-import { useMutation } from "convex/react"
+import { useConvexMutation } from "better-convex/react"
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
 import { useStableQuery } from "@/lib/hooks/use-stable-query"
@@ -11,7 +11,7 @@ export interface Repository {
 
 export function useRepositories() {
   const repositories = useStableQuery(api.repositories.getRepositories)
-  const saveRepositories = useMutation(api.repositories.saveRepositories)
+  const saveRepositories = useConvexMutation(api.repositories.saveRepositories)
 
   return {
     repositories,

@@ -1,4 +1,4 @@
-import { useAction, useQuery } from "convex/react"
+import { useConvexAction, useConvexQuery } from "better-convex/react"
 import { Bot } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { AgentCard } from "@/components/app/authenticated/agent-card"
@@ -17,10 +17,10 @@ export function AgentsTable() {
   const hasSyncedOnce = useRef(false)
   const { hasCursorKey, isLoading: isLoadingCursorKey } = useCursorKey()
 
-  // Use both useQuery (for loading state) and useStableQuery (for stable data)
-  const rawQueryResult = useQuery(api.agents.listByUser, { limit })
+  // Use both useConvexQuery (for loading state) and useStableQuery (for stable data)
+  const rawQueryResult = useConvexQuery(api.agents.listByUser, { limit })
   const dbResult = useStableQuery(api.agents.listByUser, { limit })
-  const syncAgents = useAction(api.cursor.getAgents)
+  const syncAgents = useConvexAction(api.cursor.getAgents)
 
   // Track if we've ever received a successful query result
   useEffect(() => {
