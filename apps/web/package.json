@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "bun run build:images && vite build",
+    "build:images": "bun ./scripts/optimize-images.ts",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -44,6 +45,7 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
+    "sharp": "^0.33.5",
     "@tailwindcss/postcss": "^4.1.9",
     "@types/bun": "latest",
     "@types/node": "^22",

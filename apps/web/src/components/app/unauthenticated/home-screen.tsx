@@ -12,38 +12,44 @@ function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
-          <img
-            src="/android-chrome-512x512.png"
-            alt="Cursor Agents Manager"
-            className="h-12 w-12 rounded-full"
-          />
+          <picture>
+            <source type="image/webp" srcSet="/android-chrome-192x192.webp" />
+            <img
+              src="/android-chrome-192x192.png"
+              alt="Cursor Agents Manager"
+              width={48}
+              height={48}
+              className="h-12 w-12 rounded-full"
+              fetchPriority="high"
+            />
+          </picture>
           <span className="font-semibold text-foreground">
             Cursor Agents Manager
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav className="hidden items-center gap-2 md:flex">
           <a
             href="#features"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             Features
           </a>
           <a
             href="#how-it-works"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             How It Works
           </a>
           <a
             href="#screenshots"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             Screenshots
           </a>
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           {isAuthenticated ? (
             <Link to="/agents" className="hidden sm:inline-flex">
               <Button>Go to Agents</Button>
@@ -54,8 +60,9 @@ function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
                 href="https://github.com/StillScripts/cursor-agents-manager"
                 target="_blank"
                 rel="noopener noreferrer"
+                className="inline-flex shrink-0"
               >
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon-xl">
                   <Github className="h-5 w-5" />
                   <span className="sr-only">GitHub</span>
                 </Button>
@@ -147,7 +154,11 @@ function HeroSection({ isAuthenticated }: { isAuthenticated: boolean }) {
           <img
             src="/images/app-screenshot.png"
             alt="Terminal"
+            width={1540}
+            height={793}
             className="mt-6 md:mt-8 mx-auto rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm w-full max-w-[1536px]"
+            fetchPriority="high"
+            loading="eager"
           />
         </div>
       </div>
@@ -316,7 +327,7 @@ function HowItWorksSection() {
               href="https://cursor.com/dashboard?tab=cloud-agents"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary"
+              className="text-primary underline underline-offset-4 hover:text-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:rounded"
             >
               Cursor
             </a>
@@ -400,18 +411,24 @@ function ScreenshotsSection() {
       description:
         "See all your running and completed agents at a glance with real-time status updates.",
       src: "/images/agents-dashboard.png",
+      width: 1258,
+      height: 476,
     },
     {
       title: "Launch Agent",
       description:
         "Describe tasks with text or voice input. Attach images and select your target repository.",
       src: "/images/launch-agent.png",
+      width: 1258,
+      height: 476,
     },
     {
       title: "AI-Powered Features",
       description:
         "Unlock summaries, text-to-speech, voice input, and AI prompt improvement with your API key.",
       src: "/images/ai-enhancements.png",
+      width: 1258,
+      height: 476,
     },
   ]
 
@@ -438,7 +455,10 @@ function ScreenshotsSection() {
                 <img
                   src={screenshot.src || "/placeholder.svg"}
                   alt={screenshot.title}
+                  width={screenshot.width ?? 1258}
+                  height={screenshot.height ?? 476}
                   className="w-full object-cover"
+                  loading="lazy"
                 />
               </div>
               <h3 className="mb-1 font-semibold text-foreground">
@@ -531,7 +551,7 @@ function Footer() {
             href="https://github.com/StillScripts/cursor-agents-manager"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Github className="h-4 w-4" />
             <span>GitHub</span>
