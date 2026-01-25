@@ -293,7 +293,6 @@ export function ImageUpload({
           <div className="flex flex-wrap gap-3">
             {value.map((image, index) => (
               <div key={index} className="relative group">
-                {/** biome-ignore lint/performance/noImgElement: We do not care about this rule here */}
                 <img
                   src={getPreviewUrl(image, index) || "/placeholder.svg"}
                   alt={`Preview ${index + 1}`}
