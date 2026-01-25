@@ -151,15 +151,22 @@ function HeroSection({ isAuthenticated }: { isAuthenticated: boolean }) {
             </div>
           )}
 
-          <img
-            src="/images/app-screenshot.png"
-            alt="Terminal"
-            width={1540}
-            height={793}
-            className="mt-6 md:mt-8 mx-auto rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm w-full max-w-[1536px]"
-            fetchPriority="high"
-            loading="eager"
-          />
+          <picture>
+            <source
+              type="image/webp"
+              srcSet="/images/app-screenshot-800.webp 800w, /images/app-screenshot-1320.webp 1320w"
+              sizes="(max-width: 1536px) 100vw, 1536px"
+            />
+            <img
+              src="/images/app-screenshot.png"
+              alt="Terminal"
+              width={1540}
+              height={793}
+              className="mt-6 md:mt-8 mx-auto rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm w-full max-w-[1536px]"
+              fetchPriority="high"
+              loading="eager"
+            />
+          </picture>
         </div>
       </div>
     </section>
@@ -449,26 +456,45 @@ function ScreenshotsSection() {
         </div>
 
         <div className="mx-auto mt-16 grid gap-8 md:grid-cols-3">
-          {screenshots.map((screenshot) => (
-            <div key={screenshot.title} className="group flex flex-col">
-              <div className="relative mb-4 overflow-hidden rounded-xl border border-border/50 bg-background transition-all group-hover:border-primary/50">
-                <img
-                  src={screenshot.src || "/placeholder.svg"}
-                  alt={screenshot.title}
-                  width={screenshot.width ?? 1258}
-                  height={screenshot.height ?? 476}
-                  className="w-full object-cover"
-                  loading="lazy"
-                />
+          {screenshots.map((screenshot) => {
+            const base = /^\/images\/(.+)\.(png|jpg|jpeg)$/i.exec(
+              screenshot.src || ""
+            )?.[1]
+            const img = (
+              <img
+                src={screenshot.src || "/placeholder.svg"}
+                alt={screenshot.title}
+                width={screenshot.width ?? 1258}
+                height={screenshot.height ?? 476}
+                className="w-full object-cover"
+                loading="lazy"
+              />
+            )
+            return (
+              <div key={screenshot.title} className="group flex flex-col">
+                <div className="relative mb-4 overflow-hidden rounded-xl border border-border/50 bg-background transition-all group-hover:border-primary/50">
+                  {base ? (
+                    <picture>
+                      <source
+                        type="image/webp"
+                        srcSet={`/images/${base}-400.webp 400w, /images/${base}-800.webp 800w`}
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                      />
+                      {img}
+                    </picture>
+                  ) : (
+                    img
+                  )}
+                </div>
+                <h3 className="mb-1 font-semibold text-foreground">
+                  {screenshot.title}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {screenshot.description}
+                </p>
               </div>
-              <h3 className="mb-1 font-semibold text-foreground">
-                {screenshot.title}
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {screenshot.description}
-              </p>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </section>
