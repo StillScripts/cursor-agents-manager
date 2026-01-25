@@ -13,7 +13,7 @@ export function AgentCard({ agent }: AgentCardProps) {
   const repoName = agent.source.repository.split("/").slice(-2).join("/")
 
   return (
-    <Link href={`/agent/${agent.id}`}>
+    <Link to="/agent/$id" params={{ id: agent.id }}>
       <Card className="bg-card border-border hover:bg-accent/50 transition-colors active:scale-[0.98]">
         <CardContent className="p-3">
           <div className="flex items-start justify-between gap-2">

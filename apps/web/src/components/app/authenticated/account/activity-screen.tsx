@@ -60,7 +60,7 @@ function TaskActivityGroup({ group }: { group: GroupedLogs }) {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <Link
-          href="/tasks"
+          to="/tasks"
           className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
         >
           {displayName}

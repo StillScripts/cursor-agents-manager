@@ -365,7 +365,7 @@ function HowItWorksSection() {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes pulse-flow {
           0% {
             transform: translateX(-100%);

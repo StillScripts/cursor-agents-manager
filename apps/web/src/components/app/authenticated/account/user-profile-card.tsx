@@ -44,7 +44,7 @@ export function UserProfileCard() {
           </div>
         </div>
         <div className="mt-4 pt-4 border-t border-border">
-          <Link href="/account/activity">
+          <Link to="/account/activity">
             <Button variant="outline" className="w-full">
               Your Activity
             </Button>

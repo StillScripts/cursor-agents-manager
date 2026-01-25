@@ -20,7 +20,7 @@ export function NoCursorAccess({ title }: NoCursorAccessProps) {
             <p className="text-foreground font-medium mb-2">
               You need a cursor key to use this feature.
             </p>
-            <Link href="/account">
+            <Link to="/account">
               <Button variant="default" className="mt-2">
                 Go to Account Settings
               </Button>

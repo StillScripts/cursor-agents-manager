@@ -15,6 +15,13 @@ export default defineConfig({
     }),
     tanstackStart({
       srcDirectory: "src",
+      server: {
+        entry: "./src/entry-server.tsx",
+      },
+      router: {
+        routeFileIgnorePrefix: "-",
+        routeFileIgnorePattern: "routeTree.gen",
+      },
     }),
     viteReact(),
   ],

@@ -18,7 +18,7 @@ export function DesktopHeader() {
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                to={item.href}
                 className={cn(
                   "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
                   isActive
