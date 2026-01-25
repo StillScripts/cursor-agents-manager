@@ -1,9 +1,9 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
 import { Suspense } from "react"
-import { BottomNav } from "./_authenticated/_components/bottom-nav"
-import { DesktopHeader } from "./_authenticated/_components/desktop-header"
-import { GlobalTimerBanner } from "./_authenticated/_components/global-timer-banner"
+import { BottomNav } from "@/components/app/authenticated/bottom-nav"
+import { DesktopHeader } from "@/components/app/authenticated/desktop-header"
+import { GlobalTimerBanner } from "@/components/app/authenticated/global-timer-banner"
 import { isAuthenticated } from "@/lib/better-auth/auth-server"
 
 const checkAuth = createServerFn({ method: "GET" }).handler(async () => {

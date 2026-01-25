@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { Suspense } from "react"
-import { AgentDetail } from "./agent/_components/agent-detail"
+import { AgentDetail } from "@/components/app/authenticated/agent/agent-detail"
 
 export const Route = createFileRoute("/_authenticated/agent/$id")({
   head: () => ({

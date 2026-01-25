@@ -16,10 +16,10 @@ import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
-import { PageHeader } from "@/app/(authenticated)/_components/page-header"
-import { StatusBadge } from "@/app/(authenticated)/_components/status-badge"
-import { ConversationSection } from "@/app/(authenticated)/agent/_components/conversation-section"
-import { FollowUpMessageInput } from "@/app/(authenticated)/agent/_components/follow-up-message-input"
+import { ConversationSection } from "@/components/app/authenticated/agent/conversation-section"
+import { FollowUpMessageInput } from "@/components/app/authenticated/agent/follow-up-message-input"
+import { PageHeader } from "@/components/app/authenticated/page-header"
+import { StatusBadge } from "@/components/app/authenticated/status-badge"
 import {
   Accordion,
   AccordionContent,

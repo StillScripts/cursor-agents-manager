@@ -9,8 +9,8 @@ import {
   launchAgentFormSchema,
   type Model,
 } from "validators/cursor/launch-agent"
-import { NoCursorAccess } from "@/app/(authenticated)/_components/no-cursor-access"
-import { PageHeader } from "@/app/(authenticated)/_components/page-header"
+import { NoCursorAccess } from "@/components/app/authenticated/no-cursor-access"
+import { PageHeader } from "@/components/app/authenticated/page-header"
 import {
   extractErrorMessage,
   FieldSkeleton,

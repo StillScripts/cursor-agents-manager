@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { Suspense } from "react"
-import { ActivityScreen } from "./account/_components/activity-screen"
+import { ActivityScreen } from "@/components/app/authenticated/account/activity-screen"
 
 export const Route = createFileRoute("/_authenticated/account/activity")({
   head: () => ({

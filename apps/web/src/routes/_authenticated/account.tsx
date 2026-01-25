@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { Suspense } from "react"
-import { PageHeader } from "./_components/page-header"
-import { CursorApiKeyManager } from "./account/_components/cursor-api-key-manager"
-import { DeleteAccountButton } from "./account/_components/delete-account-button"
-import { GithubTokenManager } from "./account/_components/github-token-manager"
-import { OpenAIApiKeyManager } from "./account/_components/openai-api-key-manager"
-import { SettingsLinkCard } from "./account/_components/settings-link-card"
-import { SignOutButton } from "./account/_components/sign-out-button"
-import { UserProfileCard } from "./account/_components/user-profile-card"
+import { CursorApiKeyManager } from "@/components/app/authenticated/account/cursor-api-key-manager"
+import { DeleteAccountButton } from "@/components/app/authenticated/account/delete-account-button"
+import { GithubTokenManager } from "@/components/app/authenticated/account/github-token-manager"
+import { OpenAIApiKeyManager } from "@/components/app/authenticated/account/openai-api-key-manager"
+import { SettingsLinkCard } from "@/components/app/authenticated/account/settings-link-card"
+import { SignOutButton } from "@/components/app/authenticated/account/sign-out-button"
+import { UserProfileCard } from "@/components/app/authenticated/account/user-profile-card"
+import { PageHeader } from "@/components/app/authenticated/page-header"
 
 export const Route = createFileRoute("/_authenticated/account")({
   head: () => ({

@@ -15,7 +15,6 @@ export default defineConfig({
     }),
     tanstackStart({
       srcDirectory: "src",
-      routeFileIgnorePattern: "/_components/",
     }),
     viteReact(),
   ],
