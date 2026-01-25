@@ -1,4 +1,3 @@
-
 import { useRouter } from "@tanstack/react-router"
 import { useMutation } from "convex/react"
 import { AlertTriangle, Trash2 } from "lucide-react"

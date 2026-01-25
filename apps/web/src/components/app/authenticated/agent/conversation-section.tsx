@@ -1,4 +1,3 @@
-
 import { Bot, User, Wrench } from "lucide-react"
 import { useState } from "react"
 import ReactMarkdown from "react-markdown"

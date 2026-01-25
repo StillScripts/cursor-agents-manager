@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from "@tanstack/react-router"
 import { formatDuration } from "helpers"
 import { Clock } from "lucide-react"

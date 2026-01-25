@@ -1,4 +1,3 @@
-
 import { formatDuration, formatTime } from "helpers"
 import { useSetAtom } from "jotai"
 import { Clock, Eye, PlayCircle, Sparkles } from "lucide-react"

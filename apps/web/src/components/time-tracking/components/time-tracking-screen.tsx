@@ -1,4 +1,3 @@
-
 import { useAtomValue } from "jotai"
 import { TaskList } from "@/components/time-tracking/components/task-list"
 import { Navigation } from "@/components/time-tracking/components/time-tracking-tabs"

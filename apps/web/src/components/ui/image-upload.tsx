@@ -1,4 +1,3 @@
-
 import { ImageIcon, Upload, X } from "lucide-react"
 import type React from "react"
 import { useCallback, useRef, useState } from "react"

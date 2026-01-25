@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from "@tanstack/react-router"
 import { navItems } from "@/components/app/authenticated/nav-items"
 import { cn } from "@/lib/utils"

@@ -1,4 +1,3 @@
-
 import { Link, useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { type SignUpFormData, signUpFormSchema } from "validators/auth"

@@ -1,4 +1,3 @@
-
 import { NumberField } from "@base-ui/react/number-field"
 import { GripHorizontal, Minus, Plus } from "lucide-react"
 import type * as React from "react"

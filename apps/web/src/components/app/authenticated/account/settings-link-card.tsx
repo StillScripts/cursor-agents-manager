@@ -1,4 +1,3 @@
-
 import { Link } from "@tanstack/react-router"
 import { ChevronRight, Settings } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"

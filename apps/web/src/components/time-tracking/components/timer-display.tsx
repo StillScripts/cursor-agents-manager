@@ -1,4 +1,3 @@
-
 import { formatDuration } from "helpers"
 import { useAtom } from "jotai"
 import { Clock, Play, Square } from "lucide-react"

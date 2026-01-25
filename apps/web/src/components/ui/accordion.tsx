@@ -1,4 +1,3 @@
-
 import { Accordion as AccordionPrimitive } from "@base-ui/react/accordion"
 import { ChevronDown, ChevronUp } from "lucide-react"
 import { cn } from "@/lib/utils"

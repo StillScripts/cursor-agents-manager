@@ -1,4 +1,3 @@
-
 import { Plus, Trash2 } from "lucide-react"
 import { type BranchFormData, branchesRequestSchema } from "validators/settings"
 import { Button } from "@/components/ui/button"

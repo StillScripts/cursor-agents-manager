@@ -1,4 +1,3 @@
-
 import { Link, useNavigate } from "@tanstack/react-router"
 import { useAction } from "convex/react"
 import { AlertCircle, ExternalLink, Rocket, Settings } from "lucide-react"

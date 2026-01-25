@@ -1,4 +1,3 @@
-
 import { Link } from "@tanstack/react-router"
 import { formatDuration } from "helpers"
 import { useSetAtom } from "jotai"

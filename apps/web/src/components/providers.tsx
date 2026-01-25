@@ -1,4 +1,3 @@
-
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ConvexReactClient } from "convex/react"

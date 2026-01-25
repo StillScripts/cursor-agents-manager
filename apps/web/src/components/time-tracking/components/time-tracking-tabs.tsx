@@ -1,4 +1,3 @@
-
 import { useAtom } from "jotai"
 import { ListTodo, Timer } from "lucide-react"
 import { viewAtom } from "@/lib/atoms"

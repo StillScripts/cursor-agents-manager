@@ -1,6 +1,5 @@
-
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
-import { Suspense, useState } from "react"
+import { useState } from "react"
 import { type SignInFormData, signInFormSchema } from "validators/auth"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
@@ -141,9 +140,5 @@ export function LoginFormSkeleton() {
 }
 
 export function LoginForm() {
-  return (
-    <Suspense fallback={<LoginFormSkeleton />}>
-      <LoginFormContent />
-    </Suspense>
-  )
+  return <LoginFormContent />
 }
