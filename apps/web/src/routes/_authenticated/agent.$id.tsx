@@ -14,7 +14,5 @@ export const Route = createFileRoute("/_authenticated/agent/$id")({
 function AgentPage() {
   const { id } = Route.useParams()
 
-  return (
-
-  )
+  return <AgentDetail agentId={id} initialAgent={null} />
 }

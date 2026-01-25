@@ -19,6 +19,11 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 function SettingsPage() {
   return (
-
+    <div className="p-4 flex flex-col gap-4 sm:gap-6">
+      <PageHeader title="Settings" showBack />
+      <ThemeSelector />
+      <RepositoriesFormContainer />
+      <BranchesFormContainer />
+    </div>
   )
 }

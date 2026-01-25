@@ -20,6 +20,20 @@ export const Route = createFileRoute("/_authenticated/account")({
 
 function AccountPage() {
   return (
-
+    <div className="p-4 flex flex-col gap-4 sm:gap-6">
+      <PageHeader title="Account" />
+      <UserProfileCard />
+      <CursorApiKeyManager />
+      <OpenAIApiKeyManager />
+      <GithubTokenManager />
+      <SettingsLinkCard />
+      <div className="flex flex-col gap-2 pt-4 border-t">
+        <SignOutButton />
+        <DeleteAccountButton />
+      </div>
+      <p className="text-xs text-center text-muted-foreground pt-4">
+        Cursor Agent Manager v0.1.0
+      </p>
+    </div>
   )
 }

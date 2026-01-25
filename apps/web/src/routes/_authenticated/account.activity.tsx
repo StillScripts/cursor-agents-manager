@@ -12,7 +12,5 @@ export const Route = createFileRoute("/_authenticated/account/activity")({
 })
 
 function ActivityPage() {
-  return (
-
-  )
+  return <ActivityScreen />
 }
