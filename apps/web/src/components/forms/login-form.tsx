@@ -16,7 +16,7 @@ import { FormProvider, useAppForm } from "@/lib/hooks/use-app-form"
 function LoginFormContent() {
   const [error, setError] = useState("")
   const navigate = useNavigate()
-  const search = useSearch({ strict: false }) as { callbackUrl?: string }
+  const search = useSearch({ strict: false })
   const callbackUrl = search.callbackUrl || "/agents"
 
   // @ts-expect-error - useAppForm generic signature expects 12 type args in this version, but inference works correctly
