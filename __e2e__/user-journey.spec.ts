@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test"
 import type { Page } from "@playwright/test"
+import { expect, test } from "@playwright/test"
 
 // Test user credentials - using predetermined email for consistency
 const timestamp = Date.now()
@@ -152,15 +152,15 @@ test.describe
         // Verify branches were saved (they remain in the form on Settings).
         // The Launch Agent form and its branch selector are not rendered when the
         // user has no cursor API key (NoCursorAccess), so we assert here instead.
-        await expect(page.locator('input[name="branches[1].name"]')).toHaveValue(
-          "main"
-        )
-        await expect(page.locator('input[name="branches[2].name"]')).toHaveValue(
-          "develop"
-        )
-        await expect(page.locator('input[name="branches[3].name"]')).toHaveValue(
-          "sample"
-        )
+        await expect(
+          page.locator('input[name="branches[1].name"]')
+        ).toHaveValue("main")
+        await expect(
+          page.locator('input[name="branches[2].name"]')
+        ).toHaveValue("develop")
+        await expect(
+          page.locator('input[name="branches[3].name"]')
+        ).toHaveValue("sample")
       })
     })
 
