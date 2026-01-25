@@ -22,28 +22,28 @@ function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav className="hidden items-center gap-2 md:flex">
           <a
             href="#features"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             Features
           </a>
           <a
             href="#how-it-works"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             How It Works
           </a>
           <a
             href="#screenshots"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             Screenshots
           </a>
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           {isAuthenticated ? (
             <Link to="/agents" className="hidden sm:inline-flex">
               <Button>Go to Agents</Button>
@@ -54,8 +54,9 @@ function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
                 href="https://github.com/StillScripts/cursor-agents-manager"
                 target="_blank"
                 rel="noopener noreferrer"
+                className="inline-flex shrink-0"
               >
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon-xl">
                   <Github className="h-5 w-5" />
                   <span className="sr-only">GitHub</span>
                 </Button>
@@ -531,7 +532,7 @@ function Footer() {
             href="https://github.com/StillScripts/cursor-agents-manager"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Github className="h-4 w-4" />
             <span>GitHub</span>
