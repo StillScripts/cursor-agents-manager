@@ -1,0 +1,39 @@
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
+import { createServerFn } from "@tanstack/react-start"
+import { BottomNav } from "@/components/app/authenticated/bottom-nav"
+import { DesktopHeader } from "@/components/app/authenticated/desktop-header"
+import { GlobalTimerBanner } from "@/components/app/authenticated/global-timer-banner"
+import { isAuthenticated } from "@/lib/better-auth/auth-server"
+
+const checkAuth = createServerFn({ method: "GET" }).handler(async () => {
+  return await isAuthenticated()
+})
+
+export const Route = createFileRoute("/_authenticated")({
+  beforeLoad: async () => {
+    const authenticated = await checkAuth()
+    if (!authenticated) {
+      throw redirect({ to: "/login" })
+    }
+  },
+  head: () => ({
+    meta: [{ name: "robots", content: "noindex, nofollow" }],
+  }),
+  component: AuthenticatedLayout,
+})
+
+function AuthenticatedLayout() {
+  return (
+    <>
+      <DesktopHeader />
+
+      <main className="h-dvh overflow-y-auto mobile-scroll main-content-bottom-padding bg-background max-w-md mx-auto w-full md:h-auto md:flex md:flex-col md:min-h-screen md:pt-16 md:overflow-visible md:max-w-none">
+        <div className="md:max-w-7xl md:mx-auto md:px-6 md:py-8 md:w-full pb-8 md:pb-0">
+          <GlobalTimerBanner />
+          <Outlet />
+        </div>
+      </main>
+      <BottomNav />
+    </>
+  )
+}

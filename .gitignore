@@ -9,6 +9,9 @@ node_modules/
 /out/
 apps/web/.next/
 apps/web/out/
+apps/web/.vinxi/
+apps/web/.output/
+apps/web/dist/
 
 # production
 /build
@@ -41,4 +44,4 @@ packages/backend/.convex/
 /test-results/
 /playwright-report/
 /blob-report/
-/playwright/.cache/
+/playwright/.cache/app.config.timestamp_*

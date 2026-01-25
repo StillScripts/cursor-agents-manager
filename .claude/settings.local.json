@@ -5,12 +5,17 @@
       "WebFetch(domain:docs.anthropic.com)",
       "WebFetch(domain:docs.github.com)",
       "WebFetch(domain:cli.github.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:agentskills.io)",
       "WebFetch(domain:cursor.com)",
       "WebFetch(domain:docs.convex.dev)",
       "WebFetch(domain:labs.convex.dev)",
+      "WebFetch(domain:convex-better-auth.netlify.app)",
       "WebFetch(domain:tanstack.com)",
       "WebFetch(domain:www.better-auth.com)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:blog.logrocket.com)",
       "WebSearch",
       "Bash(ls:*)",
       "Bash(pwd:*)",
@@ -22,6 +27,7 @@
       "Bash(tail:*)",
       "Bash(cat:*)",
       "Bash(tree:*)",
+      "Bash(curl:*)",
       "Bash(git status:*)",
       "Bash(git log:*)",
       "Bash(git diff:*)",
@@ -53,6 +59,7 @@
       "Bash(bun run lint:fix:*)",
       "Bash(bun run test:*)",
       "Bash(bun run biome:*)",
+      "Bash(bun run:*)",
       "Bash(bunx biome check:*)",
       "Bash(bunx tsc:*)",
       "Skill(commit)",
@@ -66,8 +73,7 @@
       "Skill(better-auth-best-practices)",
       "Skill(convex-best-practices)",
       "Skill(vercel-react-best-practices)",
-      "Skill(web-design-guidelines)",
-      "Bash(bun run:*)"
+      "Skill(web-design-guidelines)"
     ]
   }
 }

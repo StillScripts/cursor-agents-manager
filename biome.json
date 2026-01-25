@@ -17,7 +17,8 @@
       "!**/*.min.js",
       "!**/drizzle",
       "!**/convex/_generated",
-      "!**/*.css"
+      "!**/*.css",
+      "!**/routeTree.gen.ts"
     ]
   },
   "formatter": {
