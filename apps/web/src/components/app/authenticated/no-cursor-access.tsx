@@ -1,7 +1,7 @@
 "use client"
 
+import { Link } from "@tanstack/react-router"
 import { Key } from "lucide-react"
-import Link from "next/link"
 import { PageHeader } from "@/components/app/authenticated/page-header"
 import { Button } from "@/components/ui/button"
 

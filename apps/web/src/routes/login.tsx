@@ -9,7 +9,9 @@ const checkAuth = createServerFn({ method: "GET" }).handler(async () => {
 })
 
 export const Route = createFileRoute("/login")({
-  validateSearch: (search: Record<string, unknown>): { callbackUrl?: string } => {
+  validateSearch: (
+    search: Record<string, unknown>
+  ): { callbackUrl?: string } => {
     return {
       callbackUrl: search.callbackUrl as string | undefined,
     }
@@ -23,7 +25,10 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Sign In | Cursor Agents" },
-      { name: "description", content: "Sign in to your Cursor Agent Manager account" },
+      {
+        name: "description",
+        content: "Sign in to your Cursor Agent Manager account",
+      },
     ],
   }),
   component: LoginPage,

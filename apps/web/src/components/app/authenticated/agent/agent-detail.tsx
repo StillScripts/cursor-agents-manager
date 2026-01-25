@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "@tanstack/react-router"
 import { formatRelativeTime } from "helpers"
 import {
   ExternalLink,
@@ -12,7 +13,6 @@ import {
   Trash2,
   Volume2,
 } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -110,7 +110,7 @@ export function AgentDetail({
 
   const handleDelete = async () => {
     await deleteAgent.mutateAsync(agentId)
-    router.push("/agents")
+    router.navigate({ to: "/agents" })
   }
 
   const handleSummarize = async () => {

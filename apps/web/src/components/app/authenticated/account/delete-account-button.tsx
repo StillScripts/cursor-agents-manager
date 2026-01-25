@@ -1,8 +1,8 @@
 "use client"
 
+import { useRouter } from "@tanstack/react-router"
 import { useMutation } from "convex/react"
 import { AlertTriangle, Trash2 } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
 import {
   type DeleteAccountFormData,
@@ -56,8 +56,7 @@ export function DeleteAccountButton() {
           console.error("Failed to sign out:", error)
         }
         // In case the callbackURL fails...
-        router.push("/")
-        router.refresh()
+        router.navigate({ to: "/" })
       } catch (err) {
         setError(
           err instanceof Error ? err : new Error("Failed to delete account")

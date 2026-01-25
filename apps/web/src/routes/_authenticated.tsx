@@ -18,9 +18,7 @@ export const Route = createFileRoute("/_authenticated")({
     }
   },
   head: () => ({
-    meta: [
-      { name: "robots", content: "noindex, nofollow" },
-    ],
+    meta: [{ name: "robots", content: "noindex, nofollow" }],
   }),
   component: AuthenticatedLayout,
 })

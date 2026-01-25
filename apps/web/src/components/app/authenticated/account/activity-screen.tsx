@@ -1,5 +1,6 @@
 "use client"
 
+import { Link } from "@tanstack/react-router"
 import {
   formatActivityType,
   formatDateTime,
@@ -7,7 +8,6 @@ import {
   formatDurationMs,
 } from "helpers"
 import { Clock, FileText } from "lucide-react"
-import Link from "next/link"
 import { PageHeader } from "@/components/app/authenticated/page-header"
 import { Card, CardContent } from "@/components/ui/card"
 import { SkeletonCard } from "@/components/ui/skeleton-card"

@@ -1,7 +1,7 @@
 "use client"
 
+import { Link } from "@tanstack/react-router"
 import { ChevronRight, Settings } from "lucide-react"
-import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 
 export function SettingsLinkCard() {

@@ -1,5 +1,6 @@
 "use client"
 
+import { Link } from "@tanstack/react-router"
 import { formatDuration } from "helpers"
 import { useSetAtom } from "jotai"
 import {
@@ -12,7 +13,6 @@ import {
   Rocket,
   Trash2,
 } from "lucide-react"
-import { Link } from "@tanstack/react-router"
 import type React from "react"
 import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"

@@ -1,7 +1,7 @@
 "use client"
 
+import { useRouter } from "@tanstack/react-router"
 import { LogOut } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { signOut } from "@/lib/better-auth/auth-client"
 
@@ -10,8 +10,7 @@ export function SignOutButton() {
 
   const handleSignOut = async () => {
     await signOut()
-    router.push("/login")
-    router.refresh()
+    router.navigate({ to: "/login" })
   }
 
   return (

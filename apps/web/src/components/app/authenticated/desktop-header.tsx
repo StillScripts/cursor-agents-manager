@@ -1,12 +1,12 @@
 "use client"
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { Link, useLocation } from "@tanstack/react-router"
 import { navItems } from "@/components/app/authenticated/nav-items"
 import { cn } from "@/lib/utils"
 
 export function DesktopHeader() {
-  const pathname = usePathname()
+  const location = useLocation()
+  const pathname = location.pathname
 
   return (
     <header className="hidden md:block fixed  top-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-b border-border z-50">

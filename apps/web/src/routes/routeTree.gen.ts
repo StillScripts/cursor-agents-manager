@@ -8,163 +8,163 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as SignupRouteImport } from './routes/signup'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
-import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
-import { Route as AuthenticatedAgentsRouteImport } from './routes/_authenticated/agents'
-import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
-import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
-import { Route as AuthenticatedAgentsNewRouteImport } from './routes/_authenticated/agents.new'
-import { Route as AuthenticatedAgentsIdRouteImport } from './routes/_authenticated/agents.$id'
-import { Route as AuthenticatedAccountActivityRouteImport } from './routes/_authenticated/account.activity'
+import { Route as rootRouteImport } from "./routes/__root"
+import { Route as AuthenticatedRouteImport } from "./routes/_authenticated"
+import { Route as AuthenticatedAccountRouteImport } from "./routes/_authenticated/account"
+import { Route as AuthenticatedAccountActivityRouteImport } from "./routes/_authenticated/account.activity"
+import { Route as AuthenticatedAgentsRouteImport } from "./routes/_authenticated/agents"
+import { Route as AuthenticatedAgentsIdRouteImport } from "./routes/_authenticated/agents.$id"
+import { Route as AuthenticatedAgentsNewRouteImport } from "./routes/_authenticated/agents.new"
+import { Route as AuthenticatedSettingsRouteImport } from "./routes/_authenticated/settings"
+import { Route as AuthenticatedTasksRouteImport } from "./routes/_authenticated/tasks"
+import { Route as ApiAuthSplatRouteImport } from "./routes/api/auth.$"
+import { Route as IndexRouteImport } from "./routes/index"
+import { Route as LoginRouteImport } from "./routes/login"
+import { Route as SignupRouteImport } from "./routes/signup"
 
 const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
+  id: "/signup",
+  path: "/signup",
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+  id: "/login",
+  path: "/login",
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
-  id: '/_authenticated',
+  id: "/_authenticated",
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
-  id: '/tasks',
-  path: '/tasks',
+  id: "/tasks",
+  path: "/tasks",
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+  id: "/settings",
+  path: "/settings",
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedAgentsRoute = AuthenticatedAgentsRouteImport.update({
-  id: '/agents',
-  path: '/agents',
+  id: "/agents",
+  path: "/agents",
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
-  id: '/account',
-  path: '/account',
+  id: "/account",
+  path: "/account",
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
+  id: "/api/auth/$",
+  path: "/api/auth/$",
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAgentsNewRoute = AuthenticatedAgentsNewRouteImport.update({
-  id: '/new',
-  path: '/new',
+  id: "/new",
+  path: "/new",
   getParentRoute: () => AuthenticatedAgentsRoute,
 } as any)
 const AuthenticatedAgentsIdRoute = AuthenticatedAgentsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
+  id: "/$id",
+  path: "/$id",
   getParentRoute: () => AuthenticatedAgentsRoute,
 } as any)
 const AuthenticatedAccountActivityRoute =
   AuthenticatedAccountActivityRouteImport.update({
-    id: '/activity',
-    path: '/activity',
+    id: "/activity",
+    path: "/activity",
     getParentRoute: () => AuthenticatedAccountRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/signup': typeof SignupRoute
-  '/account': typeof AuthenticatedAccountRouteWithChildren
-  '/agents': typeof AuthenticatedAgentsRouteWithChildren
-  '/settings': typeof AuthenticatedSettingsRoute
-  '/tasks': typeof AuthenticatedTasksRoute
-  '/account/activity': typeof AuthenticatedAccountActivityRoute
-  '/agents/$id': typeof AuthenticatedAgentsIdRoute
-  '/agents/new': typeof AuthenticatedAgentsNewRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
+  "/": typeof IndexRoute
+  "/login": typeof LoginRoute
+  "/signup": typeof SignupRoute
+  "/account": typeof AuthenticatedAccountRouteWithChildren
+  "/agents": typeof AuthenticatedAgentsRouteWithChildren
+  "/settings": typeof AuthenticatedSettingsRoute
+  "/tasks": typeof AuthenticatedTasksRoute
+  "/account/activity": typeof AuthenticatedAccountActivityRoute
+  "/agents/$id": typeof AuthenticatedAgentsIdRoute
+  "/agents/new": typeof AuthenticatedAgentsNewRoute
+  "/api/auth/$": typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/signup': typeof SignupRoute
-  '/account': typeof AuthenticatedAccountRouteWithChildren
-  '/agents': typeof AuthenticatedAgentsRouteWithChildren
-  '/settings': typeof AuthenticatedSettingsRoute
-  '/tasks': typeof AuthenticatedTasksRoute
-  '/account/activity': typeof AuthenticatedAccountActivityRoute
-  '/agents/$id': typeof AuthenticatedAgentsIdRoute
-  '/agents/new': typeof AuthenticatedAgentsNewRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
+  "/": typeof IndexRoute
+  "/login": typeof LoginRoute
+  "/signup": typeof SignupRoute
+  "/account": typeof AuthenticatedAccountRouteWithChildren
+  "/agents": typeof AuthenticatedAgentsRouteWithChildren
+  "/settings": typeof AuthenticatedSettingsRoute
+  "/tasks": typeof AuthenticatedTasksRoute
+  "/account/activity": typeof AuthenticatedAccountActivityRoute
+  "/agents/$id": typeof AuthenticatedAgentsIdRoute
+  "/agents/new": typeof AuthenticatedAgentsNewRoute
+  "/api/auth/$": typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/_authenticated': typeof AuthenticatedRouteWithChildren
-  '/login': typeof LoginRoute
-  '/signup': typeof SignupRoute
-  '/_authenticated/account': typeof AuthenticatedAccountRouteWithChildren
-  '/_authenticated/agents': typeof AuthenticatedAgentsRouteWithChildren
-  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
-  '/_authenticated/tasks': typeof AuthenticatedTasksRoute
-  '/_authenticated/account/activity': typeof AuthenticatedAccountActivityRoute
-  '/_authenticated/agents/$id': typeof AuthenticatedAgentsIdRoute
-  '/_authenticated/agents/new': typeof AuthenticatedAgentsNewRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
+  "/": typeof IndexRoute
+  "/_authenticated": typeof AuthenticatedRouteWithChildren
+  "/login": typeof LoginRoute
+  "/signup": typeof SignupRoute
+  "/_authenticated/account": typeof AuthenticatedAccountRouteWithChildren
+  "/_authenticated/agents": typeof AuthenticatedAgentsRouteWithChildren
+  "/_authenticated/settings": typeof AuthenticatedSettingsRoute
+  "/_authenticated/tasks": typeof AuthenticatedTasksRoute
+  "/_authenticated/account/activity": typeof AuthenticatedAccountActivityRoute
+  "/_authenticated/agents/$id": typeof AuthenticatedAgentsIdRoute
+  "/_authenticated/agents/new": typeof AuthenticatedAgentsNewRoute
+  "/api/auth/$": typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
-    | '/login'
-    | '/signup'
-    | '/account'
-    | '/agents'
-    | '/settings'
-    | '/tasks'
-    | '/account/activity'
-    | '/agents/$id'
-    | '/agents/new'
-    | '/api/auth/$'
+    | "/"
+    | "/login"
+    | "/signup"
+    | "/account"
+    | "/agents"
+    | "/settings"
+    | "/tasks"
+    | "/account/activity"
+    | "/agents/$id"
+    | "/agents/new"
+    | "/api/auth/$"
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
-    | '/login'
-    | '/signup'
-    | '/account'
-    | '/agents'
-    | '/settings'
-    | '/tasks'
-    | '/account/activity'
-    | '/agents/$id'
-    | '/agents/new'
-    | '/api/auth/$'
+    | "/"
+    | "/login"
+    | "/signup"
+    | "/account"
+    | "/agents"
+    | "/settings"
+    | "/tasks"
+    | "/account/activity"
+    | "/agents/$id"
+    | "/agents/new"
+    | "/api/auth/$"
   id:
-    | '__root__'
-    | '/'
-    | '/_authenticated'
-    | '/login'
-    | '/signup'
-    | '/_authenticated/account'
-    | '/_authenticated/agents'
-    | '/_authenticated/settings'
-    | '/_authenticated/tasks'
-    | '/_authenticated/account/activity'
-    | '/_authenticated/agents/$id'
-    | '/_authenticated/agents/new'
-    | '/api/auth/$'
+    | "__root__"
+    | "/"
+    | "/_authenticated"
+    | "/login"
+    | "/signup"
+    | "/_authenticated/account"
+    | "/_authenticated/agents"
+    | "/_authenticated/settings"
+    | "/_authenticated/tasks"
+    | "/_authenticated/account/activity"
+    | "/_authenticated/agents/$id"
+    | "/_authenticated/agents/new"
+    | "/api/auth/$"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -175,89 +175,89 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
+    "/signup": {
+      id: "/signup"
+      path: "/signup"
+      fullPath: "/signup"
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
+    "/login": {
+      id: "/login"
+      path: "/login"
+      fullPath: "/login"
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: '/'
+    "/_authenticated": {
+      id: "/_authenticated"
+      path: ""
+      fullPath: "/"
       preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
+    "/": {
+      id: "/"
+      path: "/"
+      fullPath: "/"
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/tasks': {
-      id: '/_authenticated/tasks'
-      path: '/tasks'
-      fullPath: '/tasks'
+    "/_authenticated/tasks": {
+      id: "/_authenticated/tasks"
+      path: "/tasks"
+      fullPath: "/tasks"
       preLoaderRoute: typeof AuthenticatedTasksRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/settings': {
-      id: '/_authenticated/settings'
-      path: '/settings'
-      fullPath: '/settings'
+    "/_authenticated/settings": {
+      id: "/_authenticated/settings"
+      path: "/settings"
+      fullPath: "/settings"
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/agents': {
-      id: '/_authenticated/agents'
-      path: '/agents'
-      fullPath: '/agents'
+    "/_authenticated/agents": {
+      id: "/_authenticated/agents"
+      path: "/agents"
+      fullPath: "/agents"
       preLoaderRoute: typeof AuthenticatedAgentsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/account': {
-      id: '/_authenticated/account'
-      path: '/account'
-      fullPath: '/account'
+    "/_authenticated/account": {
+      id: "/_authenticated/account"
+      path: "/account"
+      fullPath: "/account"
       preLoaderRoute: typeof AuthenticatedAccountRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/api/auth/$': {
-      id: '/api/auth/$'
-      path: '/api/auth/$'
-      fullPath: '/api/auth/$'
+    "/api/auth/$": {
+      id: "/api/auth/$"
+      path: "/api/auth/$"
+      fullPath: "/api/auth/$"
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/agents/new': {
-      id: '/_authenticated/agents/new'
-      path: '/new'
-      fullPath: '/agents/new'
+    "/_authenticated/agents/new": {
+      id: "/_authenticated/agents/new"
+      path: "/new"
+      fullPath: "/agents/new"
       preLoaderRoute: typeof AuthenticatedAgentsNewRouteImport
       parentRoute: typeof AuthenticatedAgentsRoute
     }
-    '/_authenticated/agents/$id': {
-      id: '/_authenticated/agents/$id'
-      path: '/$id'
-      fullPath: '/agents/$id'
+    "/_authenticated/agents/$id": {
+      id: "/_authenticated/agents/$id"
+      path: "/$id"
+      fullPath: "/agents/$id"
       preLoaderRoute: typeof AuthenticatedAgentsIdRouteImport
       parentRoute: typeof AuthenticatedAgentsRoute
     }
-    '/_authenticated/account/activity': {
-      id: '/_authenticated/account/activity'
-      path: '/activity'
-      fullPath: '/account/activity'
+    "/_authenticated/account/activity": {
+      id: "/_authenticated/account/activity"
+      path: "/activity"
+      fullPath: "/account/activity"
       preLoaderRoute: typeof AuthenticatedAccountActivityRouteImport
       parentRoute: typeof AuthenticatedAccountRoute
     }
@@ -303,7 +303,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
-  AuthenticatedRouteChildren,
+  AuthenticatedRouteChildren
 )
 
 const rootRouteChildren: RootRouteChildren = {
@@ -317,9 +317,10 @@ export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
+import type { createStart } from "@tanstack/react-start"
+import type { getRouter } from "./router.tsx"
+
+declare module "@tanstack/react-start" {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>

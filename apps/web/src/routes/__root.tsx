@@ -1,31 +1,37 @@
+import type { QueryClient } from "@tanstack/react-query"
 import {
+  createRootRouteWithContext,
   HeadContent,
   Outlet,
   Scripts,
-  createRootRouteWithContext,
 } from "@tanstack/react-router"
-import type { QueryClient } from "@tanstack/react-query"
-import { Suspense, type ReactNode } from "react"
+import { type ReactNode, Suspense } from "react"
 import { Providers } from "@/components/providers"
-import { PWARegister } from "@/components/pwa-register"
 import { PWAInstaller } from "@/components/pwa-installer"
+import { PWARegister } from "@/components/pwa-register"
 import appCss from "./globals.css?url"
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
-}>()(
-  {
+}>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       {
         name: "viewport",
-        content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
+        content:
+          "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
       },
       { title: "Cursor Agents" },
-      { name: "description", content: "Manage your Cursor background agents on the go" },
+      {
+        name: "description",
+        content: "Manage your Cursor background agents on the go",
+      },
       { name: "apple-mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      {
+        name: "apple-mobile-web-app-status-bar-style",
+        content: "black-translucent",
+      },
       { name: "apple-mobile-web-app-title", content: "Agents" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "theme-color", content: "#1a1a2e" },
@@ -112,14 +118,19 @@ function RootDocument({ children }: { children: ReactNode }) {
           }}
         />
       </head>
-      <body className="antialiased font-sans md:overflow-visible" suppressHydrationWarning>
-        <Suspense fallback={null}>
-          <Providers>
-            {children}
-            <PWARegister />
-            <PWAInstaller />
-          </Providers>
-        </Suspense>
+      <body
+        className="antialiased font-sans md:overflow-visible"
+        suppressHydrationWarning
+      >
+        <div id="root">
+          <Suspense fallback={null}>
+            <Providers>
+              {children}
+              <PWARegister />
+              <PWAInstaller />
+            </Providers>
+          </Suspense>
+        </div>
         <Scripts />
       </body>
     </html>
