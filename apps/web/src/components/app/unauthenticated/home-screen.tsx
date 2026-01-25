@@ -12,11 +12,17 @@ function Header({ isAuthenticated }: { isAuthenticated: boolean }) {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
-          <img
-            src="/android-chrome-512x512.png"
-            alt="Cursor Agents Manager"
-            className="h-12 w-12 rounded-full"
-          />
+          <picture>
+            <source type="image/webp" srcSet="/android-chrome-192x192.webp" />
+            <img
+              src="/android-chrome-192x192.png"
+              alt="Cursor Agents Manager"
+              width={48}
+              height={48}
+              className="h-12 w-12 rounded-full"
+              fetchPriority="high"
+            />
+          </picture>
           <span className="font-semibold text-foreground">
             Cursor Agents Manager
           </span>
@@ -149,6 +155,8 @@ function HeroSection({ isAuthenticated }: { isAuthenticated: boolean }) {
             src="/images/app-screenshot.png"
             alt="Terminal"
             className="mt-6 md:mt-8 mx-auto rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm w-full max-w-[1536px]"
+            fetchPriority="high"
+            loading="eager"
           />
         </div>
       </div>
@@ -440,6 +448,7 @@ function ScreenshotsSection() {
                   src={screenshot.src || "/placeholder.svg"}
                   alt={screenshot.title}
                   className="w-full object-cover"
+                  loading="lazy"
                 />
               </div>
               <h3 className="mb-1 font-semibold text-foreground">
