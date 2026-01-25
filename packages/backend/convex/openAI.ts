@@ -10,7 +10,7 @@ import {
   extractUserMessagesAndLastAssistant,
 } from "validators"
 import { api, internal } from "./_generated/api"
-import { action, internalAction } from "./_generated/server"
+import { action, internalAction } from "better-convex/server"
 import { checkRateLimit, openAIRateLimiters } from "./rateLimiting"
 
 /**

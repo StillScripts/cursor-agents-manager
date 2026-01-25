@@ -2,7 +2,7 @@
 
 import { v } from "convex/values"
 import * as crypto from "crypto"
-import { action } from "./_generated/server"
+import { action } from "better-convex/server"
 
 /**
  * Verify webhook signature using HMAC SHA256

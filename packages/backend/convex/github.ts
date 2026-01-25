@@ -4,7 +4,7 @@ import { v } from "convex/values"
 import { decryptData } from "encryption"
 import { parseGithubPrUrl } from "validators"
 import { api, internal } from "./_generated/api"
-import { action, internalAction } from "./_generated/server"
+import { action, internalAction } from "better-convex/server"
 import { checkRateLimit, githubRateLimiters } from "./rateLimiting"
 
 /**

@@ -10,7 +10,7 @@ import type {
   LaunchAgentRequest,
 } from "validators"
 import { api, components, internal } from "./_generated/api"
-import { action, internalAction } from "./_generated/server"
+import { action, internalAction } from "better-convex/server"
 import { checkRateLimit, cursorRateLimiters } from "./rateLimiting"
 
 const CURSOR_API_URL = "https://api.cursor.com/v0/agents"

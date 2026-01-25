@@ -1,5 +1,5 @@
 import { v } from "convex/values"
-import { internalMutation, query } from "./_generated/server"
+import { internalMutation, query } from "better-convex/server"
 import { getAuthenticatedUser } from "./auth"
 
 /**

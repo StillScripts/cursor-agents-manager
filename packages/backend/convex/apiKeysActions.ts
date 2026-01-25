@@ -3,7 +3,7 @@
 import { v } from "convex/values"
 import { decryptData, encryptData, maskApiKey } from "encryption"
 import { api, internal } from "./_generated/api"
-import { action } from "./_generated/server"
+import { action } from "better-convex/server"
 
 // ============================================================================
 // Actions that handle encryption/decryption (require Node.js crypto)
