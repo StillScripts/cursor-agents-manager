@@ -1,5 +1,6 @@
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { ConvexProvider } from "better-convex/react"
 import { ConvexReactClient } from "convex/react"
 import { Provider as JotaiProvider } from "jotai"
 import type React from "react"
@@ -51,13 +52,15 @@ export function Providers({
           authClient={authClient}
           initialToken={initialToken}
         >
-          <QueryClientProvider client={queryClient}>
-            <CursorKeyProvider>
-              <OpenAIKeyProvider>
-                <GithubKeyProvider>{children}</GithubKeyProvider>
-              </OpenAIKeyProvider>
-            </CursorKeyProvider>
-          </QueryClientProvider>
+          <ConvexProvider client={convex} queryClient={queryClient}>
+            <QueryClientProvider client={queryClient}>
+              <CursorKeyProvider>
+                <OpenAIKeyProvider>
+                  <GithubKeyProvider>{children}</GithubKeyProvider>
+                </OpenAIKeyProvider>
+              </CursorKeyProvider>
+            </QueryClientProvider>
+          </ConvexProvider>
         </ConvexBetterAuthProvider>
       </JotaiProvider>
     </ThemeProvider>

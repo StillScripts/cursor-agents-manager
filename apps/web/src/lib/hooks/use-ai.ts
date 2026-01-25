@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useAction } from "convex/react"
+import { useConvexAction } from "better-convex/react"
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
 import { useStableQuery } from "@/lib/hooks/use-stable-query"
@@ -18,7 +18,7 @@ export type WorkSummary = {
 
 export function useSummarizeConversation() {
   const queryClient = useQueryClient()
-  const summarizeAction = useAction(api.openAI.summarizeConversation)
+  const summarizeAction = useConvexAction(api.openAI.summarizeConversation)
 
   return useMutation({
     mutationFn: async (agentId: string) => {
@@ -48,7 +48,7 @@ export function useTodayWorkSummary() {
 
 export function useSummarizeTodayWork() {
   const queryClient = useQueryClient()
-  const summarizeAction = useAction(api.openAI.summarizeTodayWork)
+  const summarizeAction = useConvexAction(api.openAI.summarizeTodayWork)
 
   return useMutation({
     mutationFn: async () => {
@@ -65,7 +65,7 @@ export function useSummarizeTodayWork() {
 }
 
 export function useTranscribeAudio() {
-  const transcribeAction = useAction(api.openAI.transcribeAudio)
+  const transcribeAction = useConvexAction(api.openAI.transcribeAudio)
 
   return useMutation({
     mutationFn: async (audioFile: File) => {
@@ -89,7 +89,7 @@ export function useTranscribeAudio() {
 }
 
 export function useTextToSpeech() {
-  const ttsAction = useAction(api.openAI.textToSpeech)
+  const ttsAction = useConvexAction(api.openAI.textToSpeech)
 
   return useMutation({
     mutationFn: async (params: { text: string; voice?: string }) => {
@@ -109,7 +109,7 @@ export function useTextToSpeech() {
 }
 
 export function useImprovePrompt() {
-  const improvePromptAction = useAction(api.openAI.improvePrompt)
+  const improvePromptAction = useConvexAction(api.openAI.improvePrompt)
 
   return useMutation({
     mutationFn: async ({

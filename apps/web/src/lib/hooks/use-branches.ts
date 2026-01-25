@@ -1,4 +1,4 @@
-import { useMutation } from "convex/react"
+import { useConvexMutation } from "better-convex/react"
 import { api } from "@/convex/_generated/api"
 import { useStableQuery } from "@/lib/hooks/use-stable-query"
 
@@ -8,7 +8,7 @@ export interface Branch {
 
 export function useBranches() {
   const branches = useStableQuery(api.branches.getBranches)
-  const saveBranches = useMutation(api.branches.saveBranches)
+  const saveBranches = useConvexMutation(api.branches.saveBranches)
 
   return {
     branches,

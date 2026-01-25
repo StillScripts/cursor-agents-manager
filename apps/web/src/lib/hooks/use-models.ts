@@ -1,4 +1,4 @@
-import { useAction } from "convex/react"
+import { useConvexAction } from "better-convex/react"
 import { useCallback, useEffect, useState } from "react"
 import { api } from "@/convex/_generated/api"
 
@@ -17,7 +17,7 @@ export function useModels() {
     error: null,
   })
 
-  const getModels = useAction(api.cursor.getModels)
+  const getModels = useConvexAction(api.cursor.getModels)
 
   const fetchModels = useCallback(async () => {
     try {

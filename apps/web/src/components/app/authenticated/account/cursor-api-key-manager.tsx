@@ -1,4 +1,4 @@
-import { useAction } from "convex/react"
+import { useConvexAction } from "better-convex/react"
 import { Check, Eye, EyeOff, Key, Trash2 } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -32,11 +32,11 @@ export function CursorApiKeyManager() {
     maskedKey: null,
   })
 
-  const getCursorApiKeyStatus = useAction(
+  const getCursorApiKeyStatus = useConvexAction(
     api.apiKeysActions.getCursorApiKeyStatus
   )
-  const saveCursorApiKey = useAction(api.apiKeysActions.saveCursorApiKey)
-  const deleteCursorApiKey = useAction(api.apiKeysActions.deleteCursorApiKey)
+  const saveCursorApiKey = useConvexAction(api.apiKeysActions.saveCursorApiKey)
+  const deleteCursorApiKey = useConvexAction(api.apiKeysActions.deleteCursorApiKey)
 
   const fetchStatus = useCallback(async () => {
     try {

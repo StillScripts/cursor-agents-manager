@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query"
-import { useAction, useMutation as useConvexMutation } from "convex/react"
+import { useConvexAction, useConvexMutation } from "better-convex/react"
 import { useEffect, useState } from "react"
 import { api } from "@/convex/_generated/api"
 import type { Id } from "@/convex/_generated/dataModel"
@@ -59,7 +59,7 @@ export function useAgent(id: string, initialData?: Agent | null) {
   const dbResult = useStableQuery(api.agents.getById, { agentId: id })
 
   // Convex action for syncing from Cursor API
-  const getAgentById = useAction(api.cursor.getAgentById)
+  const getAgentById = useConvexAction(api.cursor.getAgentById)
 
   // Initial sync on mount (if no data in DB, fetches from Cursor API)
   useEffect(() => {
@@ -113,7 +113,7 @@ export function useAgentConversation(id: string) {
   })
 
   // Convex action for syncing from Cursor API
-  const getConversation = useAction(api.cursor.getConversation)
+  const getConversation = useConvexAction(api.cursor.getConversation)
 
   // Initial sync on mount (if no data in DB, fetches from Cursor API)
   useEffect(() => {
@@ -213,7 +213,7 @@ export function useAgentConversationWithCursor(
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const getConversationWithCursor = useAction(
+  const getConversationWithCursor = useConvexAction(
     api.cursor.getConversationWithCursor
   )
 
@@ -316,7 +316,7 @@ export function useAgentConversationWithCursor(
 }
 
 export function useLaunchAgent() {
-  const launchAgent = useAction(api.cursor.launchAgent)
+  const launchAgent = useConvexAction(api.cursor.launchAgent)
 
   return useMutation({
     mutationFn: async (data: LaunchAgentRequest) => {
@@ -332,7 +332,7 @@ export function useLaunchAgent() {
 }
 
 export function useStopAgent() {
-  const stopAgent = useAction(api.cursor.stopAgent)
+  const stopAgent = useConvexAction(api.cursor.stopAgent)
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -342,7 +342,7 @@ export function useStopAgent() {
 }
 
 export function useDeleteAgent() {
-  const deleteAgent = useAction(api.cursor.deleteAgent)
+  const deleteAgent = useConvexAction(api.cursor.deleteAgent)
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -352,7 +352,7 @@ export function useDeleteAgent() {
 }
 
 export function useSendFollowUp() {
-  const sendFollowUp = useAction(api.cursor.sendFollowUp)
+  const sendFollowUp = useConvexAction(api.cursor.sendFollowUp)
 
   return useMutation({
     mutationFn: async ({ id, message }: { id: string; message: string }) => {
