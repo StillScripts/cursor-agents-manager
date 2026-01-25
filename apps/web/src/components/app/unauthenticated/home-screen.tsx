@@ -154,6 +154,8 @@ function HeroSection({ isAuthenticated }: { isAuthenticated: boolean }) {
           <img
             src="/images/app-screenshot.png"
             alt="Terminal"
+            width={1540}
+            height={793}
             className="mt-6 md:mt-8 mx-auto rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm w-full max-w-[1536px]"
             fetchPriority="high"
             loading="eager"
@@ -409,18 +411,24 @@ function ScreenshotsSection() {
       description:
         "See all your running and completed agents at a glance with real-time status updates.",
       src: "/images/agents-dashboard.png",
+      width: 1258,
+      height: 476,
     },
     {
       title: "Launch Agent",
       description:
         "Describe tasks with text or voice input. Attach images and select your target repository.",
       src: "/images/launch-agent.png",
+      width: 1258,
+      height: 476,
     },
     {
       title: "AI-Powered Features",
       description:
         "Unlock summaries, text-to-speech, voice input, and AI prompt improvement with your API key.",
       src: "/images/ai-enhancements.png",
+      width: 1258,
+      height: 476,
     },
   ]
 
@@ -447,6 +455,8 @@ function ScreenshotsSection() {
                 <img
                   src={screenshot.src || "/placeholder.svg"}
                   alt={screenshot.title}
+                  width={screenshot.width ?? 1258}
+                  height={screenshot.height ?? 476}
                   className="w-full object-cover"
                   loading="lazy"
                 />
