@@ -1,37 +1,39 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { HomepageScreen } from "@/components/app/unauthenticated/home-screen"
 
+const title = "Your AI Agents, In Your Pocket | Cursor Agents Manager"
+const description =
+  "Launch Cursor background agents, track their progress, and give feedback anywhere, all from your phone. Free and open source mobile app for managing AI agents on the go."
+const ogImage = "/images/app-screenshot.png"
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Your AI Agents, In Your Pocket | Cursor Agents Manager" },
+      { title },
       {
         name: "description",
-        content:
-          "Launch Cursor background agents, track their progress, and give feedback anywhere, all from your phone. Free and open source mobile app for managing AI agents on the go.",
+        content: description,
       },
       {
         property: "og:title",
-        content: "Your AI Agents, In Your Pocket | Cursor Agents Manager",
+        content: title,
       },
       {
         property: "og:description",
-        content:
-          "Launch Cursor background agents, track their progress, and give feedback anywhere, all from your phone. Free and open source mobile app for managing AI agents on the go.",
+        content: description,
       },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "/images/app-screenshot.png" },
+      { property: "og:image", content: ogImage },
       { name: "twitter:card", content: "summary_large_image" },
       {
         name: "twitter:title",
-        content: "Your AI Agents, In Your Pocket | Cursor Agents Manager",
+        content: title,
       },
       {
         name: "twitter:description",
-        content:
-          "Launch Cursor background agents, track their progress, and give feedback anywhere, all from your phone. Free and open source mobile app for managing AI agents on the go.",
+        content: description,
       },
-      { name: "twitter:image", content: "/images/app-screenshot.png" },
+      { name: "twitter:image", content: ogImage },
     ],
   }),
   component: HomePage,
