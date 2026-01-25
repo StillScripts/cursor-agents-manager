@@ -1,4 +1,3 @@
-"use client"
 
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
 import { Suspense, useState } from "react"

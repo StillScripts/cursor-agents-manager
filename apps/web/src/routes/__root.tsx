@@ -5,7 +5,7 @@ import {
   Outlet,
   Scripts,
 } from "@tanstack/react-router"
-import { type ReactNode, Suspense } from "react"
+import type { ReactNode } from "react"
 import { Providers } from "@/components/providers"
 import { PWAInstaller } from "@/components/pwa-installer"
 import { PWARegister } from "@/components/pwa-register"
@@ -123,13 +123,11 @@ function RootDocument({ children }: { children: ReactNode }) {
         suppressHydrationWarning
       >
         <div id="root">
-          <Suspense fallback={null}>
-            <Providers>
-              {children}
-              <PWARegister />
-              <PWAInstaller />
-            </Providers>
-          </Suspense>
+          <Providers>
+            {children}
+            <PWARegister />
+            <PWAInstaller />
+          </Providers>
         </div>
         <Scripts />
       </body>

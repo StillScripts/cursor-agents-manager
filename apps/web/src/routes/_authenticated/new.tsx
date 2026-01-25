@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { Suspense } from "react"
 import { LaunchAgentForm } from "@/components/forms/launch-agent-form"
 
 export const Route = createFileRoute("/_authenticated/new")({
@@ -13,9 +12,5 @@ export const Route = createFileRoute("/_authenticated/new")({
 })
 
 function NewAgentPage() {
-  return (
-    <Suspense fallback={null}>
-      <LaunchAgentForm />
-    </Suspense>
-  )
+  return <LaunchAgentForm />
 }

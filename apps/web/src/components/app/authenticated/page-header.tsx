@@ -1,4 +1,3 @@
-"use client"
 
 import { useRouter } from "@tanstack/react-router"
 import { ChevronLeft } from "lucide-react"

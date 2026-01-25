@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { Suspense } from "react"
 import { ActivityScreen } from "@/components/app/authenticated/account/activity-screen"
 
 export const Route = createFileRoute("/_authenticated/account/activity")({
@@ -14,8 +13,6 @@ export const Route = createFileRoute("/_authenticated/account/activity")({
 
 function ActivityPage() {
   return (
-    <Suspense fallback={null}>
-      <ActivityScreen />
-    </Suspense>
+
   )
 }

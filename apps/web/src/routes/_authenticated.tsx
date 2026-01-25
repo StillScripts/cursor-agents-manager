@@ -1,6 +1,5 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
-import { Suspense } from "react"
 import { BottomNav } from "@/components/app/authenticated/bottom-nav"
 import { DesktopHeader } from "@/components/app/authenticated/desktop-header"
 import { GlobalTimerBanner } from "@/components/app/authenticated/global-timer-banner"
@@ -26,21 +25,15 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedLayout() {
   return (
     <>
-      <Suspense fallback={null}>
-        <DesktopHeader />
-      </Suspense>
+      <DesktopHeader />
 
       <main className="h-dvh overflow-y-auto mobile-scroll main-content-bottom-padding bg-background max-w-md mx-auto w-full md:h-auto md:flex md:flex-col md:min-h-screen md:pt-16 md:overflow-visible md:max-w-none">
         <div className="md:max-w-7xl md:mx-auto md:px-6 md:py-8 md:w-full pb-8 md:pb-0">
-          <Suspense fallback={null}>
-            <GlobalTimerBanner />
-          </Suspense>
+          <GlobalTimerBanner />
           <Outlet />
         </div>
       </main>
-      <Suspense fallback={null}>
-        <BottomNav />
-      </Suspense>
+      <BottomNav />
     </>
   )
 }

@@ -1,4 +1,3 @@
-"use client"
 
 import { useQuery } from "convex/react"
 import { createContext, type ReactNode, useContext } from "react"

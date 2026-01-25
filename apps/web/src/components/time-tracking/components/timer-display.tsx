@@ -1,4 +1,3 @@
-"use client"
 
 import { formatDuration } from "helpers"
 import { useAtom } from "jotai"

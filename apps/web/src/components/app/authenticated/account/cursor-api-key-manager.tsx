@@ -1,4 +1,3 @@
-"use client"
 
 import { useAction } from "convex/react"
 import { Check, Eye, EyeOff, Key, Trash2 } from "lucide-react"

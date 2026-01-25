@@ -1,4 +1,3 @@
-"use client"
 
 import { Sparkles, Wand2 } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"

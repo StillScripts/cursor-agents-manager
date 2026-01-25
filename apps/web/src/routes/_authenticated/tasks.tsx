@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { Suspense } from "react"
 import { TimeTrackingScreen } from "@/components/time-tracking/components/time-tracking-screen"
 
 export const Route = createFileRoute("/_authenticated/tasks")({
@@ -13,9 +12,5 @@ export const Route = createFileRoute("/_authenticated/tasks")({
 })
 
 function TasksPage() {
-  return (
-    <Suspense fallback={null}>
-      <TimeTrackingScreen />
-    </Suspense>
-  )
+  return <TimeTrackingScreen />
 }

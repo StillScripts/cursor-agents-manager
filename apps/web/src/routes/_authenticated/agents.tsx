@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { Suspense } from "react"
 import { AgentsTable } from "@/components/app/authenticated/agents-table"
 
 export const Route = createFileRoute("/_authenticated/agents")({
@@ -16,9 +15,5 @@ export const Route = createFileRoute("/_authenticated/agents")({
 })
 
 function AgentsPage() {
-  return (
-    <Suspense fallback={null}>
-      <AgentsTable />
-    </Suspense>
-  )
+  return <AgentsTable />
 }

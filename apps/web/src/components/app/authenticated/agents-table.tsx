@@ -1,4 +1,3 @@
-"use client"
 
 import { useAction, useQuery } from "convex/react"
 import { Bot } from "lucide-react"

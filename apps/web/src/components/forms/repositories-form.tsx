@@ -1,4 +1,3 @@
-"use client"
 
 import { parseGitHubUrl } from "helpers"
 import { GitBranch, Link, Plus, Trash2 } from "lucide-react"

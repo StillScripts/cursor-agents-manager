@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { Suspense } from "react"
 import { AgentDetail } from "@/components/app/authenticated/agent/agent-detail"
 
 export const Route = createFileRoute("/_authenticated/agent/$id")({
@@ -16,8 +15,6 @@ function AgentPage() {
   const { id } = Route.useParams()
 
   return (
-    <Suspense fallback={null}>
-      <AgentDetail agentId={id} initialAgent={null} />
-    </Suspense>
+
   )
 }

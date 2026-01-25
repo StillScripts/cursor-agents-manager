@@ -1,7 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
-import { Suspense } from "react"
-import { LoginForm, LoginFormSkeleton } from "@/components/forms/login-form"
+import { LoginForm } from "@/components/forms/login-form"
 import { isAuthenticated } from "@/lib/better-auth/auth-server"
 
 const checkAuth = createServerFn({ method: "GET" }).handler(async () => {
@@ -35,9 +34,5 @@ export const Route = createFileRoute("/login")({
 })
 
 function LoginPage() {
-  return (
-    <Suspense fallback={<LoginFormSkeleton />}>
-      <LoginForm />
-    </Suspense>
-  )
+  return <LoginForm />
 }

@@ -1,4 +1,3 @@
-"use client"
 
 import { useAtom } from "jotai"
 import { ListTodo, Timer } from "lucide-react"

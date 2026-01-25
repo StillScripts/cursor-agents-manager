@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { Suspense } from "react"
 import { CursorApiKeyManager } from "@/components/app/authenticated/account/cursor-api-key-manager"
 import { DeleteAccountButton } from "@/components/app/authenticated/account/delete-account-button"
 import { GithubTokenManager } from "@/components/app/authenticated/account/github-token-manager"
@@ -21,22 +20,6 @@ export const Route = createFileRoute("/_authenticated/account")({
 
 function AccountPage() {
   return (
-    <Suspense fallback={null}>
-      <div className="p-4 flex flex-col gap-4 sm:gap-6">
-        <PageHeader title="Account" />
-        <UserProfileCard />
-        <CursorApiKeyManager />
-        <OpenAIApiKeyManager />
-        <GithubTokenManager />
-        <SettingsLinkCard />
-        <div className="flex flex-col gap-2 pt-4 border-t">
-          <SignOutButton />
-          <DeleteAccountButton />
-        </div>
-        <p className="text-xs text-center text-muted-foreground pt-4">
-          Cursor Agent Manager v0.1.0
-        </p>
-      </div>
-    </Suspense>
+
   )
 }

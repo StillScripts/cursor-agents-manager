@@ -1,4 +1,3 @@
-"use client"
 
 import { useAtomValue } from "jotai"
 import { TaskList } from "@/components/time-tracking/components/task-list"

@@ -1,4 +1,3 @@
-"use client"
 
 import { Mic, Square } from "lucide-react"
 import { useEffect, useRef, useState } from "react"

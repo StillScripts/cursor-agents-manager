@@ -1,4 +1,3 @@
-"use client"
 
 import { Mic, Sparkles, Square } from "lucide-react"
 import type React from "react"

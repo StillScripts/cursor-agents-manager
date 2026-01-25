@@ -1,7 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
 import { createServerFn } from "@tanstack/react-start"
-import { Suspense } from "react"
-import { LoginFormSkeleton } from "@/components/forms/login-form"
 import { SignupForm } from "@/components/forms/signup-form"
 import { isAuthenticated } from "@/lib/better-auth/auth-server"
 
@@ -26,9 +24,5 @@ export const Route = createFileRoute("/signup")({
 })
 
 function SignupPage() {
-  return (
-    <Suspense fallback={<LoginFormSkeleton />}>
-      <SignupForm />
-    </Suspense>
-  )
+  return <SignupForm />
 }
