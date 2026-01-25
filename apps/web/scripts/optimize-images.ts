@@ -34,7 +34,15 @@ console.log("Generated app-screenshot-800.webp, app-screenshot-1320.webp")
 const screenshots = ["agents-dashboard", "launch-agent", "ai-enhancements"]
 for (const name of screenshots) {
   const src = path.join(imagesDir, `${name}.png`)
-  await sharp(src).resize(400).webp({ quality: 82 }).toFile(path.join(imagesDir, `${name}-400.webp`))
-  await sharp(src).resize(800).webp({ quality: 82 }).toFile(path.join(imagesDir, `${name}-800.webp`))
+  await sharp(src)
+    .resize(400)
+    .webp({ quality: 82 })
+    .toFile(path.join(imagesDir, `${name}-400.webp`))
+  await sharp(src)
+    .resize(800)
+    .webp({ quality: 82 })
+    .toFile(path.join(imagesDir, `${name}-800.webp`))
 }
-console.log("Generated screenshot WebPs: agents-dashboard, launch-agent, ai-enhancements (400w, 800w)")
+console.log(
+  "Generated screenshot WebPs: agents-dashboard, launch-agent, ai-enhancements (400w, 800w)"
+)
