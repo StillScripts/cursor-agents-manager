@@ -7,21 +7,13 @@ import { useSession } from "@/lib/hooks/use-session"
 export function UserProfileCard() {
   const { user, isLoading } = useSession()
 
-  const getUserInitial = () => {
-    if (user?.name) {
-      return user.name.charAt(0).toUpperCase()
-    }
-    if (user?.email) {
-      return user.email.charAt(0).toUpperCase()
-    }
-    return "U"
-  }
+  const userInitial = (
+    user?.name?.charAt(0) ??
+    user?.email?.charAt(0) ??
+    "U"
+  ).toUpperCase()
 
-  const getUserName = () => {
-    if (user?.name) return user.name
-    if (user?.email) return user.email.split("@")[0]
-    return "User"
-  }
+  const userName = user?.name ?? user?.email?.split("@")[0] ?? "User"
 
   if (isLoading) {
     return <SkeletonCard />
@@ -33,11 +25,11 @@ export function UserProfileCard() {
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center">
             <span className="text-xl font-bold text-primary">
-              {getUserInitial()}
+              {userInitial}
             </span>
           </div>
           <div className="flex-1">
-            <p className="font-semibold text-foreground">{getUserName()}</p>
+            <p className="font-semibold text-foreground">{userName}</p>
             <p className="text-sm text-muted-foreground">
               {user?.email || "user@example.com"}
             </p>

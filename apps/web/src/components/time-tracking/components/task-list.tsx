@@ -41,28 +41,27 @@ import {
 function formatEntryDateTime(timestamp: number): string {
   const date = new Date(timestamp)
   const now = new Date()
-  const isToday = date.toDateString() === now.toDateString()
-  const yesterday = new Date(now)
-  yesterday.setDate(yesterday.getDate() - 1)
-  const isYesterday = date.toDateString() === yesterday.toDateString()
-
   const timeStr = date.toLocaleTimeString([], {
     hour: "numeric",
     minute: "2-digit",
   })
 
-  if (isToday) {
+  if (date.toDateString() === now.toDateString()) {
     return `Today at ${timeStr}`
-  } else if (isYesterday) {
-    return `Yesterday at ${timeStr}`
-  } else {
-    const dayStr = date.toLocaleDateString([], {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    })
-    return `${dayStr} at ${timeStr}`
   }
+
+  const yesterday = new Date(now)
+  yesterday.setDate(yesterday.getDate() - 1)
+  if (date.toDateString() === yesterday.toDateString()) {
+    return `Yesterday at ${timeStr}`
+  }
+
+  const dayStr = date.toLocaleDateString([], {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  })
+  return `${dayStr} at ${timeStr}`
 }
 
 function TaskAgentsList({ taskId }: { taskId: Id<"tasks"> }) {

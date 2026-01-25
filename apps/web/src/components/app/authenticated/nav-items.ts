@@ -6,3 +6,10 @@ export const navItems = [
   { href: "/new", icon: Plus, label: "New" },
   { href: "/account", icon: User, label: "Account" },
 ]
+
+export function isNavItemActive(itemHref: string, pathname: string): boolean {
+  if (itemHref === "/agents") {
+    return pathname === "/agents" || pathname.startsWith("/agent")
+  }
+  return pathname === itemHref
+}
