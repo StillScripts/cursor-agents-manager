@@ -1,5 +1,3 @@
-"use client"
-
 import { useAction } from "convex/react"
 import { useCallback, useEffect, useState } from "react"
 import { api } from "@/convex/_generated/api"

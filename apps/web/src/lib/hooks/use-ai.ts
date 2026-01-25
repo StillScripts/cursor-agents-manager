@@ -1,5 +1,3 @@
-"use client"
-
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useAction } from "convex/react"
 import { api } from "@/convex/_generated/api"

@@ -1,5 +1,3 @@
-"use client"
-
 import { useMutation } from "@tanstack/react-query"
 import { useAction, useMutation as useConvexMutation } from "convex/react"
 import { useEffect, useState } from "react"
