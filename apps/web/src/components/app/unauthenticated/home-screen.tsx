@@ -317,7 +317,7 @@ function HowItWorksSection() {
               href="https://cursor.com/dashboard?tab=cloud-agents"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary"
+              className="text-primary underline underline-offset-4 hover:text-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:rounded"
             >
               Cursor
             </a>
