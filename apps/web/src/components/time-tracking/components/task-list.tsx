@@ -103,7 +103,8 @@ function TaskAgentsList({ taskId }: { taskId: Id<"tasks"> }) {
 }
 
 export function TaskList() {
-  const { tasks, deleteTask } = useTasks()
+  const [limit, setLimit] = useState(10)
+  const { tasks, deleteTask, hasMore } = useTasks(limit)
   const { timeLogs } = useAllTimeLogs()
   const { deleteTimeLog } = useDeleteTimeLog()
   const { hasActiveTask } = useActiveTimeLog()
@@ -481,6 +482,17 @@ export function TaskList() {
             </div>
           )
         })}
+        {hasMore && (
+          <div className="flex justify-center py-4 border-t border-border mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setLimit((prev) => prev + 10)}
+            >
+              Show More
+            </Button>
+          </div>
+        )}
       </div>
     </ScrollArea>
   )

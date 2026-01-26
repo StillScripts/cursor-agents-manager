@@ -11,15 +11,19 @@ export interface Task {
   createdAt: number
 }
 
-export function useTasks() {
-  const tasks = useStableQuery(api.tasks.getTasks)
+export function useTasks(limit?: number) {
+  const result = useStableQuery(
+    api.tasks.getTasks,
+    limit !== undefined ? { limit } : {}
+  )
   const createTask = useMutation(api.tasks.createTask)
   const deleteTask = useMutation(api.tasks.deleteTask)
 
   return {
-    tasks,
-    isLoading: tasks === undefined,
-    hasTasks: (tasks?.length ?? 0) > 0,
+    tasks: result?.tasks,
+    hasMore: result?.hasMore ?? false,
+    isLoading: result === undefined,
+    hasTasks: (result?.tasks?.length ?? 0) > 0,
     createTask: (data: {
       title: string
       description?: string
