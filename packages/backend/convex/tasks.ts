@@ -3,26 +3,41 @@ import { mutation, query } from "./_generated/server"
 import { getAuthenticatedUser } from "./auth"
 
 export const getTasks = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
     const authUser = await getAuthenticatedUser(ctx).catch(() => null)
     if (!authUser) {
-      return []
+      return { tasks: [], total: 0, hasMore: false }
     }
 
+    const limit = args.limit ?? 20
+
+    // Get tasks for this user, ordered by createdAt descending
     const tasks = await ctx.db
       .query("tasks")
       .withIndex("by_user", (q) => q.eq("userId", authUser.userId))
       .order("desc")
-      .collect()
+      .take(limit + 1) // Take one extra to check if there are more
 
-    return tasks.map((task) => ({
-      _id: task._id,
-      title: task.title,
-      description: task.description,
-      repositoryId: task.repositoryId,
-      createdAt: task.createdAt,
-    }))
+    // Sort by createdAt descending (newest first)
+    tasks.sort((a, b) => b.createdAt - a.createdAt)
+
+    const hasMore = tasks.length > limit
+    const tasksToReturn = hasMore ? tasks.slice(0, limit) : tasks
+
+    return {
+      tasks: tasksToReturn.map((task) => ({
+        _id: task._id,
+        title: task.title,
+        description: task.description,
+        repositoryId: task.repositoryId,
+        createdAt: task.createdAt,
+      })),
+      total: tasksToReturn.length,
+      hasMore,
+    }
   },
 })
 
